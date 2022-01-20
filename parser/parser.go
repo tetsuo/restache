@@ -49,10 +49,6 @@ type SectionNode struct {
 	Children []Node
 }
 
-func (c SectionNode) Value() []Node {
-	return c.Children
-}
-
 func (c SectionNode) Kind() NodeKind {
 	return Section
 }
@@ -63,20 +59,12 @@ type TagNode struct {
 	Attrs    map[string][]Node
 }
 
-func (c TagNode) Kind() NodeKind {
+func (c *TagNode) Kind() NodeKind {
 	return Tag
-}
-
-func (c TagNode) Value() []Node {
-	return c.Children
 }
 
 type Node interface {
 	Kind() NodeKind
-}
-
-type Tree interface {
-	Value() []Node
 }
 
 type Parent interface {
@@ -129,30 +117,19 @@ func parse(p *parser, cb func(*TagNode) bool) func(lexer.Token) bool {
 			if treeNode, ok := node.(*TagNode); ok {
 				if treeNode.Name != t.Body {
 					p.err = fmt.Errorf("%w: <%s>...</%s>", ErrSyntax, treeNode.Name, t.Body)
-					return false
+				} else {
+					children := p.stack[i+1]
+					if len(children) > 0 {
+						treeNode.Children = p.stack[i+1]
+					}
+					p.stack = p.stack[:i+1]
+					if len(p.stack) == 1 && cb != nil {
+						cb(node.(*TagNode))
+					}
+					break
 				}
-				children := p.stack[i+1]
-				if len(children) > 0 {
-					treeNode.Children = p.stack[i+1]
-				}
-				p.stack = p.stack[:i+1]
-				if len(p.stack) == 1 && cb != nil {
-					cb(node.(*TagNode))
-				}
-				break
 			}
-			p.err = fmt.Errorf("%w: ...<%s>", ErrSyntax, t.Body)
 			return false
-		case lexer.Text:
-			i := len(p.stack) - 1
-			p.stack[i] = append(p.stack[i], &TextNode{
-				Text: t.Body,
-			})
-		case lexer.Variable:
-			i := len(p.stack) - 1
-			p.stack[i] = append(p.stack[i], &VariableNode{
-				Name: t.Body,
-			})
 		case lexer.SectionOpen, lexer.InvertedSectionOpen:
 			p.stack = append(p.stack, make([]Node, 0))
 			i := len(p.stack) - 2
@@ -170,17 +147,26 @@ func parse(p *parser, cb func(*TagNode) bool) func(lexer.Token) bool {
 			if sectionNode, ok := node.(*SectionNode); ok {
 				if sectionNode.Name != t.Body {
 					p.err = fmt.Errorf("%w: {#%s}...{/%s}", ErrSyntax, sectionNode.Name, t.Body)
-					return false
+				} else {
+					children := p.stack[i+1]
+					if len(children) > 0 {
+						sectionNode.Children = p.stack[i+1]
+					}
+					p.stack = p.stack[:i+1]
+					break
 				}
-				children := p.stack[i+1]
-				if len(children) > 0 {
-					sectionNode.Children = p.stack[i+1]
-				}
-				p.stack = p.stack[:i+1]
-				break
 			}
-			p.err = fmt.Errorf("%w: ...{/%s}", ErrSyntax, t.Body)
 			return false
+		case lexer.Text:
+			i := len(p.stack) - 1
+			p.stack[i] = append(p.stack[i], &TextNode{
+				Text: t.Body,
+			})
+		case lexer.Variable:
+			i := len(p.stack) - 1
+			p.stack[i] = append(p.stack[i], &VariableNode{
+				Name: t.Body,
+			})
 		case lexer.Comment:
 			i := len(p.stack) - 1
 			p.stack[i] = append(p.stack[i], &CommentNode{
