@@ -27,6 +27,10 @@ func (c TextNode) Kind() NodeKind {
 	return Text
 }
 
+func (c TextNode) Serialize() interface{} {
+	return c.Text
+}
+
 type VariableNode struct {
 	Name string
 }
@@ -35,12 +39,26 @@ func (c VariableNode) Kind() NodeKind {
 	return Variable
 }
 
+func (c VariableNode) Serialize() interface{} {
+	return []interface{}{
+		Variable,
+		c.Name,
+	}
+}
+
 type CommentNode struct {
 	Comment string
 }
 
 func (c CommentNode) Kind() NodeKind {
 	return Comment
+}
+
+func (c CommentNode) Serialize() interface{} {
+	return []interface{}{
+		Comment,
+		c.Comment,
+	}
 }
 
 type SectionNode struct {
@@ -53,22 +71,49 @@ func (c SectionNode) Kind() NodeKind {
 	return Section
 }
 
+func (c SectionNode) Serialize() interface{} {
+	var kind NodeKind
+	if c.Inverted {
+		kind = InvertedSection
+	} else {
+		kind = Section
+	}
+	children := make([]interface{}, len(c.Children))
+	for i, v := range c.Children {
+		children[i] = v.Serialize()
+	}
+	return []interface{}{kind, c.Name, children}
+}
+
 type TagNode struct {
 	Name     string
 	Children []Node
 	Attrs    map[string][]Node
 }
 
-func (c *TagNode) Kind() NodeKind {
+func (c TagNode) Kind() NodeKind {
 	return Tag
+}
+
+func (c TagNode) Serialize() interface{} {
+	children := make([]interface{}, len(c.Children))
+	for i, v := range c.Children {
+		children[i] = v.Serialize()
+	}
+	attrs := make(map[string]interface{}, len(c.Attrs))
+	for k, list := range c.Attrs {
+		xs := make([]interface{}, len(list))
+		for i, v := range list {
+			xs[i] = v.Serialize()
+		}
+		attrs[k] = xs
+	}
+	return []interface{}{c.Name, attrs, children}
 }
 
 type Node interface {
 	Kind() NodeKind
-}
-
-type Parent interface {
-	Children() []Node
+	Serialize() interface{}
 }
 
 var (
