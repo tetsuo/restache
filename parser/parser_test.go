@@ -11,8 +11,9 @@ import (
 
 func TestParse(t *testing.T) {
 	testCases := []struct {
-		text     string
-		expected *TagNode
+		text        string
+		expected    *TagNode
+		expectedErr string
 	}{
 		{
 			text: `<x class={foo} for="{foo} {bar}">{bar}</x>`,
@@ -284,10 +285,36 @@ func TestParse(t *testing.T) {
 				},
 			},
 		},
+		{
+			text:        `<x>bla</y></x>`,
+			expectedErr: "stache: syntax error: <x>...</y>",
+		},
+		{
+			text:        `<x>{#bla}<y></y>{/z}</x>`,
+			expectedErr: "stache: syntax error: {#bla}...{/z}",
+		},
+		{
+			text:        `<x class="<y></y>{/z}"></x>`,
+			expectedErr: "stache: syntax error: section not initialized: z",
+		},
+		{
+			text:        `</x>`,
+			expectedErr: "stache: syntax error: tag not initialized: x",
+		},
+		{
+			text:        `<x><d><y></y></e></x>`,
+			expectedErr: "stache: syntax error: <d>...</x>",
+		},
 	}
 	for _, tt := range testCases {
 		tt := tt
 		t.Run(tt.text, func(t *testing.T) {
+			if tt.expectedErr != "" {
+				err := Parse(strings.NewReader(tt.text), nil)
+				assert.ErrorIs(t, err, ErrSyntax)
+				assert.Equal(t, err.Error(), tt.expectedErr)
+				return
+			}
 			if err := Parse(strings.NewReader(tt.text), func(tree *TagNode) bool {
 				assert.EqualValues(t, tt.expected, tree)
 				return true
