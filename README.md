@@ -16,7 +16,7 @@ Running `stache < hello.html` outputs a compact AST document formatted as JSON:
 ["div",{},["Hello, ",[3,"name"],"!"]]
 ```
 
-Create a layout from the parse tree that you can render React components with:
+Create a layout from this object and render React elements with it:
 
 ```js
 const React = require('react')
@@ -72,4 +72,28 @@ stache supports the [mustache spec](http://mustache.github.io/mustache.5.html) w
 
 ```
 <h1>Today{! ignore me }.</h1>
+```
+
+## Custom components
+
+Provide your own components in the `options.registry` object.
+
+For example, this html:
+
+```html
+<foo class=bla>
+  <div>{n}</div>
+</foo>
+```
+
+You can render a custom `foo` component like this:
+
+```js
+const foo = ({ className, children }) =>
+  <p className={ className }>
+      <b>bold</b>
+      { children }
+  </p>
+
+createElement(layout, { n: 1 }, { registry: { foo: foo } })
 ```
