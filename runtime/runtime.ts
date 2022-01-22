@@ -93,10 +93,10 @@ const syntheticEvents = [
 const lowerCaseSyntheticEvents = syntheticEvents.map(d => d.toLowerCase())
 
 /**
- * A `TemplateContext` will either instantiate a new `Template` or use the provided
+ * A `Layout` will either instantiate a new `Template` or use the provided
  * one in `ctor` parameter, and call the `Template.render` method with this value.
  */
-export type TemplateContext<U> = (state: any, options: RenderOptions<U>, ctor?: TemplateConstructor<U>) => U[]
+export type Layout<U> = (state: any, options: RenderOptions<U>, ctor?: TemplateConstructor<U>) => U[]
 
 export enum ParseTreeKind {
   Section = 2,
@@ -404,18 +404,18 @@ function visitObserver<T>(
 }
 
 /**
- * Renders a `TemplateContext` into a `ReactElement`.
+ * Renders a `Layout` into a `ReactElement`.
  *
  * If a tag name doesn't resolve to a `ComponentClass` in the provided `options.registry`, xūs will
  * by default assume it is an ordinary HTML tag and wrap it in `observer`. If a `ComponentClass`
  * is found instead, then it's up to the provider to make this an observer, or not.
  *
- * @param ctx  A `TemplateContext` created with `createContext`.
+ * @param ctx  A `Layout` created with `createLayout`.
  * @param state
  * @param options
  */
 export function createElement<P>(
-  ctx: TemplateContext<React.ReactElement<P>>,
+  layout: Layout<React.ReactElement<P>>,
   state: { [s: string]: any },
   options: RenderOptions<P>
 ): React.ReactElement<P> {
@@ -435,7 +435,7 @@ export function createElement<P>(
     })
   }
 
-  const element = ctx.call(new Template(), state, {
+  const element = layout.call(new Template(), state, {
     ...({
       registry: registry,
       visitNode: _visitNode,
@@ -464,13 +464,13 @@ export function createElement<P>(
   return element
 }
 
-export const createContext = <U>(tree: ParseTree) =>
+export const createLayout = <U>(tree: ParseTree) =>
   new Function(
     'd' /* state */,
     'm' /* options */,
     't' /* opt template inst */,
     't=t?new t:this;t.root=' + JSON.stringify(tree) + ';return t.render(d,m)'
-  ) as TemplateContext<U>
+  ) as Layout<U>
 
 function isObject(value: unknown): value is object {
   return value !== null && typeof value === 'object'
