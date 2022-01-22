@@ -27,7 +27,7 @@ builds:
 
 archives:
   - id: stache
-    name_template: "stache-{{.ShortCommit}}-{{.Os}}-{{.Arch}}{{ if .Arm }}v{{.Arm }}{{ end }}"
+    name_template: "stache-{{.Version}}-{{.Os}}-{{.Arch}}{{ if .Arm }}v{{.Arm }}{{ end }}"
     format: tar.gz
 
 checksum:
