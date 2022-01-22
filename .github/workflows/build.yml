@@ -121,11 +121,16 @@ jobs:
           jq 'del(.devDependencies, .scripts, .private)' | \
           jq '. + { "publishConfig": { "registry":"https://npm.pkg.github.com/" } }' \
           > .release/package.json
+
         cd .release
         touch .npmrc
         echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > .npmrc
         git fetch --all --tags
         tag_and_release patch
+
+        cd ..
+        rm -fr .release
+        rm -fr node_modules
 
     - name: Release parser dist
       if: github.ref == 'refs/heads/master' && github.event_name == 'push'
