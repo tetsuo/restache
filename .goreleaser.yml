@@ -6,7 +6,7 @@ before:
 
 builds:
   - id: stache
-    main: ./cmd/main.go
+    main: ./main.go
     flags:
       - -trimpath
       - -tags=netgo
