@@ -1,0 +1,35 @@
+project_name: stache
+
+before:
+  hooks:
+    - go mod tidy -v
+
+builds:
+  - id: stache
+    main: ./cmd/main.go
+    flags:
+      - -trimpath
+      - -tags=netgo
+    env:
+      - CGO_ENABLED=0
+    asmflags:
+      - all=-trimpath={{.Env.GOPATH}}
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
+    ldflags: |
+      -s -w -extldflags '-static'
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    mod_timestamp: '{{ .CommitTimestamp }}'
+
+archives:
+  - id: stache
+    name_template: "stache-{{.ShortCommit}}-{{.Os}}-{{.Arch}}{{ if .Arm }}v{{.Arm }}{{ end }}"
+    format: tar.gz
+
+checksum:
+  name_template: "{{.ProjectName}}_{{.Version}}_SHA256SUMS"
+
