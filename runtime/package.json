@@ -1,0 +1,16 @@
+{
+  "name": "@onur1/stache",
+  "version": "0.0.0",
+  "description": "",
+  "main": "runtime.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/react": "^17.0.38",
+    "typescript": "^4.5.5"
+  }
+}
