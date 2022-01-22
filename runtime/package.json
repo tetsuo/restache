@@ -4,7 +4,7 @@
   "description": "",
   "main": "runtime.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node runtime-test.js"
   },
   "keywords": [],
   "author": "",
