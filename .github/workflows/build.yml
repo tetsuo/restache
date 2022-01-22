@@ -50,11 +50,13 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Run go tests
+    - name: Run parser tests
       run: go test ./...
 
-    - name: Install node modules
-      run: npm --prefix runtime install
+    - name: Build runtime
+      run: |
+        npm --prefix runtime install
+        (cd runtime && ./node_modules/.bin/tsc)
 
-    - name: Run js tests
+    - name: Run runtime tests
       run: npm --prefix runtime test
