@@ -1,0 +1,60 @@
+name: Build
+
+on: [pull_request, push]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [1.17.x]
+        node-version: [17.0.x]
+
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go-version }}
+      id: go
+
+    - name: Set up NodeJS
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Set up Go modules cache
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-go-modules
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go${{ matrix.go-version }}-build-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go${{ matrix.go-version }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-go${{ matrix.go-version }}-build-
+          ${{ runner.os }}-go${{ matrix.go-version }}-
+
+    - name: Setup node modules cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          runtime/node_modules
+        key: ${{ runner.OS }}-node${{ matrix.node-version }}-build-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.OS }}-node${{ matrix.node-version }}-build-${{ env.cache-name }}-
+          ${{ runner.OS }}-node${{ matrix.node-version }}-build-
+          ${{ runner.OS }}-node${{ matrix.node-version }}-
+
+    - name: Check out code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Run go tests
+      run: go test ./...
+
+    - name: Install node modules
+      run: npm --prefix runtime install
+
+    - name: Run js tests
+      run: npm --prefix runtime test
