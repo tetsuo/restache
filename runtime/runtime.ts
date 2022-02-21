@@ -313,7 +313,7 @@ function visitObserver<T>(
 
   Object.keys(attrs).forEach(propKey => {
     const tpl = new Template<{ [s: string]: any }>({
-      visitNode: (propType, propOptions, propChildren) => {
+      visitNode: (_propType, propOptions, _propChildren) => {
         const propParseTree = propOptions.parseTree
         const traverseFn = propOptions.traverseChildren
         const newPropChildren = (propParseTree[ParseTreeIndex.Children] as (ParseTree | string)[]).reduce<
@@ -406,8 +406,8 @@ function visitObserver<T>(
 /**
  * Renders a `Layout` into a `ReactElement`.
  *
- * If a tag name doesn't resolve to a `ComponentClass` in the provided `options.registry`, xūs will
- * by default assume it is an ordinary HTML tag and wrap it in `observer`. If a `ComponentClass`
+ * If a tag name doesn't resolve to a `ComponentClass` in the provided `options.registry`,
+ * assumes that it is an ordinary HTML tag and wrap it with `observer`. If a `ComponentClass`
  * is found instead, then it's up to the provider to make this an observer, or not.
  *
  * @param ctx  A `Layout` created with `createLayout`.
@@ -415,7 +415,7 @@ function visitObserver<T>(
  * @param options
  */
 export function createElement<P>(
-  layout: Layout<React.ReactElement<P>>,
+  layout: Layout<P>,
   state: { [s: string]: any },
   options: RenderOptions<P>
 ): React.ReactElement<P> {
