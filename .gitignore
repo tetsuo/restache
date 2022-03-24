@@ -1,4 +1,2 @@
 runtime/.npmrc
-runtime/runtime.d.ts
-runtime/runtime.js
 dist
