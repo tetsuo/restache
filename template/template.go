@@ -1,0 +1,75 @@
+package template
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/onur1/stache/parser"
+)
+
+type Template struct {
+	name  string
+	trees []*parser.TagNode
+}
+
+func New(name string) *Template {
+	t := &Template{
+		name:  name,
+		trees: []*parser.TagNode{},
+	}
+	return t
+}
+
+func (t *Template) Name() string {
+	return t.name
+}
+
+func (t *Template) Serialize() interface{} {
+	var ret []interface{}
+	for _, tree := range t.trees {
+		ret = append(ret, []interface{}{t.name, tree.Serialize()})
+		fmt.Println(ret)
+	}
+	return ret
+}
+
+func (t *Template) Trees() []*parser.TagNode {
+	return t.trees
+}
+
+func ParseGlob(pattern string) ([]*Template, error) {
+	return parseGlob(pattern)
+}
+
+func parseGlob(pattern string) ([]*Template, error) {
+	filenames, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, err
+	}
+	if len(filenames) == 0 {
+		return nil, fmt.Errorf("template: pattern matches no files: %#q", pattern)
+	}
+	return parseFiles(filenames...)
+}
+
+func parseFiles(filenames ...string) ([]*Template, error) {
+	if len(filenames) == 0 {
+		return nil, fmt.Errorf("template: no files named in call to ParseFiles")
+	}
+	var ts []*Template
+	for _, filename := range filenames {
+		t := New(strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename)))
+		r, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		parser.Parse(r, func(tree *parser.TagNode) bool {
+			t.trees = append(t.trees, tree)
+			return true
+		})
+		ts = append(ts, t)
+	}
+	return ts, nil
+}
