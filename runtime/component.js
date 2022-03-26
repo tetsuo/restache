@@ -2,6 +2,7 @@ const sort = require('./sort')
 const { decode } = require('./stache')
 const { isLayout } = require('./layout')
 const { constant, isBoolean, isObject, isString, flatten, has } = require('./function')
+const { syntheticEventNamesLowercase, syntheticEventNames } = require('./constants')
 
 const variableComponent = e => s => isObject(s) ? s[e.name] : null
 
@@ -71,18 +72,47 @@ const sectionComponent = (e, opts) => {
   }
 }
 
-const getRenderProps = props => {
-  let i, o, c, p
+const isElementInput = e => e.name === 'input' || e.name === 'textarea'
+
+const getRenderProps = (e, opts) => {
+  let i, o, c, p, n
+
+  const props = Object.entries(e.props).map(([key, children]) => {
+    switch (key) {
+      case 'class':
+        key = 'className'
+        break
+      case 'for':
+        key = 'htmlFor'
+        break
+      case 'checked':
+        key = isElementInput(e) ? 'defaultChecked' : key
+        break
+      case 'value':
+        key = isElementInput(e) ? 'defaultValue' : key
+        break
+      default:
+        if (has(syntheticEventNamesLowercase, key)) {
+          key = syntheticEventNames[key]
+        }
+    }
+    return [key, children.map(c => toComponent(c, opts))]
+  })
+
   return s => {
     p = {}
     i = 0
+    let maybeInt
     for (; i < props.length; i++) {
       o = props[i]
+      n = o[0]
       c = o[1].map(f => f(s))
       if (c.length > 1) {
-        p[o[0]] = [c.filter(Boolean).join('')] // TODO: test
+        p[n] = [c.filter(Boolean).join('')]
       } else if (c.length > 0) {
-        p[o[0]] = c[0] // take the first node
+        // take the first node only
+        maybeInt = parseInt(c[0], 10)
+        p[n] = isNaN(maybeInt) ? c[0] : maybeInt
       }
     }
     return p
@@ -97,9 +127,7 @@ const elementComponent = (e, opts) => {
   let renderProps, renderChildren, component
   if (!has(opts.selfClosingTags, e.name)) {
     renderChildren = getRenderChildren(e, opts)
-    renderProps = getRenderProps(
-      Object.entries(e.props).map(([key, children]) => [key, children.map(c => toComponent(c, opts))])
-    )
+    renderProps = getRenderProps(e, opts)
   } else {
     renderChildren = constantEmptyArray
     renderProps = constantEmptyObject

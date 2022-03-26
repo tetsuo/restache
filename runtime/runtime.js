@@ -1,4 +1,4 @@
-const { htmlTags, selfClosingTags } = require('./defaults')
+const { htmlTags, selfClosingTags } = require('./constants')
 const Component = require('./component')
 
 const createComponent = layout =>
