@@ -1,5 +1,5 @@
 // https://developer.mozilla.org/en-US/docs/Web/HTML/Element
-htmlTags = {
+const htmlTags = {
   // Main root
   // https://developer.mozilla.org/en-US/docs/Web/HTML/Element#main_root
   html: true,
