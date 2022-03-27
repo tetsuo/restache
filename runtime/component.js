@@ -137,26 +137,20 @@ const elementComponent = (e, opts) => {
     return s => {
       p = renderProps(s)
       c = renderChildren(p)
-      if (c.length) {
+      if (c.length > 0) {
         p.children = c
       }
       return opts.components[e.name](p)
     }
   }
-  if (!e.external && has(opts.registry, e.name)) {
+  if (!has(opts.externs, e.name) && !has(opts.components, e.name)) {
+    return s => opts.createFragment(renderChildren(s))
+  } else if (!e.external && has(opts.registry, e.name)) {
     component = opts.registry[e.name]
   } else {
     component = e.name
   }
-  return s => {
-    c = renderChildren(s)
-    if (!has(opts.externs, e.name) && !has(opts.components, e.name)) {
-      return opts.createFragment(c)
-    }
-    p = renderProps(s)
-    p.key = opts.createKey()
-    return opts.createElement(component, p, c)
-  }
+  return s => opts.createElement(component, { ...renderProps(s), ...{ key: opts.createKey() } }, renderChildren(s))
 }
 
 const textComponent = e => constant(e.text)
@@ -195,10 +189,14 @@ const findTopLevelProps = u => {
       }
     } else if (isString(u[0])) {
       if (isObject(u[1])) {
-        props = flatten(Object.values(u[1]).map(children => children.map(findTopLevelProps))).reduce(
-          (acc, x) => ({ ...acc, ...x }),
-          props
-        )
+        props = flatten(
+          Object.values(u[1]).map(children => {
+            if (!Array.isArray(children)) {
+              throw new Error(`expected an array, got ${JSON.stringify(children)}`)
+            }
+            return children.map(findTopLevelProps)
+          })
+        ).reduce((acc, x) => ({ ...acc, ...x }), props)
       }
       if (Array.isArray(u[2]) && u[2].length > 0) {
         props = u[2].reduce((acc, x) => ({ ...acc, ...findTopLevelProps(x) }), props)

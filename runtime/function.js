@@ -8,7 +8,7 @@ const isFunction = u => typeof u === 'function'
 
 const isBoolean = u => {
   const t = typeof u
-  return t === 'undefined' || t === 'boolean' || (t === 'object' && u === null)
+  return t === 'undefined' || u === true || u === false || (t === 'object' && u === null)
 }
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
