@@ -56,7 +56,6 @@ jobs:
     - name: Build runtime
       run: |
         npm --prefix runtime install
-        (cd runtime && ./node_modules/.bin/tsc)
 
     - name: Run runtime tests
       run: npm --prefix runtime test
@@ -117,7 +116,7 @@ jobs:
         }
         cd runtime
         mkdir .release
-        cp -R ../README.md runtime.js runtime.d.ts .release
+        cp -R ../README.md *.js .release
         cat package.json | \
           jq 'del(.devDependencies, .scripts, .private)' | \
           jq '. + { "publishConfig": { "registry":"https://npm.pkg.github.com/" } }' \
