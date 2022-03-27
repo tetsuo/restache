@@ -29,10 +29,9 @@ func (t *Template) Name() string {
 func (t *Template) Serialize() interface{} {
 	var ret []interface{}
 	for _, tree := range t.trees {
-		ret = append(ret, []interface{}{t.name, tree.Serialize()})
-		fmt.Println(ret)
+		ret = append(ret, tree.Serialize())
 	}
-	return ret
+	return []interface{}{t.name, ret}
 }
 
 func (t *Template) Trees() []*parser.TagNode {
