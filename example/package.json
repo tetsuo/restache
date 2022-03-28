@@ -1,19 +1,24 @@
 {
-  "name": "@onur1/stache-example",
+  "name": "stache-example",
   "private": true,
   "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "browserify": "browserify main.js -o public/bundle.js",
-    "start": "(cd public && python -m SimpleHTTPServer)"
+    "browserify": "browserify -o public/bundle.js main.js -dv",
+    "serve-frontend": "(cd public && python -m SimpleHTTPServer 7890 .)",
+    "serve-api": "go run main.go"
   },
+  "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "@onur1/stache": "^0.0.3",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
-  },
   "devDependencies": {
-    "browserify": "^17.0.0"
+    "@onur1/stache": "^0.0.7",
+    "browserify": "^17.0.0",
+    "elm-ts": "^0.6.0",
+    "fp-ts": "^2.11.9",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "rxjs": "^7.5.5"
   }
 }
