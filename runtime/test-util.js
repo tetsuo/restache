@@ -1,12 +1,9 @@
 const ReactDOMServer = require('react-dom/server')
 const { exec } = require('child_process')
-// const createComponent = require('./react')
-// const { Layout, Template } = require('./layout')
 const t = require('tap')
 const decode = require('./lib/decode')
 const createComponent = require('./lib/render')
 const sort = require('./lib/sort')
-// const { getDependencyGraph } = require('./lib/graph')
 
 const parse = s =>
   new Promise((resolve, reject) =>
@@ -24,22 +21,6 @@ const parse = s =>
       resolve(data)
     })
   )
-
-// async function runRenderTest(tc) {
-//   const roots = await Promise.all(Object.entries(tc.input).map(([k, v]) => parse(v).then(o => [k, [o]])))
-//   const T = createComponent(
-//     Layout(
-//       roots.map(([name, trees]) => Template(name, trees)),
-//       tc.opts
-//     )
-//   )
-//   const markup = ReactDOMServer.renderToStaticMarkup(T(tc.props || {}))
-//   if (markup === tc.expected) {
-//     t.pass(tc.desc)
-//   } else {
-//     t.fail(`expected "${tc.expected}", got "${markup}"`)
-//   }
-// }
 
 const isObject = o => typeof o === 'object' && o !== null
 
@@ -98,18 +79,7 @@ const runRenderTest = run(
   'render'
 )
 
-// const runGetDependencyGraphTest = run(getDependencyGraph)
-
 const runSortTest = run(d => sort(d)[0], 'sort')
-
-// const runSortTest = run(input => {
-//   const d = decode(input)
-// })
-
-// async function runSortTest(tc) {
-//   const d = decode(tc.input)
-//   Object.entries(tc.input).map(([k, v]) => decode(v).then(o => [k, [o]]))
-// }
 
 module.exports = {
   parse,
