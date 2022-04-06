@@ -5,15 +5,17 @@
   "main": "runtime.js",
   "scripts": {
     "test": "npm run lint && npm run tap",
-    "tap": "nyc tap test.js",
+    "tap": "nyc tap *-test.js",
+    "coverhtml": "tap *-test.js --coverage-report=html",
+    "watch": "tap -w --cov *-test.js",
     "lint": "eslint **/*.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "peerDependencies": {
-    "react": "^16.2.0",
-    "react-dom": "^16.2.0"
+    "react": "*",
+    "react-dom": "*"
   },
   "devDependencies": {
     "eslint": "^8.12.0",
