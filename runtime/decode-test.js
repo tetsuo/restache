@@ -67,14 +67,9 @@ const decodeTestCases = [
     expectedErr: 'a: expected an array of child nodes, got 42',
   },
   {
-    desc: 'element with valid children',
-    input: ['a', {}, ['hello', 'world']],
-    expected: Element('a', {}, [Text('hello'), Text('world')]),
-  },
-  {
-    desc: 'invalid node',
-    input: ['a', {}, ['hello', 'world']],
-    expected: Element('a', {}, [Text('hello'), Text('world')]),
+    desc: 'element with children',
+    input: ['a', {}, ['hello', 'world', 'abc', 'def', [3, 'x'], 'ghi', 'jkl']],
+    expected: Element('a', {}, [Text('helloworldabcdef'), Variable('x'), Text('ghijkl')]),
   },
   {
     desc: 'invalid tag id',
