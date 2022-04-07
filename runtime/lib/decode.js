@@ -12,17 +12,19 @@ const decode = u => {
       if (_0.trim().length < 1) {
         throw new TypeError('expected an element name, got empty string')
       }
-      const props = {}
-      if (u.length > 1) {
-        // has props?
+      let props
+      let children = []
+      const len = u.length
+      if (len > 1) {
+        props = {}
         if (!t.UnknownStruct(_1)) {
           throw new TypeError(`${_0}: expected a props object, got ${JSON.stringify(_1)}`)
         }
-        const keys = Object.keys(_1)
+        const propNames = Object.keys(_1)
         let key
         let i = 0
-        for (; i < keys.length; i++) {
-          key = keys[i]
+        for (; i < propNames.length; i++) {
+          key = propNames[i]
           if (!t.UnknownList(_1[key])) {
             throw new TypeError(`${_0} > ${key}: expected an array of child nodes, got ${JSON.stringify(_1[key])}`)
           }
@@ -34,15 +36,29 @@ const decode = u => {
           }
           props[key] = propChildren
         }
-      }
-      const children = []
-      if (u.length > 2) {
-        // has children?
-        if (!t.UnknownList(_2)) {
-          throw new TypeError(`${_0}: expected an array of child nodes, got ${JSON.stringify(_2)}`)
+        if (len > 2) {
+          // has children?
+          if (!t.UnknownList(_2)) {
+            throw new TypeError(`${_0}: expected an array of child nodes, got ${JSON.stringify(_2)}`)
+          }
+          for (let i = 0; i < _2.length; i++) {
+            children.push(decode(_2[i]))
+          }
         }
-        for (let i = 0; i < _2.length; i++) {
-          children.push(decode(_2[i]))
+        i = 0
+        let x, y
+        for (; i < children.length; i++) {
+          if (i < 1) {
+            continue
+          }
+          x = children[i - 1]
+          y = children[i]
+          if (x._tag === 'Text' && y._tag === 'Text') {
+            children[i - 1].text += y.text
+            children.splice(i, 1)
+            i = i - 1
+            continue
+          }
         }
       }
       return Element(_0, props, children)
@@ -67,7 +83,6 @@ const decode = u => {
         }
         return Variable(_1)
       } else {
-        // implicitly, if (_0 === 5)
         if (!t.String(_1)) {
           throw new TypeError(`expected a string as comment, got ${JSON.stringify(_1)}`)
         }
@@ -76,6 +91,7 @@ const decode = u => {
     }
     throw new TypeError(`expected a tag name or a valid id, got ${JSON.stringify(_0)}`)
   }
+  // text?
   if (t.String(u)) {
     return Text(u)
   }
