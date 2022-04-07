@@ -1,26 +1,8 @@
-const ReactDOMServer = require('react-dom/server')
-const { exec } = require('child_process')
 const t = require('tap')
+const ReactDOMServer = require('react-dom/server')
 const decode = require('./lib/decode')
 const createComponent = require('./lib/render')
 const sort = require('./lib/sort')
-
-const parse = s =>
-  new Promise((resolve, reject) =>
-    exec(`echo '${s}' | ${__dirname}/../stache`, (err, stdout) => {
-      if (err) {
-        reject(err)
-        return
-      }
-      let data
-      try {
-        data = JSON.parse(stdout)
-      } catch (e) {
-        reject(e)
-      }
-      resolve(data)
-    })
-  )
 
 const isObject = o => typeof o === 'object' && o !== null
 
@@ -82,7 +64,6 @@ const runRenderTest = run(
 const runSortTest = run(d => sort(d)[0], 'sort')
 
 module.exports = {
-  parse,
   runDecodeTest,
   runSortTest,
   runRenderTest,
