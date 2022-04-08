@@ -17,7 +17,7 @@ const getRenderChildren = componentTree => val => {
     o = componentTree[j](val)
     if (o !== null) {
       if (t.String(o) && c.length > 0 && t.String(c[c.length - 1])) {
-        // combine with the last output if both output text
+        // combine with the previous if both components output text
         c[c.length - 1] += o
       } else {
         c.push(o)
@@ -26,8 +26,6 @@ const getRenderChildren = componentTree => val => {
   }
   return c
 }
-
-const isElementInput = e => e.name === 'input' || e.name === 'textarea'
 
 const getRenderProps = props => {
   let i, o, c, p, n
@@ -38,10 +36,12 @@ const getRenderProps = props => {
       o = props[i]
       n = o[0]
       c = o[1].map(f => f(s))
-      if (c.length > 1) {
-        p[n] = [c.join('')] // TODO: c.filter(Boolean) ?
-      } else if (c.length > 0) {
-        p[n] = c[0]
+      if (c.length > 0) {
+        if (c.length > 1) {
+          p[n] = [c.map(String).join('')]
+        } else {
+          p[n] = c[0]
+        }
       }
     }
     return p
@@ -86,29 +86,39 @@ const createInvertedSectionComponent = (name, renderChildren) => {
 
 const createTextComponent = t => constant(String(t.text))
 
+const createPropertyComponent = (propName, propChildren, opts, index, tagWithDefaults) => {
+  switch (propName) {
+    case 'class':
+      propName = 'className'
+      break
+    case 'for':
+      propName = 'htmlFor'
+      break
+    case 'checked':
+      propName = tagWithDefaults ? 'defaultChecked' : propName
+      break
+    case 'value':
+      propName = tagWithDefaults ? 'defaultValue' : propName
+      break
+    default:
+      if (hasOwnProperty.call(opts.syntheticEvents, propName)) {
+        propName = opts.syntheticEventsReact[propName]
+      }
+  }
+  return [propName, propChildren.map(c => createComponent(c, opts, index, null))]
+}
+
 const createElementComponent = (e, opts, index, key) => {
   const renderProps = getRenderProps(
-    Object.entries(e.props).map(([propName, propChildren]) => {
-      switch (propName) {
-        case 'class':
-          propName = 'className'
-          break
-        case 'for':
-          propName = 'htmlFor'
-          break
-        case 'checked':
-          propName = isElementInput(e) ? 'defaultChecked' : propName
-          break
-        case 'value':
-          propName = isElementInput(e) ? 'defaultValue' : propName
-          break
-        default:
-          if (hasOwnProperty.call(opts.syntheticEvents, propName)) {
-            propName = opts.syntheticEventsReact[propName]
-          }
-      }
-      return [propName, propChildren.map(c => createComponent(c, opts, index, null))]
-    })
+    Object.entries(e.props).map(([propName, propChildren]) =>
+      createPropertyComponent(
+        propName,
+        propChildren,
+        opts,
+        index,
+        e.name === 'input' || e.name === 'select' || e.name === 'textarea' // has default value?
+      )
+    )
   )
   let renderChildren
   if (!hasOwnProperty.call(opts.selfClosingTags, e.name)) {

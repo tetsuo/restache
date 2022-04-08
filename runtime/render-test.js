@@ -299,7 +299,7 @@ const renderTestCases = [
     desc: 'pass text property to own component',
     input: {
       trees: [
-        Element('bar', { x: [Variable('x')] }, [Variable('x')]),
+        Element('bar', {}, [Variable('x')]),
         Element('foo', {}, [
           Element('bar', {
             x: [Text('hi')],
@@ -320,7 +320,7 @@ const renderTestCases = [
     desc: 'pass multiple text property to own component',
     input: {
       trees: [
-        Element('bar', { x: [Variable('x')] }, [Variable('x')]),
+        Element('bar', {}, [Variable('x')]),
         Element('foo', {}, [
           Element('bar', {
             x: [Text('hi'), Text('hello')],
@@ -338,20 +338,10 @@ const renderTestCases = [
     expected: 'hihello',
   },
   {
-    desc: 'pass variable property to own component',
+    desc: 'pass variable property to own component 1',
     input: {
       trees: [
-        Element(
-          'bar',
-          {
-            a: [Variable('a')],
-            b: [Variable('b')],
-            c: [Variable('c')],
-            d: [Variable('d')],
-            e: [Variable('e')],
-          },
-          [Variable('a'), Variable('b'), Variable('c'), Variable('d'), Variable('e')]
-        ),
+        Element('bar', {}, [Variable('a'), Variable('b'), Variable('c'), Variable('d'), Variable('e')]),
         Element('foo', {}, [
           Element('bar', {
             a: [Variable('y')],
@@ -381,16 +371,39 @@ const renderTestCases = [
     expected: 'hej42555100nnn[object Object]1,2,3[object Object]',
   },
   {
-    desc: 'pass single variable property to own component',
+    desc: 'pass property to own component 2',
     input: {
       trees: [
-        Element('bar', { e: [Variable('e')] }, [
+        Element('bar', {}, [
           Variable('e'),
-          Element('input', { type: [Text('checkbox')], checked: [Variable('e')] }),
+          Element(
+            'div',
+            {
+              value: [Variable('h'), Text('hi')],
+              checked: [Variable('e'), Text('hi')],
+              id: [Variable('e'), Text('hi')],
+            },
+            [Text('letsgo')]
+          ),
+          Element('input', {
+            type: [Text('check'), Text('box')],
+            id: [Variable('f')],
+            for: [Text('label'), Variable('f')],
+            checked: [Variable('e')],
+            style: [Variable('g')],
+            class: [],
+            email: [Variable('h')],
+            value: [Variable('e'), Variable('f')],
+            onclick: [Variable('fn')],
+          }),
         ]),
         Element('foo', {}, [
           Element('bar', {
             e: [Variable('faz')],
+            f: [Variable('qux')],
+            g: [Variable('style')],
+            h: [Variable('quux')],
+            fn: [Variable('xx')],
           }),
         ]),
       ],
@@ -399,6 +412,7 @@ const renderTestCases = [
         ...{
           externs: {
             input: true,
+            div: true,
           },
           selfClosingTags,
           syntheticEvents,
@@ -406,20 +420,18 @@ const renderTestCases = [
       },
       props: {
         faz: true,
+        qux: {},
+        quux: undefined,
+        style: {
+          marginRight: '3em',
+        },
+        xx: () => null,
       },
     },
-    expected: 'true<input type="checkbox" checked=""/>',
+    expected:
+      'true<div value="undefinedhi" checked="" id="truehi">letsgo</div><input type="checkbox" id="[object Object]" for="label[object Object]" style="margin-right:3em" value="true[object Object]" checked=""/>',
   },
 ]
 
 renderTestCases.map(runRenderTest)
 // renderTestCases.slice(-1).map(runRenderTest)
-
-// {
-//   desc: 'own component',
-//   input: {
-//     trees: [Element('foo', {}, [])],
-//   },
-//   opts: {},
-//   props: {},
-// },
