@@ -8,7 +8,7 @@ const decode = u => {
     }
     const [_0, _1, _2] = u
     if (t.String(_0)) {
-      // element?
+      // is element?
       if (_0.trim().length < 1) {
         throw new TypeError('expected an element name, got empty string')
       }
@@ -45,6 +45,7 @@ const decode = u => {
             children.push(decode(_2[i]))
           }
         }
+        // join consecutive text nodes
         i = 0
         let x, y
         for (; i < children.length; i++) {
@@ -91,7 +92,6 @@ const decode = u => {
     }
     throw new TypeError(`expected a tag name or a valid id, got ${JSON.stringify(_0)}`)
   }
-  // text?
   if (t.String(u)) {
     return Text(u)
   }

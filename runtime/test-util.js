@@ -3,6 +3,7 @@ const ReactDOMServer = require('react-dom/server')
 const decode = require('./lib/decode')
 const createComponent = require('./lib/render')
 const sort = require('./lib/sort')
+const main = require('./lib/main')
 
 const isObject = o => typeof o === 'object' && o !== null
 
@@ -61,10 +62,13 @@ const runRenderTest = run(
   'render'
 )
 
-const runSortTest = run(d => sort(d)[0], 'sort')
+const runMainTest = run(d => ReactDOMServer.renderToStaticMarkup(main(d.roots, d.opts)(d.props, d.children)), 'main')
+
+const runSortTest = run(d => sort(d), 'sort')
 
 module.exports = {
   runDecodeTest,
   runSortTest,
   runRenderTest,
+  runMainTest,
 }

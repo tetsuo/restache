@@ -74,12 +74,12 @@ const getDependencyGraph = trees => {
 
 const sort = roots => {
   const graph = getDependencyGraph(roots)
-  const { sorted, recursive } = tsort(graph)
+  const { sorted } = tsort(graph)
   const o = {}
   roots.forEach(d => {
     o[d.name] = d
   })
-  return [sorted.reverse().map(name => o[name]), recursive]
+  return sorted.reverse().map(name => o[name])
 }
 
 module.exports = sort

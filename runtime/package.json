@@ -2,7 +2,7 @@
   "name": "@onur1/stache",
   "version": "0.0.0",
   "description": "mustache to react transpiler",
-  "main": "runtime.js",
+  "main": "main.js",
   "scripts": {
     "test": "npm run lint && npm run tap",
     "tap": "nyc tap *-test.js",

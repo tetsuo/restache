@@ -167,7 +167,7 @@ const createComponent = (node, opts, index, key) => {
   return constantNull
 }
 
-const renderTemplates = (sorted, opts) => {
+const render = (sorted, opts) => {
   const syntheticEventsReact = Object.keys(opts.syntheticEvents).reduce(
     (i, o) => ({ ...i, ...{ [o.toLowerCase(o)]: o } }),
     {}
@@ -192,4 +192,4 @@ const renderTemplates = (sorted, opts) => {
   }, {})
 }
 
-module.exports = renderTemplates
+module.exports = render
