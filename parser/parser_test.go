@@ -315,11 +315,16 @@ func TestParse(t *testing.T) {
 				assert.Equal(t, err.Error(), tt.expectedErr)
 				return
 			}
+			seen := false
 			if err := Parse(strings.NewReader(tt.text), func(tree *TagNode) bool {
 				assert.EqualValues(t, tt.expected, tree)
+				seen = true
 				return true
 			}); err != nil {
 				log.Fatal(err)
+			}
+			if !seen {
+				t.Fail()
 			}
 		})
 	}
