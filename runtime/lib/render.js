@@ -40,6 +40,8 @@ const getRenderProps = props => {
         } else {
           p[n] = c[0]
         }
+      } else {
+        p[n] = true
       }
     }
     return p
