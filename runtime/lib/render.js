@@ -12,7 +12,7 @@ const getRenderChildren = componentTree => (val, i) => {
   let c = []
   let o
   for (; j < componentTree.length; ++j) {
-    o = componentTree[j](val, !t.Undefined(i) ? i + j : j)
+    o = componentTree[j](val, t.Number(i) ? i : j)
     if (!t.Nil(o)) {
       if (t.String(o) && c.length > 0 && t.String(c[c.length - 1])) {
         // combine with the previous if both components output text
