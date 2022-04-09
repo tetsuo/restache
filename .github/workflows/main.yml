@@ -122,7 +122,7 @@ jobs:
         }
         cd runtime
         mkdir .release
-        cp -R ../README.md *.js .release
+        cp -R ../README.md lib/*.js .release
         cat package.json | \
           jq 'del(.devDependencies, .scripts, .private)' | \
           jq '. + { "publishConfig": { "registry":"https://npm.pkg.github.com/" } }' \
