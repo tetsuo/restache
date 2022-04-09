@@ -55,6 +55,9 @@ jobs:
 
     - name: Build runtime
       run: |
+        touch runtime/.npmrc
+        echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > runtime/.npmrc
+        echo "@onur1:registry=https://npm.pkg.github.com" >> runtime/.npmrc
         npm --prefix runtime install
 
     - name: Run runtime tests
