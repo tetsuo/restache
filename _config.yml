@@ -8,8 +8,6 @@ aux_links:
   '@onur1/stache on GitHub':
     - 'https://github.com/onur1/stache'
 
-theme: "just-the-docs"
-
 defaults:
   -
     values:
