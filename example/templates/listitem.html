@@ -1,1 +1,6 @@
-<li>{name}</li>
+<li>
+  {name}
+  {#items}
+  <list name="{name}" items="{items}" />
+  {/items}
+</li>

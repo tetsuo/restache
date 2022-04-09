@@ -34,7 +34,7 @@ func main() {
 		AllowedOrigins:   []string{"*"},
 		AllowedHeaders:   []string{"*"},
 	})
-	r.Methods(http.MethodGet).Path("/layout").Handler(execMiddleware(layoutGet))
+	r.Methods(http.MethodGet).Path("/").Handler(execMiddleware(layoutGet))
 	server := &http.Server{
 		Addr:    ":7882",
 		Handler: ch.Handler(r),

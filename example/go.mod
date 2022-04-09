@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/gorilla/mux v1.8.0
 	github.com/onur1/middleware v0.0.0-20220113192843-9086f01b1f76
-	github.com/onur1/stache v0.0.0-20220327160645-8faca3f19cfa
+	github.com/onur1/stache v0.0.0-20220409031812-070cb4f084ed
 	github.com/rs/cors v1.8.2
 )
 

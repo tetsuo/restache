@@ -1,5 +1,5 @@
 {
-  "name": "stache-example",
+  "name": "@onur1/stache-example",
   "private": true,
   "version": "0.0.0",
   "description": "",
@@ -13,12 +13,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@onur1/stache": "^0.0.7",
+    "@onur1/stache": "*",
     "browserify": "^17.0.0",
-    "elm-ts": "^0.6.0",
-    "fp-ts": "^2.11.9",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "rxjs": "^7.5.5"
+    "react-dom": "^17.0.2"
   }
 }
