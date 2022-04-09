@@ -7,15 +7,13 @@ const constant = a => () => a
 
 const constantNull = constant(null)
 
-const KEY_DELIM = '.'
-
-const getRenderChildren = componentTree => val => {
+const getRenderChildren = componentTree => (val, i) => {
   let j = 0
   let c = []
   let o
   for (; j < componentTree.length; ++j) {
-    o = componentTree[j](val)
-    if (o !== null) {
+    o = componentTree[j](val, !t.Undefined(i) ? i + j : j)
+    if (!t.Nil(o)) {
       if (t.String(o) && c.length > 0 && t.String(c[c.length - 1])) {
         // combine with the previous if both components output text
         c[c.length - 1] += o
@@ -48,7 +46,7 @@ const getRenderProps = props => {
   }
 }
 
-const createVariableComponent = (v, prop) => s => prop ? s[v.name] : String(s[v.name])
+const createVariableComponent = (v, inprop) => s => inprop ? s[v.name] : String(s[v.name])
 
 const createSectionComponent = (name, renderChildren) => {
   let val
@@ -105,10 +103,10 @@ const createPropertyComponent = (propName, propChildren, opts, index, tagWithDef
         propName = opts.syntheticEventsReact[propName]
       }
   }
-  return [propName, propChildren.map(c => createComponent(c, opts, index, null))]
+  return [propName, propChildren.map(c => createComponent(c, opts, index, true))]
 }
 
-const createElementComponent = (e, opts, index, key) => {
+const createElementComponent = (e, opts, index) => {
   const renderProps = getRenderProps(
     Object.entries(e.props).map(([propName, propChildren]) =>
       createPropertyComponent(
@@ -122,21 +120,22 @@ const createElementComponent = (e, opts, index, key) => {
   )
   let renderChildren
   if (!hasOwnProperty.call(opts.selfClosingTags, e.name)) {
-    renderChildren = getRenderChildren(
-      e.children.map((c, i) => createComponent(c, opts, index, [key, String(i)].join(KEY_DELIM)))
-    )
+    renderChildren = getRenderChildren(e.children.map(c => createComponent(c, opts, index, false)))
   } else {
     renderChildren = constantNull
   }
   let p, c
   // external?
   if (hasOwnProperty.call(opts.externs, e.name)) {
-    return s => createElement(e.name, { ...renderProps(s), ...{ key } }, renderChildren(s))
+    return (s, key) => {
+      return createElement(e.name, { ...renderProps(s), ...{ key } }, renderChildren(s))
+    }
   }
   // provided by user?
   if (hasOwnProperty.call(opts.registry, e.name)) {
-    return s => {
+    return (s, key) => {
       p = renderProps(s)
+      p.key = key
       c = renderChildren(p)
       if (c.length > 0) {
         p.children = c
@@ -146,54 +145,41 @@ const createElementComponent = (e, opts, index, key) => {
   }
   // own component?
   if (hasOwnProperty.call(index, e.name)) {
-    return s => createElement(index[e.name], { ...renderProps(s), ...{ key } }, renderChildren(s))
+    return (s, key) => {
+      return createElement(index[e.name], { ...renderProps(s), ...{ key } }, renderChildren(s))
+    }
   }
   return renderChildren
 }
 
-const createComponent = (node, opts, index, key) => {
+const createComponent = (node, opts, index, inprop) => {
   switch (node._tag) {
     case 'Element':
-      if (!key) {
+      if (inprop) {
         throw new TypeError(`${node.name}: elements are not valid as prop children`)
       }
-      return createElementComponent(node, opts, index, key)
+      return createElementComponent(node, opts, index)
     case 'Variable':
-      return createVariableComponent(node, key === null)
+      return createVariableComponent(node, inprop)
     case 'Text':
       return createTextComponent(node)
     case 'Section':
       return createSectionComponent(
         node.name,
-        getRenderChildren(
-          node.children.map((c, i) => createComponent(c, opts, index, key ? [key, String(i)].join(KEY_DELIM) : null))
-        )
+        getRenderChildren(node.children.map(c => createComponent(c, opts, index, inprop)))
       )
     case 'InvertedSection':
       return createInvertedSectionComponent(
         node.name,
-        getRenderChildren(
-          node.children.map((c, i) => createComponent(c, opts, index, key ? [key, String(i)].join(KEY_DELIM) : null))
-        )
+        getRenderChildren(node.children.map(c => createComponent(c, opts, index, inprop)))
       )
   }
   return constantNull
 }
 
-const render = (sorted, opts) => {
-  const syntheticEventsReact = Object.keys(opts.syntheticEvents).reduce(
-    (i, o) => ({ ...i, ...{ [o.toLowerCase(o)]: o } }),
-    {}
-  )
-  opts = {
-    ...opts,
-    ...{
-      syntheticEventsReact,
-      syntheticEvents: Object.keys(syntheticEventsReact).reduce((i, o) => ({ ...i, ...{ [o]: true } }), {}),
-    },
-  }
-  return sorted.reduce((index, node, i) => {
-    const c = createComponent(node, opts, index, String(i))
+const render = (sorted, opts) =>
+  sorted.reduce((index, node, i) => {
+    const c = createComponent(node, opts, index, false)
     return i === sorted.length - 1
       ? c
       : {
@@ -203,6 +189,5 @@ const render = (sorted, opts) => {
           },
         }
   }, {})
-}
 
 module.exports = render
