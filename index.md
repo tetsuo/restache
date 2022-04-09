@@ -1,3 +1,18 @@
+---
+title: Home
+---
+
+**Table of contents**
+
+- [Example](#example)
+- [Language](#language)
+
+## Example
+
+```html
+<todo></todo>
+```
+
 ## Language
 
 stache supports the [mustache spec](http://mustache.github.io/mustache.5.html) with the exception of lambdas and partials.
