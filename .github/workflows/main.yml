@@ -54,11 +54,14 @@ jobs:
       run: go test ./...
 
     - name: Build runtime
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        touch runtime/.npmrc
-        echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > runtime/.npmrc
-        echo "@onur1:registry=https://npm.pkg.github.com" >> runtime/.npmrc
-        npm --prefix runtime install
+        cd runtime
+        touch .npmrc
+        echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > .npmrc
+        echo "@onur1:registry=https://npm.pkg.github.com" >> .npmrc
+        npm install
 
     - name: Run runtime tests
       run: npm --prefix runtime test
