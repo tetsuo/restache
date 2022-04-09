@@ -1,4 +1,4 @@
-const t = require('./types')
+const t = require('@onur1/t')
 const { Section, InvertedSection, Variable, Comment, Text, Element } = require('./domain')
 
 const decode = u => {

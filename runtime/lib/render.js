@@ -1,7 +1,7 @@
 const hasOwnProperty = Object.prototype.hasOwnProperty
 
 const { createElement } = require('react')
-const t = require('./types')
+const t = require('@onur1/t')
 
 const constant = a => () => a
 
