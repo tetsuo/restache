@@ -100,7 +100,7 @@ const createPropertyComponent = (propName, propChildren, opts, index, tagWithDef
       break
     default:
       if (hasOwnProperty.call(opts.syntheticEvents, propName)) {
-        propName = opts.syntheticEventsReact[propName]
+        propName = opts.syntheticEvents[propName]
       }
   }
   return [propName, propChildren.map(c => createComponent(c, opts, index, true))]
