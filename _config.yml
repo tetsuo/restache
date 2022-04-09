@@ -1,1 +1,17 @@
 remote_theme: just-the-docs/just-the-docs
+
+# Enable or disable the site search
+search_enabled: false
+
+# Aux links for the upper right navigation
+aux_links:
+  '@onur1/stache on GitHub':
+    - 'https://github.com/onur1/stache'
+
+theme: "just-the-docs"
+
+defaults:
+  -
+    values:
+      layout: "default"
+
