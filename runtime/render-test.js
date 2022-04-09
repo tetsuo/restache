@@ -338,7 +338,7 @@ const renderTestCases = [
     expected: 'hihello',
   },
   {
-    desc: 'pass variable property to own component 1',
+    desc: 'pass props to own component 1',
     input: {
       trees: [
         Element('bar', {}, [Variable('a'), Variable('b'), Variable('c'), Variable('d'), Variable('e')]),
@@ -371,7 +371,7 @@ const renderTestCases = [
     expected: 'hej42555100nnn[object Object]1,2,3[object Object]',
   },
   {
-    desc: 'pass property to own component 2',
+    desc: 'pass props to own component 2',
     input: {
       trees: [
         Element('bar', {}, [
@@ -396,6 +396,9 @@ const renderTestCases = [
             value: [Variable('e'), Variable('f')],
             onclick: [Variable('fn')],
           }),
+          Element('div', {
+            class: [Section('s1', [Section('s2', [Text('xu')])]), InvertedSection('s3', [Text('bu')])],
+          }),
         ]),
         Element('foo', {}, [
           Element('bar', {
@@ -404,6 +407,8 @@ const renderTestCases = [
             g: [Variable('style')],
             h: [Variable('quux')],
             fn: [Variable('xx')],
+            s1: [Variable('section1')],
+            s3: [Variable('section2')],
           }),
         ]),
       ],
@@ -426,12 +431,48 @@ const renderTestCases = [
           marginRight: '3em',
         },
         xx: () => null,
+        section1: {
+          s2: [1, 2, 3],
+        },
+        section2: false,
       },
     },
     expected:
-      'true<div value="undefinedhi" checked="" id="truehi">letsgo</div><input type="checkbox" id="[object Object]" for="label[object Object]" style="margin-right:3em" value="true[object Object]" checked=""/>',
+      'true<div value="undefinedhi" checked="" id="truehi">letsgo</div><input type="checkbox" id="[object Object]" for="label[object Object]" style="margin-right:3em" value="true[object Object]" checked=""/><div class="xu,xu,xubu"></div>',
+  },
+  {
+    desc: 'pass props to own component 2',
+    input: {
+      trees: [
+        Element('bar', {}, [
+          Element(
+            'div',
+            {
+              id: [Element('span', {}, [Text('hi')])],
+            },
+            [Text('letsgo')]
+          ),
+        ]),
+        Element('foo', {}, [
+          Element('bar', {
+            foo: [Variable('foo')],
+          }),
+        ]),
+      ],
+      opts: {
+        ...emptyOpts,
+        ...{
+          externs,
+          selfClosingTags,
+          syntheticEvents,
+        },
+      },
+      props: {
+        foo: 'test',
+      },
+    },
+    expectedErr: 'span: elements are not valid as prop children',
   },
 ]
 
 renderTestCases.map(runRenderTest)
-// renderTestCases.slice(-1).map(runRenderTest)

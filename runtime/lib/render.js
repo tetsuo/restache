@@ -123,7 +123,7 @@ const createElementComponent = (e, opts, index, key) => {
   let renderChildren
   if (!hasOwnProperty.call(opts.selfClosingTags, e.name)) {
     renderChildren = getRenderChildren(
-      e.children.map((c, i) => createComponent(c, opts, index, key ? [key, String(i)].join(KEY_DELIM) : null))
+      e.children.map((c, i) => createComponent(c, opts, index, [key, String(i)].join(KEY_DELIM)))
     )
   } else {
     renderChildren = constantNull
@@ -154,6 +154,9 @@ const createElementComponent = (e, opts, index, key) => {
 const createComponent = (node, opts, index, key) => {
   switch (node._tag) {
     case 'Element':
+      if (!key) {
+        throw new TypeError(`${node.name}: elements are not valid as prop children`)
+      }
       return createElementComponent(node, opts, index, key)
     case 'Variable':
       return createVariableComponent(node, key === null)
