@@ -131,6 +131,11 @@ const decodeTestCases = [
     input: [5, 'hi'],
     expected: Comment('hi'),
   },
+  {
+    desc: 'reserved prop name',
+    input: ['a', { children: [] }, 42],
+    expectedErr: 'a > children: reserved property name',
+  },
 ]
 
 decodeTestCases.map(runDecodeTest)

@@ -25,6 +25,9 @@ const decode = u => {
         let i = 0
         for (; i < propNames.length; i++) {
           key = propNames[i]
+          if (key === 'key' || key === 'children' || key === 'ref') {
+            throw new TypeError(`${_0} > ${key}: reserved property name`)
+          }
           if (!t.UnknownList(_1[key])) {
             throw new TypeError(`${_0} > ${key}: expected an array of child nodes, got ${JSON.stringify(_1[key])}`)
           }
