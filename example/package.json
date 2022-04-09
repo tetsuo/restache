@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "browserify": "browserify -o public/bundle.js main.js -dv",
+    "browserify": "browserify -o public/bundle.js main.js",
+    "watchify": "watchify -o public/bundle.js main.js -dv",
     "serve-frontend": "(cd public && python -m SimpleHTTPServer 7890 .)",
     "serve-api": "go run main.go"
   },
@@ -13,9 +14,10 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@onur1/stache": "*",
     "browserify": "^17.0.0",
+    "@onur1/stache": "file:../runtime",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "watchify": "^4.0.0"
   }
 }
