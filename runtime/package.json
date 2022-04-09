@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "description": "",
-  "main": "main.js",
+  "main": "lib/main.js",
   "scripts": {
     "test": "npm run lint && npm run tap",
     "tap": "nyc tap *-test.js",
