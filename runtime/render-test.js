@@ -3,13 +3,6 @@ const { externs, selfClosingTags, syntheticEvents } = require('./lib/spec')
 const { runRenderTest } = require('./test-util')
 const { createElement } = require('react')
 
-const defaultOpts = {
-  externs,
-  registry: {},
-  selfClosingTags,
-  syntheticEvents,
-}
-
 const emptyOpts = {
   externs: {},
   registry: {},
