@@ -3,12 +3,12 @@ const { externs, selfClosingTags, syntheticEvents } = require('./lib/spec')
 const { runRenderTest } = require('./test-util')
 const { createElement } = require('react')
 
-const emptyOpts = {
-  externs: {},
-  registry: {},
-  selfClosingTags: {},
-  syntheticEvents: {},
-}
+const getopts = (externs = {}, registry = {}, selfClosingTags = {}, syntheticEvents = {}) => ({
+  externs,
+  registry,
+  selfClosingTags,
+  syntheticEvents,
+})
 
 const customComponent = props => createElement('a', { href: '#' }, props.children)
 
@@ -17,7 +17,7 @@ const renderTestCases = [
     desc: 'text',
     input: {
       trees: [Element('foo', {}, [Text('qux')])],
-      opts: emptyOpts,
+      opts: getopts(),
     },
     expected: 'qux',
   },
@@ -25,7 +25,7 @@ const renderTestCases = [
     desc: 'text join',
     input: {
       trees: [Element('foo', {}, [Text('qux'), Text(', quux!')])],
-      opts: emptyOpts,
+      opts: getopts(),
     },
     expected: 'qux, quux!',
   },
@@ -33,7 +33,7 @@ const renderTestCases = [
     desc: 'comment',
     input: {
       trees: [Element('foo', {}, [Text('qux'), Comment('test'), Text(', quux!')])],
-      opts: emptyOpts,
+      opts: getopts(),
     },
     expected: 'qux, quux!',
   },
@@ -41,7 +41,7 @@ const renderTestCases = [
     desc: 'variable',
     input: {
       trees: [Element('foo', {}, [Variable('a'), Variable('b')])],
-      opts: emptyOpts,
+      opts: getopts(),
       props: {
         a: 'qu',
         b: ', qux!',
@@ -53,16 +53,7 @@ const renderTestCases = [
     desc: 'self closing tag skip children',
     input: {
       trees: [Element('foo', {}, [Element('div', {}, [Text('hello')])])],
-      opts: {
-        externs: {
-          div: true,
-        },
-        selfClosingTags: {
-          div: true,
-        },
-        registry: {},
-        syntheticEvents: {},
-      },
+      opts: getopts({ div: true }, {}, { div: true }),
     },
     expected: '<div></div>',
   },
@@ -70,15 +61,7 @@ const renderTestCases = [
     desc: 'render children',
     input: {
       trees: [Element('foo', {}, [Element('div', {}, [Text('hello'), Element('span', {}, [Text('world')])])])],
-      opts: {
-        externs: {
-          div: true,
-          span: true,
-        },
-        selfClosingTags: {},
-        registry: {},
-        syntheticEvents: {},
-      },
+      opts: getopts({ div: true, span: true }),
     },
     expected: '<div>hello<span>world</span></div>',
   },
@@ -99,7 +82,7 @@ const renderTestCases = [
           Text('bar'),
         ]),
       ],
-      opts: emptyOpts,
+      opts: getopts(),
       props: {
         c: [1],
         f: false,
@@ -129,7 +112,7 @@ const renderTestCases = [
           Text('bar'),
         ]),
       ],
-      opts: emptyOpts,
+      opts: getopts(),
       props: {
         c: [1, 2],
         f: true,
@@ -157,7 +140,7 @@ const renderTestCases = [
           Section('h', [Variable('x')]),
         ]),
       ],
-      opts: emptyOpts,
+      opts: getopts(),
       props: {
         x: 'ab',
         a: {
@@ -191,7 +174,7 @@ const renderTestCases = [
           Section('i', [Section('j', [Variable('x')])]),
         ]),
       ],
-      opts: emptyOpts,
+      opts: getopts(),
       props: {
         x: 'ab',
         a: {
@@ -223,7 +206,7 @@ const renderTestCases = [
         Element('bar', {}, [Text(', '), Element('baz'), Element('qux')]),
         Element('foo', {}, [Text('Hello'), Element('bar', {}, [])]),
       ],
-      opts: emptyOpts,
+      opts: getopts(),
       props: {},
     },
     expected: 'Hello, world!',
@@ -236,14 +219,12 @@ const renderTestCases = [
         Element('bar', {}, [Element('baz')]),
         Element('foo', {}, [Text('anchor'), Element('bar')]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          registry: {
-            qux: customComponent,
-          },
-        },
-      },
+      opts: getopts(
+        {},
+        {
+          qux: customComponent,
+        }
+      ),
       props: {},
     },
     expected: 'anchor<a href="#"></a>',
@@ -256,14 +237,12 @@ const renderTestCases = [
         Element('bar', {}, [Element('baz')]),
         Element('foo', {}, [Text('anchor'), Element('bar')]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          registry: {
-            qux: customComponent,
-          },
-        },
-      },
+      opts: getopts(
+        {},
+        {
+          qux: customComponent,
+        }
+      ),
       props: {},
     },
     expected: 'anchor<a href="#">hi</a>',
@@ -276,14 +255,12 @@ const renderTestCases = [
         Element('bar', {}, [Element('baz', {}, [Element('qux')])]),
         Element('foo', {}, [Element('bar')]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          registry: {
-            baz: customComponent,
-          },
-        },
-      },
+      opts: getopts(
+        {},
+        {
+          baz: customComponent,
+        }
+      ),
       props: {},
     },
     expected: '<a href="#">hej<a href="#">hi</a></a>',
@@ -299,12 +276,7 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          syntheticEvents,
-        },
-      },
+      opts: getopts(),
       props: {},
     },
     expected: 'hi',
@@ -320,12 +292,7 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          syntheticEvents,
-        },
-      },
+      opts: getopts(),
       props: {},
     },
     expected: 'hihello',
@@ -345,12 +312,7 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          syntheticEvents,
-        },
-      },
+      opts: getopts(),
       props: {
         y: 'hej',
         z: 42,
@@ -405,17 +367,15 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          externs: {
-            input: true,
-            div: true,
-          },
-          selfClosingTags,
-          syntheticEvents,
+      opts: getopts(
+        {
+          input: true,
+          div: true,
         },
-      },
+        {},
+        selfClosingTags,
+        syntheticEvents
+      ),
       props: {
         faz: true,
         qux: {},
@@ -452,14 +412,7 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: {
-        ...emptyOpts,
-        ...{
-          externs,
-          selfClosingTags,
-          syntheticEvents,
-        },
-      },
+      opts: getopts(externs, {}, selfClosingTags, syntheticEvents),
       props: {
         foo: 'test',
       },
