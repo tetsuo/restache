@@ -3,11 +3,12 @@ const { externs, selfClosingTags, syntheticEvents } = require('./lib/spec')
 const { runRenderTest } = require('./test-util')
 const { createElement } = require('react')
 
-const getopts = (externs = {}, registry = {}, selfClosingTags = {}, syntheticEvents = {}) => ({
+const getopts = (externs = {}, registry = {}, selfClosingTags = {}, syntheticEvents = {}, externProps = {}) => ({
   externs,
   registry,
   selfClosingTags,
   syntheticEvents,
+  externProps,
 })
 
 const customComponent = props => createElement('a', { href: '#' }, props.children)

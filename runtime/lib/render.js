@@ -110,10 +110,11 @@ const createPropertyComponent = (propName, propChildren, opts, index, tagWithDef
 }
 
 const createElementComponent = (e, opts, index) => {
+  const external = hasOwnProperty.call(opts.externs, e.name)
   const renderProps = getRenderProps(
     Object.entries(e.props).map(([propName, propChildren]) =>
       createPropertyComponent(
-        propName,
+        external && hasOwnProperty.call(opts.externProps, propName) ? opts.externProps[propName] : propName,
         propChildren,
         opts,
         index,
@@ -128,8 +129,7 @@ const createElementComponent = (e, opts, index) => {
     renderChildren = constantNull
   }
   let p, c
-  // external?
-  if (hasOwnProperty.call(opts.externs, e.name)) {
+  if (external) {
     return (s, key) => createElement(e.name, { ...renderProps(s), ...{ key } }, renderChildren(s))
   }
   // provided by user?
