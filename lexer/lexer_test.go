@@ -154,6 +154,13 @@ func TestTokenize(t *testing.T) {
 				{2, "x", na},
 			},
 		},
+		{
+			desc: "top-level text",
+			text: "hi",
+			expected: []Token{
+				{3, "hi", na},
+			},
+		},
 	}
 	for _, tt := range testCases {
 		tt := tt

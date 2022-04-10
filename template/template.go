@@ -11,13 +11,13 @@ import (
 
 type Template struct {
 	name  string
-	trees []*parser.TagNode
+	trees []parser.Node
 }
 
 func New(name string) *Template {
 	t := &Template{
 		name:  name,
-		trees: []*parser.TagNode{},
+		trees: []parser.Node{},
 	}
 	return t
 }
@@ -34,7 +34,7 @@ func (t *Template) Serialize() interface{} {
 	return []interface{}{t.name, map[string]interface{}{}, c}
 }
 
-func (t *Template) Trees() []*parser.TagNode {
+func (t *Template) Trees() []parser.Node {
 	return t.trees
 }
 
@@ -64,7 +64,7 @@ func parseFiles(filenames ...string) ([]*Template, error) {
 		if err != nil {
 			return nil, err
 		}
-		parser.Parse(r, func(tree *parser.TagNode) bool {
+		parser.Parse(r, func(tree parser.Node) bool {
 			t.trees = append(t.trees, tree)
 			return true
 		})

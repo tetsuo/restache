@@ -27,7 +27,7 @@ func main() {
 		}
 		fmt.Println(string(body))
 	} else {
-		if err := parser.Parse(os.Stdin, func(tree *parser.TagNode) bool {
+		if err := parser.Parse(os.Stdin, func(tree parser.Node) bool {
 			b, err := json.Marshal(tree.Serialize())
 			if err != nil {
 				fmt.Println(err)

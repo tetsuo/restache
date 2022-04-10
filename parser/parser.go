@@ -125,7 +125,7 @@ type parser struct {
 	err   error
 }
 
-func parse(p *parser, cb func(*TagNode) bool) func(lexer.Token) bool {
+func parse(p *parser, cb func(Node) bool) func(lexer.Token) bool {
 	return func(t lexer.Token) bool {
 		switch t.Kind {
 		case lexer.Open:
@@ -169,7 +169,7 @@ func parse(p *parser, cb func(*TagNode) bool) func(lexer.Token) bool {
 					}
 					p.stack = p.stack[:i+1]
 					if len(p.stack) == 1 && cb != nil {
-						cb(node.(*TagNode))
+						cb(node)
 					}
 					break
 				}
@@ -198,35 +198,51 @@ func parse(p *parser, cb func(*TagNode) bool) func(lexer.Token) bool {
 						sectionNode.Children = p.stack[i+1]
 					}
 					p.stack = p.stack[:i+1]
+					if len(p.stack) == 1 && cb != nil {
+						cb(node)
+					}
 					break
 				}
 			}
 			return false
 		case lexer.Text:
 			i := len(p.stack) - 1
-			p.stack[i] = append(p.stack[i], &TextNode{
+			node := &TextNode{
 				Text: t.Body,
-			})
+			}
+			if i == 0 && cb != nil {
+				cb(node)
+			}
+			p.stack[i] = append(p.stack[i], node)
 		case lexer.Variable:
 			i := len(p.stack) - 1
-			p.stack[i] = append(p.stack[i], &VariableNode{
+			node := &VariableNode{
 				Name: t.Body,
-			})
+			}
+			if i == 0 && cb != nil {
+				cb(node)
+			}
+			p.stack[i] = append(p.stack[i], node)
 		case lexer.Comment:
 			i := len(p.stack) - 1
-			p.stack[i] = append(p.stack[i], &CommentNode{
+			node := &CommentNode{
 				Comment: t.Body,
-			})
+			}
+			if i == 0 && cb != nil {
+				cb(node)
+			}
+			p.stack[i] = append(p.stack[i], node)
 		}
 		return true
 	}
 }
 
-func Parse(r io.Reader, cb func(*TagNode) bool) error {
+func Parse(r io.Reader, cb func(Node) bool) error {
 	p := new(parser)
 	p.stack = [][]Node{{}}
 	if err := lexer.Tokenize(r, parse(p, cb)); err != nil {
 		return err
 	}
+	p.stack = nil
 	return p.err
 }

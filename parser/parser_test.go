@@ -12,7 +12,7 @@ import (
 func TestParse(t *testing.T) {
 	testCases := []struct {
 		text        string
-		expected    *TagNode
+		expected    Node
 		expectedErr string
 	}{
 		{
@@ -305,6 +305,12 @@ func TestParse(t *testing.T) {
 			text:        `<x><d><y></y></e></x>`,
 			expectedErr: "stache: syntax error: <d>...</x>",
 		},
+		{
+			text: "hi top-level text",
+			expected: &TextNode{
+				Text: "hi top-level text",
+			},
+		},
 	}
 	for _, tt := range testCases {
 		tt := tt
@@ -316,7 +322,7 @@ func TestParse(t *testing.T) {
 				return
 			}
 			seen := false
-			if err := Parse(strings.NewReader(tt.text), func(tree *TagNode) bool {
+			if err := Parse(strings.NewReader(tt.text), func(tree Node) bool {
 				assert.EqualValues(t, tt.expected, tree)
 				seen = true
 				return true
