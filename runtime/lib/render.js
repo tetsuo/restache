@@ -48,7 +48,7 @@ const getRenderProps = props => {
   }
 }
 
-const createVariableComponent = (v, iprop) => s => iprop || v.name === 'children' ? s[v.name] : String(s[v.name])
+const createVariableComponent = (v, inProp) => s => inProp || v.name === 'children' ? s[v.name] : String(s[v.name])
 
 const createSectionComponent = (name, renderChildren) => {
   let val
@@ -87,7 +87,7 @@ const createInvertedSectionComponent = (name, renderChildren) => {
 
 const createTextComponent = t => constant(String(t.text))
 
-const createPropertyComponent = (propName, propChildren, opts, index, tagWithDefaults) => {
+const createPropertyComponent = (propName, propChildren, opts, index, inputTag) => {
   switch (propName) {
     case 'class':
       propName = 'className'
@@ -96,10 +96,10 @@ const createPropertyComponent = (propName, propChildren, opts, index, tagWithDef
       propName = 'htmlFor'
       break
     case 'checked':
-      propName = tagWithDefaults ? 'defaultChecked' : propName
+      propName = inputTag ? 'defaultChecked' : propName
       break
     case 'value':
-      propName = tagWithDefaults ? 'defaultValue' : propName
+      propName = inputTag ? 'defaultValue' : propName
       break
     default:
       if (hasOwnProperty.call(opts.syntheticEvents, propName)) {
@@ -151,26 +151,26 @@ const createElementComponent = (e, opts, index) => {
   return renderChildren
 }
 
-const createComponent = (node, opts, index, iprop) => {
+const createComponent = (node, opts, index, inProp) => {
   switch (node._tag) {
     case 'Element':
-      if (iprop) {
+      if (inProp) {
         throw new TypeError(`${node.name}: elements are not valid as prop children`)
       }
       return createElementComponent(node, opts, index)
     case 'Variable':
-      return createVariableComponent(node, iprop)
+      return createVariableComponent(node, inProp)
     case 'Text':
       return createTextComponent(node)
     case 'Section':
       return createSectionComponent(
         node.name,
-        getRenderChildren(node.children.map(c => createComponent(c, opts, index, iprop)))
+        getRenderChildren(node.children.map(c => createComponent(c, opts, index, inProp)))
       )
     case 'InvertedSection':
       return createInvertedSectionComponent(
         node.name,
-        getRenderChildren(node.children.map(c => createComponent(c, opts, index, iprop)))
+        getRenderChildren(node.children.map(c => createComponent(c, opts, index, inProp)))
       )
   }
   return constantNull
