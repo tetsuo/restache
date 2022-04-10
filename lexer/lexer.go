@@ -44,7 +44,7 @@ func Tokenize(r io.Reader, cb func(Token) bool) error {
 			}); err != nil {
 				return err
 			}
-		case html.StartTagToken:
+		case html.SelfClosingTagToken, html.StartTagToken:
 			tk := z.Token()
 			t := Token{
 				Kind: Open,
@@ -65,6 +65,9 @@ func Tokenize(r io.Reader, cb func(Token) bool) error {
 				t.Attrs = attrs
 			}
 			cb(t)
+			if tt == html.SelfClosingTagToken {
+				cb(Token{Kind: Close, Body: tk.Data})
+			}
 		case html.EndTagToken:
 			data := z.Token().Data
 			cb(Token{Kind: Close, Body: data})
