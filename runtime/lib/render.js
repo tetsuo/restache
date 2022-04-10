@@ -54,14 +54,15 @@ const createSectionComponent = (name, renderChildren) => {
   let val
   return s => {
     val = s[name]
-    if (t.Boolean(val) && val === true) {
-      return renderChildren(s)
-    } else if (t.UnknownList(val) && val.length > 0) {
+    if (t.UnknownList(val) && val.length > 0) {
       return val.flatMap(renderChildren)
     } else if (t.UnknownStruct(val)) {
       return renderChildren(val)
     }
-    return []
+    if ((t.Boolean(val) && val === false) || t.Undefined(val) || t.Nil(val)) {
+      return []
+    }
+    return renderChildren(s)
   }
 }
 
