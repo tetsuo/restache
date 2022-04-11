@@ -125,7 +125,8 @@ jobs:
         cp -R ../README.md lib/*.js .release
         cat package.json | \
           jq 'del(.devDependencies, .scripts, .private)' | \
-          jq '. + { "publishConfig": { "registry":"https://npm.pkg.github.com/" } }' \
+          jq '. + { "publishConfig": { "registry":"https://npm.pkg.github.com/" } }' | \
+          jq '. + { "main": "main.js" }' \
           > .release/package.json
 
         cd .release
