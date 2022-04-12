@@ -9,6 +9,7 @@ const getopts = (externs = {}, registry = {}, selfClosingTags = {}, syntheticEve
   selfClosingTags,
   syntheticEvents,
   externProps,
+  createElement,
 })
 
 const customComponent = props => createElement('a', { href: '#' }, props.children)
