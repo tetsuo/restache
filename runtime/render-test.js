@@ -401,7 +401,7 @@ const renderTestCases = [
       'true<div value="undefinedhi" checked="" id="truehi">letsgo</div><input type="checkbox" id="[object Object]" for="label[object Object]" style="margin-right:3em" value="true[object Object]" checked=""/><div class="xu,xu,xubu"></div>',
   },
   {
-    desc: 'pass props to own component 2',
+    desc: 'elements are not valid as prop children',
     input: {
       trees: [
         Element('bar', {}, [
