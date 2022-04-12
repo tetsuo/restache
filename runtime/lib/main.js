@@ -1,3 +1,4 @@
+const { createElement } = require('react')
 const decode = require('./decode')
 const sort = require('./sort')
 const render = require('./render')
@@ -12,6 +13,7 @@ const main = (roots, opts = {}) =>
       selfClosingTags: { ...selfClosingTags, ...opts.selfClosingTags },
       syntheticEvents: { ...syntheticEvents, ...opts.syntheticEvents },
       externProps: { ...externProps, ...opts.externProps },
+      createElement: opts.createElement || createElement,
     },
   })
 

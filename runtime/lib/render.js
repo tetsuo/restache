@@ -1,6 +1,5 @@
 const hasOwnProperty = Object.prototype.hasOwnProperty
 
-const { createElement } = require('react')
 const t = require('@onur1/t')
 
 const constant = a => () => a
@@ -130,7 +129,7 @@ const createElementComponent = (e, opts, index) => {
   }
   let p, c
   if (external) {
-    return (s, key) => createElement(e.name, { ...renderProps(s), ...{ key } }, renderChildren(s))
+    return (s, key) => opts.createElement(e.name, { ...renderProps(s), ...{ key } }, renderChildren(s))
   }
   // provided by user?
   if (hasOwnProperty.call(opts.registry, e.name)) {
@@ -146,7 +145,7 @@ const createElementComponent = (e, opts, index) => {
   }
   // own component?
   if (hasOwnProperty.call(index, e.name)) {
-    return (s, key) => createElement(index[e.name], { ...renderProps(s), ...{ key } }, renderChildren(s))
+    return (s, key) => opts.createElement(index[e.name], { ...renderProps(s), ...{ key } }, renderChildren(s))
   }
   return renderChildren
 }
