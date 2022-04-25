@@ -1,5 +1,9 @@
 const t = require('@onur1/t')
-const { Section, InvertedSection, Element, Variable, Text, Comment } = require('./tree')
+const { Section, InvertedSection, Element, Variable, Text, Comment, TEXT } = require('./tree')
+
+const KEY = 'key'
+const CHILDREN = 'children'
+const REF = 'ref'
 
 const decode = u => {
   if (t.UnknownList(u)) {
@@ -25,7 +29,7 @@ const decode = u => {
         let i = 0
         for (; i < propNames.length; i++) {
           key = propNames[i]
-          if (key === 'key' || key === 'children' || key === 'ref') {
+          if (key === KEY || key === CHILDREN || key === REF) {
             throw new TypeError(`${_0} > ${key}: reserved property name`)
           }
           if (!t.UnknownList(_1[key])) {
@@ -57,7 +61,7 @@ const decode = u => {
           }
           x = forest[i - 1].value
           y = forest[i].value
-          if (x._type === 'Text' && y._type === 'Text') {
+          if (x._type === TEXT && y._type === TEXT) {
             forest[i - 1].value.text += y.text
             forest.splice(i, 1)
             i = i - 1

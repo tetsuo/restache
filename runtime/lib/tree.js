@@ -1,16 +1,28 @@
 const Tree = (value, forest = []) => ({ value, forest })
 
-const Section = (name, forest) => Tree({ _type: 'Section', name }, forest)
+const SECTION = 'Section'
 
-const InvertedSection = (name, forest) => Tree({ _type: 'InvertedSection', name }, forest)
+const Section = (name, forest) => Tree({ _type: SECTION, name }, forest)
 
-const Element = (name, props = {}, forest) => Tree({ _type: 'Element', name, props }, forest)
+const INVERTED_SECTION = 'InvertedSection'
 
-const Variable = name => Tree({ _type: 'Variable', name })
+const InvertedSection = (name, forest) => Tree({ _type: INVERTED_SECTION, name }, forest)
 
-const Text = text => Tree({ _type: 'Text', text })
+const ELEMENT = 'Element'
 
-const Comment = comment => Tree({ _type: 'Comment', comment })
+const Element = (name, props = {}, forest) => Tree({ _type: ELEMENT, name, props }, forest)
+
+const VARIABLE = 'Variable'
+
+const Variable = name => Tree({ _type: VARIABLE, name })
+
+const TEXT = 'Text'
+
+const Text = text => Tree({ _type: TEXT, text })
+
+const COMMENT = 'Comment'
+
+const Comment = comment => Tree({ _type: COMMENT, comment })
 
 module.exports = {
   Tree,
@@ -20,4 +32,10 @@ module.exports = {
   Variable,
   Text,
   Comment,
+  SECTION,
+  INVERTED_SECTION,
+  ELEMENT,
+  VARIABLE,
+  TEXT,
+  COMMENT,
 }

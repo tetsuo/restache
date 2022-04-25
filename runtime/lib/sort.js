@@ -1,3 +1,5 @@
+const { INVERTED_SECTION, SECTION, ELEMENT, VARIABLE, COMMENT, TEXT } = require('./tree')
+
 const hasOwnProperty = Object.prototype.hasOwnProperty
 
 const Vertex = (id, afters) => ({ id, afters })
@@ -50,14 +52,14 @@ const uniq = vals => {
 
 const getDependencies = e => {
   switch (e.value._type) {
-    case 'InvertedSection':
-    case 'Section':
+    case INVERTED_SECTION:
+    case SECTION:
       return e.forest.flatMap(getDependencies)
-    case 'Element':
+    case ELEMENT:
       return [e.value.name].concat(...e.forest.flatMap(getDependencies))
-    case 'Variable':
-    case 'Comment':
-    case 'Text':
+    case VARIABLE:
+    case COMMENT:
+    case TEXT:
       return []
   }
 }
