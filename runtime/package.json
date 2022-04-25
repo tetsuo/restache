@@ -14,20 +14,23 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "peerDependencies": {
-    "react": "*",
-    "react-dom": "*"
-  },
   "devDependencies": {
     "eslint": "^8.12.0",
     "eslint-config-prettier": "^8.5.0",
     "nyc": "^15.1.0",
     "prettier": "^2.6.1",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-redux": "^7.2.8",
     "tap": "^16.0.1"
   },
+  "peerDependencies": {
+    "react": "*",
+    "react-dom": "*",
+    "react-redux": "*"
+  },
   "dependencies": {
-    "@onur1/t": "^0.0.2"
+    "@onur1/t": "^0.0.2",
+    "style-to-object": "^0.3.0"
   }
 }
