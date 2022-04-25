@@ -1,191 +1,162 @@
+const t = require('@onur1/t')
+const { Element, ELEMENT, TEXT, VARIABLE, SECTION, INVERTED_SECTION } = require('./tree')
+const styleToObject = require('./style')
+
+const EmptyList = val => t.UnknownList(val) && val.length === 0
+const NonEmptyList = val => t.UnknownList(val) && val.length > 0
+const False = val => val === false
+const Falsy = val => [t.Undefined, t.Nil, False].some(f => f(val))
+
+const emptyList = []
+const emptyString = ''
+
+const STYLE = 'style'
+const ROOT = 'root'
+const SECTION_KEY_DELIM = '.'
+
+const data = Symbol()
+
 const hasOwnProperty = Object.prototype.hasOwnProperty
 
-const t = require('@onur1/t')
-
 const constant = a => () => a
-
 const constantNull = constant(null)
 
-const getRenderChildren = componentTree => (val, i) => {
-  let j = 0
-  let c = []
-  let o
-  for (; j < componentTree.length; ++j) {
-    o = componentTree[j](val, t.Number(i) ? i : j)
-    if (!t.Nil(o)) {
-      if (t.String(o) && c.length > 0 && t.String(c[c.length - 1])) {
-        // combine with the previous if both components output text
-        c[c.length - 1] += o
-      } else {
-        c.push(o)
-      }
-    }
+const fold = (tree, b, f, i = 0, level = 0) => {
+  let r = b
+  const len = tree.forest.length
+  for (let j = 0; j < len; j++) {
+    r = fold(tree.forest[j], r, f, j, level + 1)
   }
-  return c
+  return f(tree.value, r, i, len, level)
 }
 
-const getRenderProps = props => {
-  let i, o, c, p, n
-  return s => {
-    p = {}
-    i = 0
-    for (; i < props.length; i++) {
-      o = props[i]
-      n = o[0]
-      c = o[1].map(f => f(s))
-      if (c.length > 0) {
-        if (c.length > 1) {
-          p[n] = [c.map(String).join('')]
+const Component = (value, forest, createElement, registry, getComponent, mapPropName) => {
+  switch (value._type) {
+    case ELEMENT: {
+      const name = value.name
+      let component
+      if (hasOwnProperty.call(registry, name)) {
+        if (registry[name] === true) {
+          return attrs => forest.map((f, i) => f({ key: i, [data]: attrs[data] }))
         } else {
-          p[n] = c[0]
+          component = registry[name]
         }
       } else {
-        p[n] = true
+        component = (getComponent && getComponent(name)) || name
+      }
+      const propTrees = Object.entries(value.props).map(([name, forest]) => [
+        mapPropName ? mapPropName(name, value.name) : name,
+        name === STYLE
+          ? [
+              (() => {
+                const s = styleToObject(
+                  forest
+                    .filter(({ value }) => value._type === TEXT)
+                    .map(({ value }) => value.text)
+                    .reduce((acc, x) => acc + x, emptyString)
+                )
+                return () => s
+              })(),
+            ]
+          : forest.map(({ value, forest }) => Component(value, forest)),
+      ])
+      return attrs => {
+        const props = {
+          key: attrs.key,
+          ...propTrees.reduce(
+            (acc, [name, forest]) => ({
+              ...acc,
+              ...{
+                [name]:
+                  forest.length === 0
+                    ? true
+                    : forest.length === 1
+                    ? forest.map(f => f({ [data]: attrs[data] }))[0]
+                    : forest
+                        .map(f => f({ [data]: attrs[data] }))
+                        .map(String)
+                        .join(emptyString),
+              },
+            }),
+            {}
+          ),
+        }
+        return forest.length > 0
+          ? createElement(
+              component,
+              props,
+              forest.map((f, i) => f({ key: i, [data]: attrs[data] }))
+            )
+          : createElement(component, props)
       }
     }
-    return p
-  }
-}
-
-const createVariableComponent = (v, inProp) => s => inProp || v.name === 'children' ? s[v.name] : String(s[v.name])
-
-const createSectionComponent = (name, renderChildren) => {
-  let val
-  return s => {
-    val = s[name]
-    if (t.UnknownList(val) && val.length > 0) {
-      return val.flatMap(renderChildren)
-    } else if (t.UnknownStruct(val)) {
-      return renderChildren(val)
-    }
-    if ((t.Boolean(val) && val === false) || t.Undefined(val) || t.Nil(val)) {
-      return []
-    }
-    return renderChildren(s)
-  }
-}
-
-const createInvertedSectionComponent = (name, renderChildren) => {
-  let val
-  return s => {
-    if (!hasOwnProperty.call(s, name)) {
-      return renderChildren(s)
-    }
-    val = s[name]
-    if (
-      t.Undefined(val) ||
-      t.Nil(val) ||
-      (t.Boolean(val) && val === false) ||
-      (t.UnknownList(val) && val.length === 0)
-    ) {
-      return renderChildren(s)
-    }
-    return []
-  }
-}
-
-const createTextComponent = t => constant(String(t.text))
-
-const createPropertyComponent = (propName, propChildren, opts, index, inputTag) => {
-  switch (propName) {
-    case 'class':
-      propName = 'className'
-      break
-    case 'for':
-      propName = 'htmlFor'
-      break
-    case 'checked':
-      propName = inputTag ? 'defaultChecked' : propName
-      break
-    case 'value':
-      propName = inputTag ? 'defaultValue' : propName
-      break
-    default:
-      if (hasOwnProperty.call(opts.syntheticEvents, propName)) {
-        propName = opts.syntheticEvents[propName]
+    case TEXT:
+      return constant(value.text.trim().length > 0 ? value.text : null)
+    case VARIABLE:
+      return attrs => String(attrs[data][value.name])
+    case SECTION: {
+      return attrs => {
+        const val = attrs[data][value.name]
+        return NonEmptyList(val)
+          ? val.flatMap((b, i) =>
+              forest.map((f, j) => f({ key: (i % val.length) + SECTION_KEY_DELIM + (j % forest.length), [data]: b }))
+            )
+          : t.UnknownStruct(val)
+          ? forest.map((f, i) => f({ key: i, [data]: attrs[data][value.name] }))
+          : Falsy(val)
+          ? emptyList
+          : forest.map((f, i) => f({ key: i, [data]: attrs[data] }))
       }
-  }
-  return [propName, propChildren.map(c => createComponent(c, opts, index, true))]
-}
-
-const createElementComponent = (e, opts, index) => {
-  const external = hasOwnProperty.call(opts.externs, e.name)
-  const renderProps = getRenderProps(
-    Object.entries(e.props).map(([propName, propChildren]) =>
-      createPropertyComponent(
-        external && hasOwnProperty.call(opts.externProps, propName) ? opts.externProps[propName] : propName,
-        propChildren,
-        opts,
-        index,
-        e.name === 'input' || e.name === 'select' || e.name === 'textarea' // has default value?
-      )
-    )
-  )
-  let renderChildren
-  if (!hasOwnProperty.call(opts.selfClosingTags, e.name)) {
-    renderChildren = getRenderChildren(e.children.map(c => createComponent(c, opts, index, false)))
-  } else {
-    renderChildren = constantNull
-  }
-  let p, c
-  if (external) {
-    return (s, key) => opts.createElement(e.name, { ...renderProps(s), ...{ key } }, renderChildren(s))
-  }
-  // provided by user?
-  if (hasOwnProperty.call(opts.registry, e.name)) {
-    return (s, key) => {
-      p = renderProps(s)
-      p.key = key
-      c = renderChildren(p)
-      if (c.length > 0) {
-        p.children = c
+    }
+    case INVERTED_SECTION: {
+      return attrs => {
+        const val = attrs[data][value.name]
+        return [Falsy, EmptyList].some(f => f(val))
+          ? forest.map((f, i) => f({ key: i, [data]: attrs[data] }))
+          : emptyList
       }
-      return opts.registry[e.name](p)
     }
   }
-  // own component?
-  if (hasOwnProperty.call(index, e.name)) {
-    return (s, key) => opts.createElement(index[e.name], { ...renderProps(s), ...{ key } }, renderChildren(s))
-  }
-  return renderChildren
-}
 
-const createComponent = (node, opts, index, inProp) => {
-  switch (node._tag) {
-    case 'Element':
-      if (inProp) {
-        throw new TypeError(`${node.name}: elements are not valid as prop children`)
-      }
-      return createElementComponent(node, opts, index)
-    case 'Variable':
-      return createVariableComponent(node, inProp)
-    case 'Text':
-      return createTextComponent(node)
-    case 'Section':
-      return createSectionComponent(
-        node.name,
-        getRenderChildren(node.children.map(c => createComponent(c, opts, index, inProp)))
-      )
-    case 'InvertedSection':
-      return createInvertedSectionComponent(
-        node.name,
-        getRenderChildren(node.children.map(c => createComponent(c, opts, index, inProp)))
-      )
-  }
   return constantNull
 }
 
-const render = (sorted, opts) =>
-  sorted.reduce((index, node, i) => {
-    const c = createComponent(node, opts, index, false)
-    return i === sorted.length - 1
-      ? c
-      : {
-          ...index,
-          ...{
-            [node.name]: c,
-          },
-        }
-  }, {})
+const init = root => ({
+  forest: emptyList,
+  registry: root.forest.reduce((acc, a) => ({ ...acc, ...{ [a.value.name]: true } }), {}),
+})
 
-module.exports = render
+const render = (root, opts) =>
+  fold(root, init(root), (a, acc, i, len, level) => {
+    if (level === 0) {
+      if (acc.forest.length > 0) {
+        return attrs => acc.forest[acc.forest.length - 1]({ key: i, [data]: attrs })
+      }
+      return constantNull
+    }
+
+    const forest =
+      len > 0
+        ? acc.forest
+            .slice(0, -len)
+            .concat(
+              Component(
+                a,
+                acc.forest.slice(-len),
+                opts.createElement,
+                acc.registry,
+                opts.getComponent,
+                opts.mapPropName
+              )
+            )
+        : acc.forest.concat(
+            Component(a, emptyList, opts.createElement, acc.registry, opts.getComponent, opts.mapPropName)
+          )
+
+    return {
+      forest,
+      registry: level === 1 ? { ...acc.registry, ...{ [a.name]: forest[forest.length - 1] } } : acc.registry,
+    }
+  })
+
+module.exports = (forest, opts) => render(Element(ROOT, {}, forest), opts)
