@@ -49,12 +49,12 @@ const uniq = vals => {
 }
 
 const getDependencies = e => {
-  switch (e._tag) {
+  switch (e.value._type) {
     case 'InvertedSection':
     case 'Section':
-      return e.children.flatMap(getDependencies)
+      return e.forest.flatMap(getDependencies)
     case 'Element':
-      return [e.name].concat(...e.children.flatMap(getDependencies))
+      return [e.value.name].concat(...e.forest.flatMap(getDependencies))
     case 'Variable':
     case 'Comment':
     case 'Text':
@@ -64,9 +64,9 @@ const getDependencies = e => {
 const getDependencyGraph = trees => {
   const graph = {}
   let deps, name
-  trees.forEach(tree => {
-    name = tree.name
-    deps = tree.children.flatMap(getDependencies)
+  trees.forEach(({ forest, value }) => {
+    name = value.name
+    deps = forest.flatMap(getDependencies)
     graph[name] = Vertex(name, deps.length > 1 ? uniq(deps) : deps)
   })
   return graph
@@ -77,7 +77,7 @@ const sort = roots => {
   const { sorted } = tsort(graph)
   const o = {}
   roots.forEach(d => {
-    o[d.name] = d
+    o[d.value.name] = d
   })
   return sorted.reverse().map(name => o[name])
 }

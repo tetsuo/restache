@@ -1,5 +1,5 @@
 const t = require('@onur1/t')
-const { Section, InvertedSection, Variable, Comment, Text, Element } = require('./domain')
+const { Section, InvertedSection, Element, Variable, Text, Comment } = require('./tree')
 
 const decode = u => {
   if (t.UnknownList(u)) {
@@ -13,7 +13,7 @@ const decode = u => {
         throw new TypeError('expected an element name, got empty string')
       }
       let props
-      let children = []
+      let forest = []
       const len = u.length
       if (len > 1) {
         props = {}
@@ -32,12 +32,12 @@ const decode = u => {
             throw new TypeError(`${_0} > ${key}: expected an array of child nodes, got ${JSON.stringify(_1[key])}`)
           }
           let j = 0
-          const propChildren = []
+          const propForest = []
           const arr = _1[key]
           for (; j < arr.length; j++) {
-            propChildren.push(decode(arr[j]))
+            propForest.push(decode(arr[j]))
           }
-          props[key] = propChildren
+          props[key] = propForest
         }
         if (len > 2) {
           // has children?
@@ -45,42 +45,42 @@ const decode = u => {
             throw new TypeError(`${_0}: expected an array of child nodes, got ${JSON.stringify(_2)}`)
           }
           for (let i = 0; i < _2.length; i++) {
-            children.push(decode(_2[i]))
+            forest.push(decode(_2[i]))
           }
         }
         // join consecutive text nodes
         i = 0
         let x, y
-        for (; i < children.length; i++) {
+        for (; i < forest.length; i++) {
           if (i < 1) {
             continue
           }
-          x = children[i - 1]
-          y = children[i]
-          if (x._tag === 'Text' && y._tag === 'Text') {
-            children[i - 1].text += y.text
-            children.splice(i, 1)
+          x = forest[i - 1].value
+          y = forest[i].value
+          if (x._type === 'Text' && y._type === 'Text') {
+            forest[i - 1].value.text += y.text
+            forest.splice(i, 1)
             i = i - 1
             continue
           }
         }
       }
-      return Element(_0, props, children)
+      return Element(_0, props, forest)
     } else if (t.Integer(_0) && _0 >= 2 && _0 <= 5) {
       if (_0 === 2 || _0 === 4) {
         if (!t.NonEmptyString(_1)) {
           throw new TypeError(`expected a non-empty string as section name, got ${JSON.stringify(_1)}`)
         }
-        const children = []
+        const forest = []
         if (u.length > 2) {
           for (let i = 0; i < _2.length; i++) {
-            children.push(decode(_2[i]))
+            forest.push(decode(_2[i]))
           }
         }
         if (_0 === 2) {
-          return Section(_1, children)
+          return Section(_1, forest)
         }
-        return InvertedSection(_1, children)
+        return InvertedSection(_1, forest)
       } else if (_0 === 3) {
         if (!t.NonEmptyString(_1)) {
           throw new TypeError(`expected a non-empty string as variable name, got ${JSON.stringify(_1)}`)
