@@ -24,6 +24,15 @@ const COMMENT = 'Comment'
 
 const Comment = comment => Tree({ _type: COMMENT, comment })
 
+const fold = (tree, b, f, i = 0, level = 0) => {
+  let r = b
+  const len = tree.forest.length
+  for (let j = 0; j < len; j++) {
+    r = fold(tree.forest[j], r, f, j, level + 1)
+  }
+  return f(tree.value, r, i, len, level)
+}
+
 module.exports = {
   Tree,
   Section,
@@ -38,4 +47,5 @@ module.exports = {
   VARIABLE,
   TEXT,
   COMMENT,
+  fold,
 }

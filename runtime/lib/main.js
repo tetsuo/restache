@@ -1,19 +1,27 @@
 const { createElement } = require('react')
+const { connect } = require('react-redux')
 const decode = require('./decode')
 const sort = require('./sort')
 const render = require('./render')
-const { externs, selfClosingTags, syntheticEvents, externProps } = require('./spec')
+const { reactProps, reactSyntheticEvents } = require('./react')
+
+const hasOwnProperty = Object.prototype.hasOwnProperty
+
+const mapPropName = (propName, tagName) =>
+  hasOwnProperty.call(reactProps, propName) // react prop name?
+    ? reactProps[propName]
+    : hasOwnProperty.call(reactSyntheticEvents, propName) // react event name?
+    ? reactSyntheticEvents[propName]
+    : propName
 
 const main = (roots, opts = {}) =>
   render(sort(roots.map(decode)), {
     ...opts,
     ...{
-      registry: opts.registry || {},
-      externs: { ...externs, ...opts.externs },
-      selfClosingTags: { ...selfClosingTags, ...opts.selfClosingTags },
-      syntheticEvents: { ...syntheticEvents, ...opts.syntheticEvents },
-      externProps: { ...externProps, ...opts.externProps },
+      getComponent: opts.getComponent || (() => null),
+      mapPropName: opts.mapPropName || mapPropName,
       createElement: opts.createElement || createElement,
+      connect: opts.connect || connect,
     },
   })
 
