@@ -22,14 +22,15 @@ const constant = a => () => a
 
 const constantNull = constant(null)
 
-const Component = (createElement, getComponent) => (value, forest, registry, inProperty) => {
+const renderForest = forest => attrs => forest.map((f, i) => f({ ...attrs, key: i }))
+
   switch (value._type) {
     case ELEMENT: {
       const name = value.name
       let component
       if (hasOwnProperty.call(registry, name)) {
         if (registry[name] === true) {
-          return attrs => forest.map((f, i) => f({ ...attrs, key: i }))
+          return renderForest(forest)
         } else {
           component = registry[name]
         }
@@ -58,11 +59,7 @@ const Component = (createElement, getComponent) => (value, forest, registry, inP
           ),
         }
         return forest.length > 0
-          ? createElement(
-              component,
-              props,
-              forest.map((f, i) => f({ ...attrs, key: i }))
-            )
+          ? createElement(component, props, renderForest(forest)(attrs))
           : createElement(component, props)
       }
     }
@@ -81,13 +78,13 @@ const Component = (createElement, getComponent) => (value, forest, registry, inP
           ? forest.map((f, i) => f({ ...attrs[value.name], key: i }))
           : Falsy(val)
           ? emptyList
-          : forest.map((f, i) => f({ ...attrs, key: i }))
+          : renderForest(forest)(attrs)
       }
     }
     case INVERTED_SECTION: {
       return attrs => {
         const val = attrs[value.name]
-        return [Falsy, EmptyList].some(f => f(val)) ? forest.map((f, i) => f({ ...attrs, key: i })) : emptyList
+        return [Falsy, EmptyList].some(f => f(val)) ? renderForest(forest)(attrs) : emptyList
       }
     }
   }
