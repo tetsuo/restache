@@ -3,7 +3,7 @@ const { connect } = require('react-redux')
 const decode = require('./decode')
 const sort = require('./sort')
 const render = require('./render')
-const { reactProps, reactSyntheticEvents } = require('./react')
+const { reactProps, reactSyntheticEvents } = require('./specs')
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
 

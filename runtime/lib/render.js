@@ -1,6 +1,7 @@
 const t = require('@onur1/t')
-const { Element, ELEMENT, TEXT, VARIABLE, SECTION, INVERTED_SECTION, fold } = require('./tree')
+const { Element, ELEMENT, TEXT, VARIABLE, SECTION, INVERTED_SECTION, fold, Section } = require('./tree')
 const styleToObject = require('./style')
+const { htmlBooleanAttrs } = require('./specs')
 
 const emptyList = []
 const emptyStruct = {}
