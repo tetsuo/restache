@@ -42,15 +42,17 @@ const Component = (createElement, getComponent, inProperty) => (value, forest, r
         const props = {
           key: attrs.key,
           ...value.props.reduce(
-            (acc, [name, forest]) => ({
+            (acc, [name, forest_]) => ({
               ...acc,
               ...{
                 [name]:
-                  forest.length === 0
-                    ? true
-                    : forest.length === 1
-                    ? forest[0](attrs)
-                    : forest
+                  forest_.length === 0
+                    ? hasOwnProperty.call(htmlBooleanAttrs, name)
+                      ? true
+                      : ''
+                    : forest_.length === 1
+                    ? forest_[0](attrs)
+                    : forest_
                         .map(f => f(attrs))
                         .map(String)
                         .join(emptyString),
