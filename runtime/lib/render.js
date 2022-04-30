@@ -24,6 +24,7 @@ const constantNull = constant(null)
 
 const renderForest = forest => attrs => forest.map((f, i) => f({ ...attrs, key: i }))
 
+const Component = (createElement, getComponent, inProperty) => (value, forest, registry) => {
   switch (value._type) {
     case ELEMENT: {
       const name = value.name
@@ -91,7 +92,7 @@ const renderForest = forest => attrs => forest.map((f, i) => f({ ...attrs, key: 
   return constantNull
 }
 
-const render = (root, createComponent, mapPropName) =>
+const render = (root, createComponent, createProp, mapPropName) =>
   fold(
     root,
     {
@@ -101,7 +102,7 @@ const render = (root, createComponent, mapPropName) =>
     (a, acc, i, len, level) => {
       if (level === 0) {
         if (acc.forest.length > 0) {
-          return acc.forest[acc.forest.length - 1]
+          return acc.forest
         }
         return constantNull
       }
@@ -126,7 +127,7 @@ const render = (root, createComponent, mapPropName) =>
                       return () => s
                     })(),
                   ]
-                : forest.map(({ value, forest }) => createComponent(value, forest, undefined, true)),
+                : render(Section('', forest), createProp),
             ]),
           },
         }
@@ -144,5 +145,12 @@ const render = (root, createComponent, mapPropName) =>
     }
   )
 
-module.exports = (forest, opts) =>
-  render(Element(ROOT, emptyStruct, forest), Component(opts.createElement, opts.getComponent), opts.mapPropName)
+module.exports = (forest, opts) => {
+  const components = render(
+    Element(ROOT, emptyStruct, forest),
+    Component(opts.createElement, opts.getComponent),
+    Component(undefined, undefined, true),
+    opts.mapPropName
+  )
+  return components[components.length - 1]
+}
