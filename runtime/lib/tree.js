@@ -2,15 +2,15 @@ const Tree = (value, forest = []) => ({ value, forest })
 
 const SECTION = 'Section'
 
-const Section = (name, forest) => Tree({ _type: SECTION, name }, forest)
+const Section = (name, forest = []) => Tree({ _type: SECTION, name }, forest)
 
 const INVERTED_SECTION = 'InvertedSection'
 
-const InvertedSection = (name, forest) => Tree({ _type: INVERTED_SECTION, name }, forest)
+const InvertedSection = (name, forest = []) => Tree({ _type: INVERTED_SECTION, name }, forest)
 
 const ELEMENT = 'Element'
 
-const Element = (name, props = {}, forest) => Tree({ _type: ELEMENT, name, props }, forest)
+const Element = (name, props = {}, forest = []) => Tree({ _type: ELEMENT, name, props }, forest)
 
 const VARIABLE = 'Variable'
 
