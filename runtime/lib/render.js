@@ -120,15 +120,16 @@ const render = (root, createComponent, createProp, mapPropName) =>
               mapPropName ? mapPropName(name, b.name) : name,
               name === STYLE
                 ? [
-                    (() => {
-                      const s = styleToObject(
-                        forest
-                          .filter(({ value }) => value._type === TEXT)
-                          .map(({ value }) => value.text)
-                          .reduce((acc, x) => acc + x, emptyString)
+                    constant(
+                      constant(
+                        styleToObject(
+                          forest
+                            .filter(({ value }) => value._type === TEXT)
+                            .map(({ value }) => value.text)
+                            .reduce((acc, x) => acc + x, emptyString)
+                        )
                       )
-                      return () => s
-                    })(),
+                    )(),
                   ]
                 : render(Section('', forest), createProp),
             ]),
