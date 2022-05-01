@@ -399,6 +399,23 @@ const renderTestCases = [
     },
     expected: '<div style="margin-right:3em"></div>',
   },
+  {
+    desc: 'boolean attributes',
+    input: {
+      trees: [
+        Element('foo', {}, [
+          Element('input', {
+            type: [Text('checkbox')],
+            checked: [],
+            disabled: [],
+          }),
+        ]),
+      ],
+      opts: { createElement },
+      props: {},
+    },
+    expected: '<input type="checkbox" checked disabled></input>',
+  },
 ]
 
 renderTestCases.map(runRenderTest)
