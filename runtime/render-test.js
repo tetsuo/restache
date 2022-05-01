@@ -1,16 +1,21 @@
-const { Element, Text, Section, InvertedSection, Variable, Comment } = require('./lib/domain')
-const { externs, selfClosingTags, syntheticEvents } = require('./lib/spec')
-const { runRenderTest } = require('./test-util')
 const { createElement } = require('react')
+const { reactProps, reactSyntheticEvents } = require('./lib/specs')
+const { Element, Text, Section, InvertedSection, Variable, Comment } = require('./lib/tree')
+const { runRenderTest } = require('./test-util')
 
-const getopts = (externs = {}, registry = {}, selfClosingTags = {}, syntheticEvents = {}, externProps = {}) => ({
-  externs,
-  registry,
-  selfClosingTags,
-  syntheticEvents,
-  externProps,
-  createElement,
-})
+const getComponent = name => {
+  if (name === 'qux' || name === 'baz') {
+    return customComponent
+  }
+  return null
+}
+
+const mapPropName = (propName, _tagName) =>
+  hasOwnProperty.call(reactProps, propName) // react prop name?
+    ? reactProps[propName]
+    : hasOwnProperty.call(reactSyntheticEvents, propName) // react event name?
+    ? reactSyntheticEvents[propName]
+    : propName
 
 const customComponent = props => createElement('a', { href: '#' }, props.children)
 
@@ -19,7 +24,7 @@ const renderTestCases = [
     desc: 'text',
     input: {
       trees: [Element('foo', {}, [Text('qux')])],
-      opts: getopts(),
+      opts: { createElement },
     },
     expected: 'qux',
   },
@@ -27,7 +32,7 @@ const renderTestCases = [
     desc: 'text join',
     input: {
       trees: [Element('foo', {}, [Text('qux'), Text(', quux!')])],
-      opts: getopts(),
+      opts: { createElement },
     },
     expected: 'qux, quux!',
   },
@@ -35,7 +40,7 @@ const renderTestCases = [
     desc: 'comment',
     input: {
       trees: [Element('foo', {}, [Text('qux'), Comment('test'), Text(', quux!')])],
-      opts: getopts(),
+      opts: { createElement },
     },
     expected: 'qux, quux!',
   },
@@ -43,7 +48,7 @@ const renderTestCases = [
     desc: 'variable',
     input: {
       trees: [Element('foo', {}, [Variable('a'), Variable('b')])],
-      opts: getopts(),
+      opts: { createElement },
       props: {
         a: 'qu',
         b: ', qux!',
@@ -52,18 +57,10 @@ const renderTestCases = [
     expected: 'qu, qux!',
   },
   {
-    desc: 'self closing tag skip children',
-    input: {
-      trees: [Element('foo', {}, [Element('div', {}, [Text('hello')])])],
-      opts: getopts({ div: true }, {}, { div: true }),
-    },
-    expected: '<div></div>',
-  },
-  {
     desc: 'render children',
     input: {
       trees: [Element('foo', {}, [Element('div', {}, [Text('hello'), Element('span', {}, [Text('world')])])])],
-      opts: getopts({ div: true, span: true }),
+      opts: { createElement },
     },
     expected: '<div>hello<span>world</span></div>',
   },
@@ -84,7 +81,7 @@ const renderTestCases = [
           Text('bar'),
         ]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {
         c: [1],
         f: false,
@@ -117,7 +114,7 @@ const renderTestCases = [
           Text('bar'),
         ]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {
         c: [1, 2],
         f: true,
@@ -147,7 +144,7 @@ const renderTestCases = [
           Section('h', [Variable('x')]),
         ]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {
         x: 'ab',
         a: {
@@ -181,7 +178,7 @@ const renderTestCases = [
           Section('i', [Section('j', [Variable('x')])]),
         ]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {
         x: 'ab',
         a: {
@@ -211,9 +208,9 @@ const renderTestCases = [
         Element('qux', {}, [Text('!')]),
         Element('baz', {}, [Text('world')]),
         Element('bar', {}, [Text(', '), Element('baz'), Element('qux')]),
-        Element('foo', {}, [Text('Hello'), Element('bar', {}, [])]),
+        Element('foo', {}, [Text('Hello'), Element('bar')]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {},
     },
     expected: 'Hello, world!',
@@ -226,12 +223,10 @@ const renderTestCases = [
         Element('bar', {}, [Element('baz')]),
         Element('foo', {}, [Text('anchor'), Element('bar')]),
       ],
-      opts: getopts(
-        {},
-        {
-          qux: customComponent,
-        }
-      ),
+      opts: {
+        createElement,
+        getComponent,
+      },
       props: {},
     },
     expected: 'anchor<a href="#"></a>',
@@ -244,12 +239,10 @@ const renderTestCases = [
         Element('bar', {}, [Element('baz')]),
         Element('foo', {}, [Text('anchor'), Element('bar')]),
       ],
-      opts: getopts(
-        {},
-        {
-          qux: customComponent,
-        }
-      ),
+      opts: {
+        createElement,
+        getComponent,
+      },
       props: {},
     },
     expected: 'anchor<a href="#">hi</a>',
@@ -262,12 +255,10 @@ const renderTestCases = [
         Element('bar', {}, [Element('baz', {}, [Element('qux')])]),
         Element('foo', {}, [Element('bar')]),
       ],
-      opts: getopts(
-        {},
-        {
-          baz: customComponent,
-        }
-      ),
+      opts: {
+        createElement,
+        getComponent,
+      },
       props: {},
     },
     expected: '<a href="#">hej<a href="#">hi</a></a>',
@@ -283,7 +274,7 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {},
     },
     expected: 'hi',
@@ -299,7 +290,7 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {},
     },
     expected: 'hihello',
@@ -319,7 +310,7 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: getopts(),
+      opts: { createElement },
       props: {
         y: 'hej',
         z: 42,
@@ -350,8 +341,8 @@ const renderTestCases = [
           Element('input', {
             type: [Text('check'), Text('box')],
             id: [Variable('f')],
-            for: [Text('label'), Variable('f')],
-            checked: [Variable('e')],
+            htmlfor: [Text('label'), Variable('f')],
+            defaultchecked: [Variable('e')],
             style: [Variable('g')],
             class: [],
             email: [Variable('h')],
@@ -374,22 +365,15 @@ const renderTestCases = [
           }),
         ]),
       ],
-      opts: getopts(
-        {
-          input: true,
-          div: true,
-        },
-        {},
-        selfClosingTags,
-        syntheticEvents
-      ),
+      opts: {
+        createElement,
+        mapPropName,
+      },
       props: {
         faz: true,
         qux: {},
         quux: undefined,
-        style: {
-          marginRight: '3em',
-        },
+        style: 'margin-right: 3em',
         xx: () => null,
         section1: {
           s2: [1, 2, 3],
@@ -398,33 +382,7 @@ const renderTestCases = [
       },
     },
     expected:
-      'true<div value="undefinedhi" checked="" id="truehi">letsgo</div><input type="checkbox" id="[object Object]" for="label[object Object]" style="margin-right:3em" value="true[object Object]" checked=""/><div class="xu,xu,xubu"></div>',
-  },
-  {
-    desc: 'elements are not valid as prop children',
-    input: {
-      trees: [
-        Element('bar', {}, [
-          Element(
-            'div',
-            {
-              id: [Element('span', {}, [Text('hi')])],
-            },
-            [Text('letsgo')]
-          ),
-        ]),
-        Element('foo', {}, [
-          Element('bar', {
-            foo: [Variable('foo')],
-          }),
-        ]),
-      ],
-      opts: getopts(externs, {}, selfClosingTags, syntheticEvents),
-      props: {
-        foo: 'test',
-      },
-    },
-    expectedErr: 'span: elements are not valid as prop children',
+      'true<div value="undefinedhi" checked="" id="truehi">letsgo</div><input type="checkbox" id="[object Object]" for="label[object Object]" class="" checked="" value="true[object Object]"/><div class="xu,xu,xubu"></div>',
   },
 ]
 
