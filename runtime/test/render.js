@@ -1,7 +1,7 @@
 const { createElement } = require('react')
-const { reactProps, reactSyntheticEvents } = require('./lib/specs')
-const { Element, Text, Section, InvertedSection, Variable, Comment } = require('./lib/tree')
-const { runRenderTest } = require('./test-util')
+const { reactProps, reactSyntheticEvents } = require('../lib/specs')
+const { Element, Text, Section, InvertedSection, Variable, Comment } = require('../lib/tree')
+const { runRenderTest } = require('../test-util')
 
 const getComponent = name => {
   if (name === 'qux' || name === 'baz') {

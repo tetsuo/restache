@@ -1,4 +1,4 @@
-const { runMainTest } = require('./test-util')
+const { runMainTest } = require('../test-util')
 
 const mainTestCases = [
   {

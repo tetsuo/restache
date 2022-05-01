@@ -1,5 +1,5 @@
-const { Element, Text, Section, InvertedSection, Variable, Comment } = require('./lib/tree')
-const { runDecodeTest } = require('./test-util')
+const { Element, Text, Section, InvertedSection, Variable, Comment } = require('../lib/tree')
+const { runDecodeTest } = require('../test-util')
 
 const decodeTestCases = [
   {

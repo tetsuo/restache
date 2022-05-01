@@ -6,9 +6,9 @@
   "main": "lib/main.js",
   "scripts": {
     "test": "npm run lint && npm run tap",
-    "tap": "nyc tap *-test.js",
-    "coverhtml": "tap *-test.js --coverage-report=html",
-    "watch": "tap -w --cov *-test.js",
+    "tap": "nyc tap test/*.js",
+    "coverhtml": "tap test/*.js --coverage-report=html",
+    "watch": "tap -w --cov test/*.js",
     "lint": "eslint **/*.js"
   },
   "keywords": [],
