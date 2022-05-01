@@ -30,7 +30,7 @@
     "react-redux": "*"
   },
   "dependencies": {
-    "@onur1/t": "^0.0.2",
+    "@onur1/t": "^0.0.4",
     "style-to-object": "^0.3.0"
   }
 }

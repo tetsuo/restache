@@ -14,11 +14,6 @@ const SECTION_KEY_DELIM = '.'
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
 
-const EmptyList = val => t.UnknownList(val) && val.length === 0
-const NonEmptyList = val => t.UnknownList(val) && val.length > 0
-const False = val => val === false
-const Falsy = val => [t.Undefined, t.Nil, False].some(f => f(val))
-
 const constant = a => () => a
 
 const constantNull = constant(null)
@@ -74,13 +69,13 @@ const Component = (createElement, getComponent, inProperty) => (value, forest, r
     case SECTION: {
       return attrs => {
         const val = attrs[value.name]
-        return NonEmptyList(val)
+        return t.NonEmptyList(val)
           ? val.flatMap((b, i) =>
               forest.map((f, j) => f({ ...b, key: (i % val.length) + SECTION_KEY_DELIM + (j % forest.length) }))
             )
           : t.UnknownStruct(val)
           ? forest.map((f, i) => f({ ...attrs[value.name], key: i }))
-          : Falsy(val)
+          : t.Falsy(val)
           ? emptyList
           : renderForest(forest)(attrs)
       }
@@ -88,7 +83,7 @@ const Component = (createElement, getComponent, inProperty) => (value, forest, r
     case INVERTED_SECTION: {
       return attrs => {
         const val = attrs[value.name]
-        return [Falsy, EmptyList].some(f => f(val)) ? renderForest(forest)(attrs) : emptyList
+        return [t.Falsy, t.EmptyList].some(f => f(val)) ? renderForest(forest)(attrs) : emptyList
       }
     }
   }
