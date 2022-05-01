@@ -7,7 +7,7 @@ const { reactProps, reactSyntheticEvents } = require('./specs')
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
 
-const mapPropName = (propName, tagName) =>
+const mapPropName = propName =>
   hasOwnProperty.call(reactProps, propName) // react prop name?
     ? reactProps[propName]
     : hasOwnProperty.call(reactSyntheticEvents, propName) // react event name?
