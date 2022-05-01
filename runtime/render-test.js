@@ -384,6 +384,21 @@ const renderTestCases = [
     expected:
       'true<div value="undefinedhi" checked="" id="truehi">letsgo</div><input type="checkbox" id="[object Object]" for="label[object Object]" class="" checked="" value="true[object Object]"/><div class="xu,xu,xubu"></div>',
   },
+  {
+    desc: 'style to object',
+    input: {
+      trees: [
+        Element('foo', {}, [
+          Element('div', {
+            style: [Text('margin-right: 3em')],
+          }),
+        ]),
+      ],
+      opts: { createElement },
+      props: {},
+    },
+    expected: '<div style="margin-right:3em"></div>',
+  },
 ]
 
 renderTestCases.map(runRenderTest)
