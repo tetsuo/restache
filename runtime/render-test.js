@@ -416,6 +416,15 @@ const renderTestCases = [
     },
     expected: '<input type="checkbox" checked disabled></input>',
   },
+  {
+    desc: 'empty text',
+    input: {
+      trees: [Element('foo', {}, [Element('p', {}, [Text('')])])],
+      opts: { createElement },
+      props: {},
+    },
+    expected: '<p></p>',
+  },
 ]
 
 renderTestCases.map(runRenderTest)
