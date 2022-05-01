@@ -10,7 +10,7 @@ const getComponent = name => {
   return null
 }
 
-const mapPropName = (propName, _tagName) =>
+const mapPropName = propName =>
   hasOwnProperty.call(reactProps, propName) // react prop name?
     ? reactProps[propName]
     : hasOwnProperty.call(reactSyntheticEvents, propName) // react event name?
@@ -414,7 +414,7 @@ const renderTestCases = [
       opts: { createElement },
       props: {},
     },
-    expected: '<input type="checkbox" checked disabled></input>',
+    expected: '<input type="checkbox" disabled="" checked=""/>',
   },
   {
     desc: 'empty text',
