@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/onur1/stache/lexer"
 )
@@ -65,6 +66,7 @@ type SectionNode struct {
 	Name     string
 	Inverted bool
 	Children []Node
+	Selector string
 }
 
 func (c SectionNode) Kind() NodeKind {
@@ -82,7 +84,7 @@ func (c SectionNode) Serialize() interface{} {
 	for i, v := range c.Children {
 		children[i] = v.Serialize()
 	}
-	return []interface{}{kind, c.Name, children}
+	return []interface{}{kind, c.Name, children, c.Selector}
 }
 
 type TagNode struct {
@@ -178,8 +180,16 @@ func parse(p *parser, cb func(Node) bool) func(lexer.Token) bool {
 		case lexer.SectionOpen, lexer.InvertedSectionOpen:
 			p.stack = append(p.stack, make([]Node, 0))
 			i := len(p.stack) - 2
+
+			var selector string
+			parts := strings.Split(t.Body, ":")
+			if len(parts) > 1 {
+				selector = strings.TrimSpace(parts[1])
+			}
+
 			p.stack[i] = append(p.stack[i], &SectionNode{
-				Name:     t.Body,
+				Name:     strings.TrimSpace(parts[0]),
+				Selector: selector,
 				Inverted: t.Kind == lexer.InvertedSectionOpen,
 			})
 		case lexer.SectionClose:

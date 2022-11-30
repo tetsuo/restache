@@ -311,6 +311,13 @@ func TestParse(t *testing.T) {
 				Text: "hi top-level text",
 			},
 		},
+		{
+			text: `{#items : year < 2001 && director == 'Lars von trier' }{/items}`,
+			expected: &SectionNode{
+				Name:     "items",
+				Selector: "year < 2001 && director == 'Lars von trier'",
+			},
+		},
 	}
 	for _, tt := range testCases {
 		tt := tt
