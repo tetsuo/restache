@@ -8,7 +8,6 @@ jobs:
     strategy:
       matrix:
         go-version: [1.17.x]
-        node-version: [17.0.x]
 
     steps:
     - name: Set up Go
@@ -16,11 +15,6 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
       id: go
-
-    - name: Set up NodeJS
-      uses: actions/setup-node@v2
-      with:
-        node-version: ${{ matrix.node-version }}
 
     - name: Set up Go modules cache
       uses: actions/cache@v2
@@ -34,39 +28,15 @@ jobs:
           ${{ runner.os }}-go${{ matrix.go-version }}-build-
           ${{ runner.os }}-go${{ matrix.go-version }}-
 
-    - name: Set up node modules cache
-      uses: actions/cache@v2
-      with:
-        path: |
-          runtime/node_modules
-        key: ${{ runner.OS }}-node${{ matrix.node-version }}-build-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.OS }}-node${{ matrix.node-version }}-build-${{ env.cache-name }}-
-          ${{ runner.OS }}-node${{ matrix.node-version }}-build-
-          ${{ runner.OS }}-node${{ matrix.node-version }}-
-
     - name: Check out code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
-    - name: Run parser tests
+    - name: Run tests
       run: go test ./...
 
-    - name: Build runtime
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        cd runtime
-        touch .npmrc
-        echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > .npmrc
-        echo "@onur1:registry=https://npm.pkg.github.com" >> .npmrc
-        npm install
-
-    - name: Run runtime tests
-      run: npm --prefix runtime test
-
-    - name: Tag new version & release runtime dist
+    - name: Tag new version
       if: github.ref == 'refs/heads/master' && github.event_name == 'push'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -111,8 +81,6 @@ jobs:
           local next
           if [[ -z "$(git describe --contains "$commit" 2>/dev/null)" ]]; then
             next="$(next_version "$1")"
-            npm version "$next"
-            npm publish
             git tag "$next"
             git config user.name github-actions
             git config user.email github-actions@github.com
@@ -120,26 +88,11 @@ jobs:
             echo "RELEASE_TAG=$next" >> $GITHUB_ENV
           fi
         }
-        cd runtime
-        mkdir .release
-        cp -R ../README.md lib/*.js .release
-        cat package.json | \
-          jq 'del(.devDependencies, .scripts, .private)' | \
-          jq '. + { "publishConfig": { "registry":"https://npm.pkg.github.com/" } }' | \
-          jq '. + { "main": "main.js" }' \
-          > .release/package.json
 
-        cd .release
-        touch .npmrc
-        echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" > .npmrc
         git fetch --all --tags
         tag_and_release patch
 
-        cd ..
-        rm -fr .release
-        rm -fr node_modules
-
-    - name: Release parser dist
+    - name: Release
       if: github.ref == 'refs/heads/master' && github.event_name == 'push'
       uses: goreleaser/goreleaser-action@v2
       with:
