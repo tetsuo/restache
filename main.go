@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/onur1/stache/parser"
-	"github.com/onur1/stache/template"
+	"github.com/tetsuo/stache/parser"
+	"github.com/tetsuo/stache/template"
 )
 
 func main() {

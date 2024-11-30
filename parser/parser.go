@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/onur1/stache/lexer"
+	"github.com/tetsuo/stache/lexer"
 )
 
 type NodeKind int

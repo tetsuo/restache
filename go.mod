@@ -1,4 +1,4 @@
-module github.com/onur1/stache
+module github.com/tetsuo/stache
 
 go 1.17
 

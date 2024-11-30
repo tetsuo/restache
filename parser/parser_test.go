@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onur1/stache/parser"
+	. "github.com/tetsuo/stache/parser"
 	"github.com/stretchr/testify/assert"
 )
 

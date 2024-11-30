@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/onur1/stache/parser"
+	"github.com/tetsuo/stache/parser"
 )
 
 type Template struct {
