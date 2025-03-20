@@ -1,0 +1,671 @@
+hi
+
+%
+
+text(hi)
+
+%
+
+  multiline
+  - beep
+  - boop
+let's go
+
+%
+
+text(multiline
+  - beep
+  - boop
+let's go)
+
+%
+
+<div></div>
+<a href=# />
+
+%
+
+open(div)
+close(div)
+openclose(a, href=text(#))
+
+%
+
+<div id="main"></div>
+<span></span>
+<b>{hello}</b>
+
+%
+
+open(div, id=text(main))
+close(div)
+open(span)
+close(span)
+open(b)
+expr(hello)
+close(b)
+
+%
+
+Hello, world!</div>
+</article> world!
+
+%
+
+text(Hello, world!)
+close(div)
+close(article)
+text( world!)
+
+%
+
+<div>Hello, {name}!</div>
+
+%
+
+open(div)
+text(Hello, )
+expr(name)
+text(!)
+close(div)
+
+%
+
+<table cols=3>
+  <tbody>Where is it?</tbody>
+  <tr><td>There</td></tr>
+  <tr><td>it</td></tr>
+  <tr><td bgcolor="blue">is.</td></tr>
+</table>
+
+%
+
+open(table, cols=text(3))
+open(tbody)
+text(Where is it?)
+close(tbody)
+open(tr)
+open(td)
+text(There)
+close(td)
+close(tr)
+open(tr)
+open(td)
+text(it)
+close(td)
+close(tr)
+open(tr)
+open(td, bgcolor=text(blue))
+text(is.)
+close(td)
+close(tr)
+close(table)
+
+%
+
+Welcome to our store, {customer.name}!
+Enjoy your shopping experience.
+
+%
+
+text(Welcome to our store, )
+expr(customer.name)
+text(!
+Enjoy your shopping experience.)
+
+%
+
+<p>Welcome, {user}! Have a nice day.</p>
+
+%
+
+open(p)
+text(Welcome, )
+expr(user)
+text(! Have a nice day.)
+close(p)
+
+%
+
+<div>Hello, <strong>{user}</strong>!<p>Welcome back.</p></div>
+
+%
+
+open(div)
+text(Hello, )
+open(strong)
+expr(user)
+close(strong)
+text(!)
+open(p)
+text(Welcome back.)
+close(p)
+close(div)
+
+%
+
+<div id="container">
+  <section class="content">
+    <p>Welcome, {user}!</p>
+  </section>
+</div>
+
+%
+
+open(div, id=text(container))
+open(section, class=text(content))
+open(p)
+text(Welcome, )
+expr(user)
+text(!)
+close(p)
+close(section)
+close(div)
+
+%
+
+{#items}
+  <li>
+    <span>{name}</span>
+    <ul>
+      {#fruits}
+        <li>
+          {name}
+          <ul>
+            {#vitamins}
+              <li>{id}</li>
+            {/vitamins}
+          </ul>
+        </li>
+      {/fruits}
+    </ul>
+  </li>
+{/items}
+
+%
+
+sopen(items)
+open(li)
+open(span)
+expr(name)
+close(span)
+open(ul)
+sopen(fruits)
+open(li)
+expr(name)
+open(ul)
+sopen(vitamins)
+open(li)
+expr(id)
+close(li)
+sclose(vitamins)
+close(ul)
+close(li)
+sclose(fruits)
+close(ul)
+close(li)
+sclose(items)
+
+%
+
+<!-- This is an HTML comment -->
+<p>Hello, world!</p>
+<!-- Ignore HTML comments -->
+
+%
+
+open(p)
+text(Hello, world!)
+close(p)
+
+%
+
+<button onclick="alert('{message}')">Click Me!</button>
+
+%
+
+open(button, onclick=text(alert('{message}')))
+text(Click Me!)
+close(button)
+
+%
+
+{#loggedIn}
+  <p>Welcome back!</p>
+{^loggedIn}
+  <p>Please log in.</p>
+{/loggedIn}
+
+%
+
+sopen(loggedIn)
+open(p)
+text(Welcome back!)
+close(p)
+sinverse(loggedIn)
+open(p)
+text(Please log in.)
+close(p)
+sclose(loggedIn)
+
+%
+
+<ul>
+  {#categories}
+    <li>{name}
+      <ul>
+        {#items}
+          {#available}
+            <li>{itemName} - In Stock</li>
+          {/available}
+        {/items}
+      </ul>
+    </li>
+  {/categories}
+</ul>
+
+%
+
+open(ul)
+sopen(categories)
+open(li)
+expr(name)
+open(ul)
+sopen(items)
+sopen(available)
+open(li)
+expr(itemName)
+text( - In Stock)
+close(li)
+sclose(available)
+sclose(items)
+close(ul)
+close(li)
+sclose(categories)
+close(ul)
+
+%
+
+<x>
+  {^fruits}
+    <k></k>
+  {/fruits}
+</x>
+
+%
+
+open(x)
+sinverse(fruits)
+open(k)
+close(k)
+sclose(fruits)
+close(x)
+
+%
+
+<table cols={numcols}>
+  {#fruits}
+    <tr bgcolor="{athing}">
+      <td bgcolor="{bgcolor}">{name}</td>
+      {#proteins}<td class="{foo}">{name}</td>{/proteins}
+    </tr>
+  {/fruits}
+</table>
+
+%
+
+open(table, cols=expr(numcols))
+sopen(fruits)
+open(tr, bgcolor=expr(athing))
+open(td, bgcolor=expr(bgcolor))
+expr(name)
+close(td)
+sopen(proteins)
+open(td, class=expr(foo))
+expr(name)
+close(td)
+sclose(proteins)
+close(tr)
+sclose(fruits)
+close(table)
+
+%
+
+<div class="{theme == 'dark' ? 'dark-mode' : 'light-mode'}">
+  {message}
+</div>
+
+%
+
+open(div, class=expr(theme == 'dark' ? 'dark-mode' : 'light-mode'))
+expr(message)
+close(div)
+
+%
+
+{#users}
+  <div>
+    {#active}
+      <span>Active</span>
+    {/active}
+    {^active}
+      <span>Inactive</span>
+    {/active}
+  </div>
+  <br />
+{/users}
+<br />
+
+%
+
+sopen(users)
+open(div)
+sopen(active)
+open(span)
+text(Active)
+close(span)
+sclose(active)
+sinverse(active)
+open(span)
+text(Inactive)
+close(span)
+sclose(active)
+close(div)
+openclose(br)
+sclose(users)
+openclose(br)
+
+%
+
+{#users}
+  <ul>
+    {#friends}
+      <li>{name}</li>
+    {/friends}
+  </ul>
+  {^friends}
+    <p>No friends found.</p>
+  {/friends}
+{/users}
+
+%
+
+sopen(users)
+open(ul)
+sopen(friends)
+open(li)
+expr(name)
+close(li)
+sclose(friends)
+close(ul)
+sinverse(friends)
+open(p)
+text(No friends found.)
+close(p)
+sclose(friends)
+sclose(users)
+
+%
+
+<ul>
+  {#items}
+    <li class="{selected ? 'highlight' : ''}">
+      {name}
+    </li>
+  {/items}
+</ul>
+
+%
+
+open(ul)
+sopen(items)
+open(li, class=expr(selected ? 'highlight' : ''))
+expr(name)
+close(li)
+sclose(items)
+close(ul)
+
+%
+
+<img src="{user.avatar}" alt="{user.name}">
+
+%
+
+open(img, src=expr(user.avatar) alt=expr(user.name))
+
+%
+
+<img src="{user.avatar}" alt="{user.info.name}"/>
+
+%
+
+openclose(img, src=expr(user.avatar) alt=expr(user.info.name))
+
+%
+
+{^}{}  {#}{/}  x  {}{}<br/>
+
+%
+
+sinverse()
+expr()
+sopen()
+sclose()
+text(  x  )
+expr()
+expr()
+openclose(br)
+
+%
+
+</></ ><>{  ^}{  #}{   }{  /}<><  ><p></></p><  />
+{ #   }{^  }{/  }
+{  #  items  }
+{^ items  }
+{  /  items}
+
+%
+
+text(<>)
+sinverse()
+sopen()
+expr(   )
+sclose()
+text(<><  >)
+open(p)
+close(p)
+text(<  />
+)
+sopen(   )
+sinverse(  )
+sclose(  )
+sopen(  items  )
+sinverse( items  )
+sclose(  items)
+
+%
+
+{ ## items }{ ^/items #}{/# items}{  hello  }
+
+%
+
+sopen(# items )
+sinverse(/items #)
+sclose(# items)
+expr(  hello  )
+
+%
+
+{{hello}}{{  hello  }}{{#hi}}
+
+%
+
+expr({hello)
+text(})
+expr({  hello  )
+text(})
+expr({#hi)
+text(})
+
+%
+
+<div class="foo" id={foo}>
+<div class="  foo  " id={foo}>
+
+%
+
+open(div, class=text(foo) id=expr(foo))
+open(div, class=text(  foo  ) id=expr(foo))
+
+%
+
+{
+
+%
+
+text({)
+
+%
+
+<p id={>
+<p id="{">
+<p id=" {">
+<p id="{ ">
+<p id="  {  ">
+<p id=}>
+<p id="}">
+<p id=" }">
+<p id="} ">
+<p id="  }  ">
+<p id="  {
+  ">
+<p id="  }
+  ">
+
+%
+
+open(p, id=text({))
+open(p, id=text({))
+open(p, id=text( {))
+open(p, id=text({ ))
+open(p, id=text(  {  ))
+open(p, id=text(}))
+open(p, id=text(}))
+open(p, id=text( }))
+open(p, id=text(} ))
+open(p, id=text(  }  ))
+open(p, id=text(  {
+  ))
+open(p, id=text(  }
+  ))
+
+%
+
+<p id="hi{name}">
+<p id="{name}hi">
+<p id="  hi  {name}">
+<p id="{name} hi  ">
+<p id="hi {name} hi">
+
+%
+
+open(p, id=text(hi{name}))
+open(p, id=text({name}hi))
+open(p, id=text(  hi  {name}))
+open(p, id=text({name} hi  ))
+open(p, id=text(hi {name} hi))
+
+%
+
+<p id={name}>
+<p id="{name}">
+<p id="{name  }">
+<p id="    {name}">
+<p id="{ name }   ">
+<p id="  {  name} ">
+<p id="  {  n   a m  e } ">
+
+%
+
+open(p, id=expr(name))
+open(p, id=expr(name))
+open(p, id=expr(name  ))
+open(p, id=expr(name))
+open(p, id=expr( name ))
+open(p, id=expr(  name))
+open(p, id=expr(  n   a m  e ))
+
+%
+
+<p id={{name}>
+<p id="{{  name }">
+<p id="{{name {}}">
+<p id="{{name {}">
+<p id="{ { name   {  }">
+
+%
+
+open(p, id=expr({name))
+open(p, id=expr({  name ))
+open(p, id=text({{name {}}))
+open(p, id=expr({name {))
+open(p, id=expr( { name   {  ))
+
+%
+
+{! some comment}
+{name}
+{! multiline
+some
+  comment
+  here
+  }<div>
+
+%
+
+comment( some comment)
+expr(name)
+comment( multiline
+some
+  comment
+  here
+  )
+open(div)
+
+%
+
+<p>{   }</p>
+<p>{!     }</p>
+<p>{  username   }</p>
+<p>{  ! Comment  }</p>
+<p>{email     }</p>
+
+%
+open(p)
+expr(   )
+close(p)
+open(p)
+comment(     )
+close(p)
+open(p)
+expr(  username   )
+close(p)
+open(p)
+comment( Comment  )
+close(p)
+open(p)
+expr(email     )
+close(p)
+
+%
+
+<img src="{profile.picture}" alt="{profile.name}"/>
+<meta name="description" content="{page.description}"/>
+<link rel="stylesheet" href="{theme.css}">
+
+%
+
+openclose(img, src=expr(profile.picture) alt=expr(profile.name))
+openclose(meta, name=text(description) content=expr(page.description))
+open(link, rel=text(stylesheet) href=expr(theme.css))
+
