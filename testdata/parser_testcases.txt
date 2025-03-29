@@ -1,0 +1,253 @@
+hello hi
+
+%
+
+main [] [ text "hello hi" ]
+
+%
+
+{! my comment hi }
+
+%
+
+main [] [ comment "my comment hi" ]
+
+%
+
+both text {! and comment }
+
+%
+
+main []
+  [ text "both text", comment "and comment" ]
+
+%
+
+{!a comment}some text {! another comment
+
+  but this
+    time
+  it
+   is multi
+   line!
+}
+
+%
+
+main [] [ comment "a comment", text "some text", comment "another comment
+
+  but this
+    time
+  it
+   is multi
+   line!" ]
+
+%
+
+hello {name} world
+
+%
+
+main [] [ text "hello", var "name", text "world" ]
+
+%
+
+<div><p>Hello {name}</p></div>
+
+%
+
+main [] [
+  div [][
+    p [][
+      text "Hello",
+      var "name"
+    ]
+  ]
+]
+
+%
+
+<div></div>
+
+%
+
+main [] [ div [][] ]
+
+%
+
+<custom></custom>
+
+%
+
+main [] [ custom [][] ]
+
+%
+
+<div>
+  <ul>
+    <li>Apple</li>
+    <li>{Banana}</li>
+    <li>Kiwi</li>
+  </ul>
+</div>
+
+%
+
+main []
+  [ div [] [
+    ul [] [
+      li [] [ text "Apple"]
+    , li [] [ var "Banana"]
+    , li [] [ text "Kiwi"]]
+    ]
+  ]
+
+%
+
+<div>
+  <p>
+    <area><area><area></area><area>
+  </p>
+</div>
+
+%
+
+main [] [ div[][ p[][ area[][], area[][], area[][], area[][] ] ] ]
+
+%
+
+<input />
+<input>
+<input>
+<input>bazbar</input>
+
+%
+
+main [][ input[][], input[][], input[][], input[][], text "bazbar" ]
+
+%
+
+<hr />
+<hr>
+<hr />
+<hr />
+<img src="quu">
+<img src="quux">
+<p>test</p>
+
+%
+
+main []
+  [ hr[][], hr[][], hr[][], hr[][], img [ src text "quu" ][], img [ src text "quux" ][], p[][ text "test"] ]
+
+%
+
+<img id="baz" src={filesource}>
+
+%
+
+main []
+  [ img [ id text "baz", src var "filesource" ] [] ]
+
+%
+
+<input>
+<span>{name}</span>
+
+%
+
+main [] [
+    input [][]
+  , span [][ var "name" ]
+]
+
+%
+
+<img src="test.png" alt={description} id="should {betext}" />
+
+%
+
+main [] [
+  img [
+      src text "test.png"
+    , alt var "description"
+    , id text "should {betext}"
+  ][]
+]
+
+%
+
+<p>{?isAdmin}Welcome back!{/isAdmin}</p>
+
+%
+
+main [] [
+  p [] [
+    when "isAdmin" [
+      text "Welcome back!"
+    ]
+  ]
+]
+
+%
+
+{^isAdmin}
+  {#users}
+    <li>{name}</li>
+  {/users}
+{/isAdmin}
+
+%
+
+main [] [
+  unless "isAdmin" [
+    range "users" [
+      li [] [ var "name" ]
+    ]
+  ]
+]
+
+%
+
+{#uncloseditems}
+  <li>{stillbuildstree}</li>
+
+%
+
+main [] [
+  range "uncloseditems"[
+    li [] [var "stillbuildstree" ]
+  ]
+]
+
+%
+
+{#fruits}
+  {#x}
+    <u class={style}>
+      {^name}
+        <li>No name</li>
+      {/name}
+      {?name}
+        <li>{name}</li>
+      {/name}
+    </u>
+  {/x}
+{/fruits}
+
+%
+
+main [] [
+  range "fruits"[
+    range "x" [
+      u[class var "style"][
+        unless "name" [
+          li [] [text "No name"]
+        ],
+        when "name" [
+          li [] [var "name"]
+        ]
+      ]
+    ]
+  ]
+]
