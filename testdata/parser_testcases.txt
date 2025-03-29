@@ -251,3 +251,39 @@ main [] [
     ]
   ]
 ]
+
+%
+
+{! uninitialized element }
+</x>
+
+%
+
+main[][ comment "uninitialized element"]
+
+%
+
+{! element e mismatch }
+<x><d><y></y></e></x>
+
+%
+
+main[][ comment "element e mismatch", x[][ d[][ y[][]]]]
+
+%
+
+{! uninitialized control }
+{/x}
+
+%
+
+main[][ comment "uninitialized control"]
+
+%
+
+{! control e mismatch }
+{?x}{?d}{#y}{name}{/y}{/e}{/x}
+
+%
+
+main[][ comment "control e mismatch", when "x"[ when "d"[ range "y"[ var "name" ]]]]
