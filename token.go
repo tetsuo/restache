@@ -11,16 +11,17 @@ import (
 type TokenType uint32
 
 const (
-	StartTagToken TokenType = iota + 1
+	ErrorToken TokenType = iota
+	StartTagToken
 	EndTagToken
 	SelfClosingTagToken
 	TextToken
-	VariableToken
-	StartSectionToken
-	EndSectionToken
-	StartInvertedSectionToken
 	CommentToken
-	ErrorToken
+	VariableToken
+	WhenToken   // if
+	UnlessToken // if not
+	RangeToken  // for
+	EndControlToken
 )
 
 // Tokenizer holds state for parsing.
@@ -64,17 +65,19 @@ func (t *Tokenizer) Comment() []byte {
 	return b[i+1:]
 }
 
-// SectionName extracts the name of a section, inverted section, or end section.
-func (t *Tokenizer) SectionName() []byte {
+// ControlName extracts the name of a section, inverted section, or end section.
+func (t *Tokenizer) ControlName() []byte {
 	// Find the first section symbol, and return the rest
 	b := t.Raw()
 	var i int
 	switch t.tt {
-	case StartSectionToken:
+	case WhenToken:
+		i = bytes.IndexByte(b, '?')
+	case RangeToken:
 		i = bytes.IndexByte(b, '#')
-	case EndSectionToken:
+	case EndControlToken:
 		i = bytes.IndexByte(b, '/')
-	case StartInvertedSectionToken:
+	case UnlessToken:
 		i = bytes.IndexByte(b, '^')
 	}
 	return b[i+1:]
@@ -198,7 +201,7 @@ func (t *Tokenizer) parseTextSegment() {
 	}
 	rpos += (lpos + 1)
 
-	t.tt = parseMustacheType(b[lpos+1 : rpos])
+	t.tt = identifyKeyword(b[lpos+1 : rpos])
 
 	t.tokBegin = lpos + 1
 	t.tokEnd = rpos
@@ -206,8 +209,8 @@ func (t *Tokenizer) parseTextSegment() {
 	t.pos = rpos + 1
 }
 
-// parseMustacheType looks at the content inside {...} and decides the token type.
-func parseMustacheType(chunk []byte) TokenType {
+// identifyKeyword looks at the content inside {...} and decides the token type.
+func identifyKeyword(chunk []byte) TokenType {
 	// Skip leading spaces
 	i := 0
 	length := len(chunk)
@@ -218,12 +221,14 @@ func parseMustacheType(chunk []byte) TokenType {
 		return VariableToken
 	}
 	switch chunk[i] {
-	case '#':
-		return StartSectionToken
+	case '?':
+		return WhenToken
 	case '^':
-		return StartInvertedSectionToken
+		return UnlessToken
+	case '#':
+		return RangeToken
 	case '/':
-		return EndSectionToken
+		return EndControlToken
 	case '!':
 		return CommentToken
 	default:

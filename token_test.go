@@ -27,7 +27,7 @@ func (e *errorReader) Read(_ []byte) (int, error) {
 
 func TestTokenizer(t *testing.T) {
 	const file = "testdata/lexer_testcases.txt"
-	for _, tc := range buildTestCases(t, file) {
+	for _, tc := range buildTestcases(t, file) {
 		t.Run(fmt.Sprintf("%s L%d", file, tc.line), func(t *testing.T) {
 			r := strings.NewReader(tc.data)
 			z := stache.NewTokenizer(r)
@@ -76,15 +76,18 @@ func TestTokenizer(t *testing.T) {
 				case stache.EndTagToken:
 					tagName, _ := z.TagName()
 					op += "close(" + string(tagName) + ")"
-				case stache.StartSectionToken:
-					sectionName := z.SectionName()
-					op += "sopen(" + string(sectionName) + ")"
-				case stache.StartInvertedSectionToken:
-					sectionName := z.SectionName()
-					op += "sinverse(" + string(sectionName) + ")"
-				case stache.EndSectionToken:
-					sectionName := z.SectionName()
-					op += "sclose(" + string(sectionName) + ")"
+				case stache.WhenToken:
+					controlName := z.ControlName()
+					op += "when(" + string(controlName) + ")"
+				case stache.UnlessToken:
+					controlName := z.ControlName()
+					op += "unless(" + string(controlName) + ")"
+				case stache.RangeToken:
+					controlName := z.ControlName()
+					op += "range(" + string(controlName) + ")"
+				case stache.EndControlToken:
+					controlName := z.ControlName()
+					op += "endctl(" + string(controlName) + ")"
 				case stache.VariableToken:
 					varName := z.Raw()
 					op += "expr(" + string(varName) + ")"
@@ -103,7 +106,7 @@ func TestTokenizer(t *testing.T) {
 
 			actual := strings.TrimSpace(strings.Join(ops, "\n"))
 			if actual != tc.expected {
-				t.Errorf("\nexpected:\n%v\ngot:\n%v\n", tc.expected, actual)
+				t.Errorf("\nexpected:\n%v\ngot:\n%v\n", "\t"+strings.Join(strings.Split(tc.expected, "\n"), "\n\t"), "\t"+strings.Join(strings.Split(actual, "\n"), "\n\t"))
 			}
 		})
 	}
@@ -131,20 +134,9 @@ func TestTokenizer(t *testing.T) {
 			t.Errorf("expected test error, got %v", err)
 		}
 	})
-
-	// t.Run("xx", func(t *testing.T) {
-	// 	z := stache.NewTokenizer(strings.NewReader(" "))
-	// 	tt := z.Next()
-	// 	if tt != stache.ErrorToken {
-	// 		t.Errorf("expected ErrorToken, got %v", tt)
-	// 	}
-	// 	if err := z.Err(); err != io.EOF {
-	// 		t.Errorf("expected io.EOF, got %v", err)
-	// 	}
-	// })
 }
 
-func buildTestCases(t *testing.T, filename string) []testCase {
+func buildTestcases(t *testing.T, filename string) []testCase {
 	file, err := os.Open(filename)
 	if err != nil {
 		t.Fatalf("Error opening file: %v", err)
