@@ -184,27 +184,27 @@ close(div)
 
 %
 
-sopen(items)
+range(items)
 open(li)
 open(span)
 expr(name)
 close(span)
 open(ul)
-sopen(fruits)
+range(fruits)
 open(li)
 expr(name)
 open(ul)
-sopen(vitamins)
+range(vitamins)
 open(li)
 expr(id)
 close(li)
-sclose(vitamins)
+endctl(vitamins)
 close(ul)
 close(li)
-sclose(fruits)
+endctl(fruits)
 close(ul)
 close(li)
-sclose(items)
+endctl(items)
 
 %
 
@@ -230,7 +230,7 @@ close(button)
 
 %
 
-{#loggedIn}
+{?loggedIn}
   <p>Welcome back!</p>
 {^loggedIn}
   <p>Please log in.</p>
@@ -238,15 +238,15 @@ close(button)
 
 %
 
-sopen(loggedIn)
+when(loggedIn)
 open(p)
 text(Welcome back!)
 close(p)
-sinverse(loggedIn)
+unless(loggedIn)
 open(p)
 text(Please log in.)
 close(p)
-sclose(loggedIn)
+endctl(loggedIn)
 
 %
 
@@ -255,7 +255,7 @@ sclose(loggedIn)
     <li>{name}
       <ul>
         {#items}
-          {#available}
+          {?available}
             <li>{itemName} - In Stock</li>
           {/available}
         {/items}
@@ -267,21 +267,21 @@ sclose(loggedIn)
 %
 
 open(ul)
-sopen(categories)
+range(categories)
 open(li)
 expr(name)
 open(ul)
-sopen(items)
-sopen(available)
+range(items)
+when(available)
 open(li)
 expr(itemName)
 text( - In Stock)
 close(li)
-sclose(available)
-sclose(items)
+endctl(available)
+endctl(items)
 close(ul)
 close(li)
-sclose(categories)
+endctl(categories)
 close(ul)
 
 %
@@ -295,10 +295,10 @@ close(ul)
 %
 
 open(x)
-sinverse(fruits)
+unless(fruits)
 open(k)
 close(k)
-sclose(fruits)
+endctl(fruits)
 close(x)
 
 %
@@ -315,18 +315,18 @@ close(x)
 %
 
 open(table, cols=expr(numcols))
-sopen(fruits)
+range(fruits)
 open(tr, bgcolor=expr(athing))
 open(td, bgcolor=expr(bgcolor))
 expr(name)
 close(td)
-sopen(proteins)
+range(proteins)
 open(td, class=expr(foo))
 expr(name)
 close(td)
-sclose(proteins)
+endctl(proteins)
 close(tr)
-sclose(fruits)
+endctl(fruits)
 close(table)
 
 %
@@ -345,7 +345,7 @@ close(div)
 
 {#users}
   <div>
-    {#active}
+    {?active}
       <span>Active</span>
     {/active}
     {^active}
@@ -358,21 +358,21 @@ close(div)
 
 %
 
-sopen(users)
+range(users)
 open(div)
-sopen(active)
+when(active)
 open(span)
 text(Active)
 close(span)
-sclose(active)
-sinverse(active)
+endctl(active)
+unless(active)
 open(span)
 text(Inactive)
 close(span)
-sclose(active)
+endctl(active)
 close(div)
 openclose(br)
-sclose(users)
+endctl(users)
 openclose(br)
 
 %
@@ -390,20 +390,20 @@ openclose(br)
 
 %
 
-sopen(users)
+range(users)
 open(ul)
-sopen(friends)
+range(friends)
 open(li)
 expr(name)
 close(li)
-sclose(friends)
+endctl(friends)
 close(ul)
-sinverse(friends)
+unless(friends)
 open(p)
 text(No friends found.)
 close(p)
-sclose(friends)
-sclose(users)
+endctl(friends)
+endctl(users)
 
 %
 
@@ -418,11 +418,11 @@ sclose(users)
 %
 
 open(ul)
-sopen(items)
+range(items)
 open(li, class=expr(selected ? 'highlight' : ''))
 expr(name)
 close(li)
-sclose(items)
+endctl(items)
 close(ul)
 
 %
@@ -443,14 +443,15 @@ openclose(img, src=expr(user.avatar) alt=expr(user.info.name))
 
 %
 
-{^}{}  {#}{/}  x  {}{}<br/>
+{^}{}  {#}{/} {?}  x  {}{}<br/>
 
 %
 
-sinverse()
+unless()
 expr()
-sopen()
-sclose()
+range()
+endctl()
+when()
 text(  x  )
 expr()
 expr()
@@ -467,21 +468,21 @@ openclose(br)
 %
 
 text(<>)
-sinverse()
-sopen()
+unless()
+range()
 expr(   )
-sclose()
+endctl()
 text(<><  >)
 open(p)
 close(p)
 text(<  />
 )
-sopen(   )
-sinverse(  )
-sclose(  )
-sopen(  items  )
-sinverse( items  )
-sclose(  items)
+range(   )
+unless(  )
+endctl(  )
+range(  items  )
+unless( items  )
+endctl(  items)
 
 %
 
@@ -489,9 +490,9 @@ sclose(  items)
 
 %
 
-sopen(# items )
-sinverse(/items #)
-sclose(# items)
+range(# items )
+unless(/items #)
+endctl(# items)
 expr(  hello  )
 
 %
