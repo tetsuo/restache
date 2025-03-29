@@ -2,8 +2,9 @@ package stache
 
 import (
 	"bytes"
+	"fmt"
 	"io"
-	"log"
+	"os"
 
 	"golang.org/x/net/html/atom"
 )
@@ -138,11 +139,11 @@ func inBodyIM(p *parser) bool {
 		name := bytes.TrimSpace(p.z.ControlName())
 		top := p.controlStack.top()
 		if top == nil {
-			// TODO: unexpected {/...}
+			fmt.Fprintf(os.Stderr, "stache: unexpected closing tag: {/%s}\n", name)
 			return true
 		}
 		if !bytes.Equal(top.name, name) {
-			log.Printf("mismatched control end: expected {/%s}, got {/%s}\n", top.name, name)
+			fmt.Fprintf(os.Stderr, "stache: mismatched control end: expected {/%s}, got {/%s}\n", top.name, name)
 			return true
 		}
 		p.controlStack.pop()
