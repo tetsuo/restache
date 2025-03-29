@@ -54,6 +54,7 @@ func inBodyIM(p *parser) bool {
 		}
 		p.oe.top().AppendChild(n)
 		return true
+
 	case StartTagToken:
 		name, hasAttr := p.z.TagName()
 
@@ -83,86 +84,71 @@ func inBodyIM(p *parser) bool {
 
 		p.oe = append(p.oe, elem)
 		return true
+
 	case EndTagToken:
 		name, _ := p.z.TagName()
-		for i := len(p.oe) - 1; i >= 0; i-- {
-			n := p.oe[i]
-			if n.DataAtom != 0 {
-				if n.DataAtom == atom.Lookup(name) {
-					p.oe = p.oe[:i]
-					break
-				}
-			} else {
-				if bytes.Equal(n.Data, name) {
-					p.oe = p.oe[:i]
-					break
-				}
-			}
-		}
+		p.oe.popUntil(atom.Lookup(name), name)
 		return true
+
 	case VariableToken:
-		p.oe.top().AppendChild(&Node{
-			Type: VariableNode,
-			Data: bytes.Clone(bytes.TrimSpace(p.z.Raw())),
-			Path: slices.Clone(p.path),
-		})
+		p.oe.top().AppendChild(
+			&Node{
+				Type: VariableNode,
+				Data: bytes.Clone(bytes.TrimSpace(p.z.Raw())),
+				Path: slices.Clone(p.path),
+			},
+		)
 		return true
+
 	case WhenToken:
-		name := bytes.Clone(bytes.TrimSpace(p.z.ControlName()))
-		node := &Node{Type: WhenNode, Data: name, Path: slices.Clone(p.path)}
+		node := &Node{
+			Type: WhenNode,
+			Data: bytes.Clone(bytes.TrimSpace(p.z.ControlName())),
+			Path: slices.Clone(p.path),
+		}
 		p.oe.top().AppendChild(node)
 		p.oe = append(p.oe, node)
 		return true
 
 	case UnlessToken:
-		name := bytes.Clone(bytes.TrimSpace(p.z.ControlName()))
-		node := &Node{Type: UnlessNode, Data: name, Path: slices.Clone(p.path)}
+		node := &Node{
+			Type: UnlessNode,
+			Data: bytes.Clone(bytes.TrimSpace(p.z.ControlName())),
+			Path: slices.Clone(p.path),
+		}
 		p.oe.top().AppendChild(node)
 		p.oe = append(p.oe, node)
 		return true
 
 	case RangeToken:
-		name := bytes.Clone(bytes.TrimSpace(p.z.ControlName()))
 		node := &Node{
 			Type: RangeNode,
-			Data: name,
+			Data: bytes.Clone(bytes.TrimSpace(p.z.ControlName())),
 			Path: slices.Clone(p.path),
 		}
-		segments := bytes.Split(name, []byte("."))
-		p.path = append(p.path, segments...)
+		p.path = append(p.path, bytes.Split(node.Data, []byte("."))...)
 		p.oe.top().AppendChild(node)
 		p.oe = append(p.oe, node)
 		return true
+
 	case EndControlToken:
-		name := bytes.TrimSpace(p.z.ControlName())
-
-		for i := len(p.oe) - 1; i >= 0; i-- {
-			n := p.oe[i]
-
-			if (n.Type == RangeNode || n.Type == WhenNode || n.Type == UnlessNode) &&
-				bytes.Equal(n.Data, name) {
-				// Rollback path first
-				if n.Type == RangeNode {
-					p.path = n.Path
-				}
-
-				// Pop only after rollback is complete
-				p.oe = p.oe[:i]
-				return true
-			}
-		}
-
-		// No match found; fallback safety pop
-		if len(p.oe) > 1 {
-			p.oe = p.oe[:len(p.oe)-1]
+		var (
+			name  = bytes.TrimSpace(p.z.ControlName())
+			n     *Node
+			found bool
+		)
+		if n, found = p.oe.popCtrl(name); found && n.Type == RangeNode {
+			p.path = n.Path
 		}
 		return true
 
 	case CommentToken:
-		p.oe.top().AppendChild(&Node{
-			Type: CommentNode,
-			Data: bytes.Clone(bytes.TrimSpace(p.z.Comment())),
-		})
+		p.oe.top().AppendChild(
+			&Node{
+				Type: CommentNode,
+				Data: bytes.Clone(bytes.TrimSpace(p.z.Comment())),
+			},
+		)
 
 		return true
 	}

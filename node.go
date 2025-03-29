@@ -1,6 +1,8 @@
 package stache
 
 import (
+	"bytes"
+
 	"golang.org/x/net/html/atom"
 )
 
@@ -110,10 +112,40 @@ func (n *Node) RemoveChild(c *Node) {
 // nodeStack is a stack of nodes.
 type nodeStack []*Node
 
+// pop pops the stack. It will panic if s is empty.
+func (s *nodeStack) pop() *Node {
+	i := len(*s)
+	n := (*s)[i-1]
+	*s = (*s)[:i-1]
+	return n
+}
+
 // top returns the most recently pushed node, or nil if s is empty.
 func (s *nodeStack) top() *Node {
 	if i := len(*s); i > 0 {
 		return (*s)[i-1]
 	}
 	return nil
+}
+
+func (s *nodeStack) popUntil(a atom.Atom, name []byte) bool {
+	for i := len(*s) - 1; i >= 0; i-- {
+		n := (*s)[i]
+		if (a != 0 && n.DataAtom == a) || (a == 0 && bytes.Equal(n.Data, name)) {
+			*s = (*s)[:i]
+			return true
+		}
+	}
+	return false
+}
+
+func (s *nodeStack) popCtrl(name []byte) (*Node, bool) {
+	for len(*s) > 1 {
+		n := s.pop()
+		if (n.Type == RangeNode || n.Type == WhenNode || n.Type == UnlessNode) &&
+			bytes.Equal(n.Data, name) {
+			return n, true
+		}
+	}
+	return nil, false
 }
