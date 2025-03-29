@@ -2,9 +2,9 @@ package stache
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"os"
+
+	"slices"
 
 	"golang.org/x/net/html/atom"
 )
@@ -26,14 +26,13 @@ var voidAtoms = map[atom.Atom]bool{
 type insertionMode func(*parser) bool
 
 type parser struct {
-	z                   *Tokenizer
-	oe                  nodeStack
-	doc                 *Node
-	im                  insertionMode
-	tt                  TokenType
-	controlStack        controlStack
-	scopeStack          scopeStack
-	hasSelfClosingToken bool
+	z    *Tokenizer
+	oe   nodeStack
+	doc  *Node // root node
+	im   insertionMode
+	tt   TokenType
+	path [][]byte
+	sc   bool // has self closing token
 }
 
 func initialIM(p *parser) bool {
@@ -62,13 +61,14 @@ func inBodyIM(p *parser) bool {
 			Type:     ElementNode,
 			Data:     name,
 			DataAtom: atom.Lookup(name),
+			Path:     slices.Clone(p.path),
 		}
 
 		for hasAttr {
 			key, val, isExpr, more := p.z.TagAttr()
 			elem.Attr = append(elem.Attr, Attribute{
-				Key:    key,
-				Val:    val,
+				Key:    bytes.Clone(key),
+				Val:    bytes.Clone(val),
 				IsExpr: isExpr,
 			})
 			hasAttr = more
@@ -76,8 +76,8 @@ func inBodyIM(p *parser) bool {
 
 		p.oe.top().AppendChild(elem)
 
-		if p.hasSelfClosingToken || voidAtoms[elem.DataAtom] {
-			p.hasSelfClosingToken = false
+		if p.sc || voidAtoms[elem.DataAtom] {
+			p.sc = false
 			return true
 		}
 
@@ -101,76 +101,78 @@ func inBodyIM(p *parser) bool {
 		}
 		return true
 	case VariableToken:
-		varName := bytes.TrimSpace(p.z.Raw())
-		path := make([][]byte, len(p.scopeStack), len(p.scopeStack)+1)
-		copy(path, p.scopeStack)
-		path = append(path, varName)
-
-		n := &Node{
+		p.oe.top().AppendChild(&Node{
 			Type: VariableNode,
-			Data: varName,
-			Path: path,
-		}
-		p.oe.top().AppendChild(n)
+			Data: bytes.Clone(bytes.TrimSpace(p.z.Raw())),
+			Path: slices.Clone(p.path),
+		})
 		return true
 	case WhenToken:
 		name := bytes.Clone(bytes.TrimSpace(p.z.ControlName()))
-		node := &Node{Type: WhenNode, Data: name}
+		node := &Node{Type: WhenNode, Data: name, Path: slices.Clone(p.path)}
 		p.oe.top().AppendChild(node)
 		p.oe = append(p.oe, node)
-		p.controlStack.push(controlFrame{typ: WhenNode, name: node.Data})
 		return true
+
 	case UnlessToken:
 		name := bytes.Clone(bytes.TrimSpace(p.z.ControlName()))
-		node := &Node{Type: UnlessNode, Data: name}
+		node := &Node{Type: UnlessNode, Data: name, Path: slices.Clone(p.path)}
 		p.oe.top().AppendChild(node)
 		p.oe = append(p.oe, node)
-		p.controlStack.push(controlFrame{typ: UnlessNode, name: node.Data})
 		return true
+
 	case RangeToken:
 		name := bytes.Clone(bytes.TrimSpace(p.z.ControlName()))
-		segments := p.scopeStack.pushSegments(name)
-		node := &Node{Type: RangeNode, Data: name}
+		node := &Node{
+			Type: RangeNode,
+			Data: name,
+			Path: slices.Clone(p.path),
+		}
+		segments := bytes.Split(name, []byte("."))
+		p.path = append(p.path, segments...)
 		p.oe.top().AppendChild(node)
 		p.oe = append(p.oe, node)
-		p.controlStack.push(controlFrame{typ: RangeNode, name: name, segments: segments})
 		return true
 	case EndControlToken:
 		name := bytes.TrimSpace(p.z.ControlName())
-		top := p.controlStack.top()
-		if top == nil {
-			fmt.Fprintf(os.Stderr, "stache: unexpected closing tag: {/%s}\n", name)
-			return true
-		}
-		if !bytes.Equal(top.name, name) {
-			fmt.Fprintf(os.Stderr, "stache: mismatched control end: expected {/%s}, got {/%s}\n", top.name, name)
-			return true
-		}
-		p.controlStack.pop()
-		p.scopeStack.popN(len(top.segments))
 
-		// pop matching node
 		for i := len(p.oe) - 1; i >= 0; i-- {
 			n := p.oe[i]
-			if n.Type == top.typ && bytes.Equal(n.Data, name) {
+
+			if (n.Type == RangeNode || n.Type == WhenNode || n.Type == UnlessNode) &&
+				bytes.Equal(n.Data, name) {
+				// Rollback path first
+				if n.Type == RangeNode {
+					p.path = n.Path
+				}
+
+				// Pop only after rollback is complete
 				p.oe = p.oe[:i]
-				break
+				return true
 			}
 		}
+
+		// No match found; fallback safety pop
+		if len(p.oe) > 1 {
+			p.oe = p.oe[:len(p.oe)-1]
+		}
 		return true
+
 	case CommentToken:
-		p.doc.AppendChild(&Node{
+		p.oe.top().AppendChild(&Node{
 			Type: CommentNode,
 			Data: bytes.Clone(bytes.TrimSpace(p.z.Comment())),
 		})
+
 		return true
 	}
+
 	return false
 }
 
 func (p *parser) parseCurrentToken() {
 	if p.tt == SelfClosingTagToken {
-		p.hasSelfClosingToken = true
+		p.sc = true
 		p.tt = StartTagToken
 	}
 
