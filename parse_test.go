@@ -129,7 +129,10 @@ func dumpResolvedNode(b *strings.Builder, n *stache.Node, indent int) {
 							if i > 0 {
 								b.WriteByte('.')
 							}
-							b.Write(seg)
+							b.Write(seg.Key)
+							if seg.IsRange {
+								b.WriteString(".#")
+							}
 						}
 
 						segments := bytes.Split(attr.Val, []byte("."))
@@ -166,12 +169,15 @@ func writeResolvedPath(b *strings.Builder, n *stache.Node) {
 		if i > 0 {
 			b.WriteByte('.')
 		}
-		b.Write(seg)
+		b.Write(seg.Key)
+		if seg.IsRange {
+			b.WriteString(".#")
+		}
 	}
 }
 
 func indentLine(b *strings.Builder, n int) {
-	for i := 0; i < n; i++ {
+	for range n {
 		b.WriteByte(' ')
 	}
 }

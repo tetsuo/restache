@@ -3,7 +3,6 @@ package stache
 import (
 	"bytes"
 	"io"
-
 	"slices"
 
 	"golang.org/x/net/html/atom"
@@ -25,13 +24,18 @@ var voidAtoms = map[atom.Atom]bool{
 
 type insertionMode func(*parser) bool
 
+type PathSegment struct {
+	Key     []byte
+	IsRange bool
+}
+
 type parser struct {
 	z    *Tokenizer
 	oe   nodeStack
 	doc  *Node // root node
 	im   insertionMode
 	tt   TokenType
-	path [][]byte
+	path []PathSegment
 	sc   bool // has self closing token
 }
 
@@ -126,7 +130,18 @@ func inBodyIM(p *parser) bool {
 			Data: bytes.Clone(bytes.TrimSpace(p.z.ControlName())),
 			Path: slices.Clone(p.path),
 		}
-		p.path = append(p.path, bytes.Split(node.Data, []byte("."))...)
+		parts := bytes.Split(node.Data, []byte("."))
+		var (
+			i    int
+			part []byte
+			last = len(parts) - 1
+		)
+		for i, part = range parts {
+			p.path = append(p.path, PathSegment{
+				Key:     part,
+				IsRange: i == last,
+			})
+		}
 		p.oe.top().AppendChild(node)
 		p.oe = append(p.oe, node)
 		return true

@@ -33,7 +33,7 @@ type Node struct {
 	DataAtom atom.Atom
 	Data     []byte
 	Attr     []Attribute
-	Path     [][]byte
+	Path     []PathSegment
 }
 
 // InsertBefore inserts newChild as a child of n, immediately before oldChild

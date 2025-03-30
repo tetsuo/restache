@@ -227,7 +227,7 @@ hello {name} world
 [] [
   unless .isAdmin [
     range .users [
-      li [] [ var users.name ]
+      li [] [ var users.#.name ]
     ]
   ]
 ]
@@ -241,7 +241,7 @@ hello {name} world
 
 [] [
   range .unclosedrange [
-    li [] [var unclosedrange.stillbuildstree ]
+    li [] [var unclosedrange.#.stillbuildstree ]
   ]
 ]
 
@@ -264,13 +264,13 @@ hello {name} world
 
 [] [
   range .fruits [
-    range fruits.x [
-      u [class var fruits.x.style ][
-        unless fruits.x.name [
+    range fruits.#.x [
+      u [class var fruits.#.x.#.style ][
+        unless fruits.#.x.#.name [
           li [] [text "No name"]
         ],
-        when fruits.x.name [
-          li [] [var fruits.x.name ]
+        when fruits.#.x.#.name [
+          li [] [var fruits.#.x.#.name ]
         ]
       ]
     ]
@@ -331,12 +331,12 @@ hello {name} world
 %
 
 [] [ range .x [
-      range x.d [
-        range x.d.y [
-          var x.d.y.name
+      range x.#.d [
+        range x.#.d.#.y [
+          var x.#.d.#.y.#.name
         ],
-        unless x.d.z [
-          var x.d.name
+        unless x.#.d.#.z [
+          var x.#.d.#.name
         ]
       ]
     ]
@@ -379,7 +379,7 @@ test one {! comment here } ending
 [] [
   ul [] [
     range .items [
-      li [] [ var items.itemName ]
+      li [] [ var items.#.itemName ]
     ]
   ]
 ]
@@ -435,10 +435,10 @@ test one {! comment here } ending
 
 [] [
   range .library [
-    when library.open [
-      range library.shelves [
-        unless library.shelves.empty [
-          var library.shelves.book.title
+    when library.#.open [
+      range library.#.shelves [
+        unless library.#.shelves.#.empty [
+          var library.#.shelves.#.book.title
         ]
       ]
     ]
@@ -460,12 +460,12 @@ test one {! comment here } ending
 
 [] [
   range .team [
-    when team.active [
-      var team.name,
+    when team.#.active [
+      var team.#.name,
       text "is active."
     ],
-    unless team.active [
-      var team.name,
+    unless team.#.active [
+      var team.#.name,
       text "is inactive."
     ]
   ]
@@ -490,16 +490,16 @@ test one {! comment here } ending
 
 [] [
   range .countries [
-    var countries.name,
+    var countries.#.name,
     text ":",
-    range countries.cities [
-      var countries.cities.name,
+    range countries.#.cities [
+      var countries.#.cities.#.name,
       text ","
     ],
-    when countries.visited [
+    when countries.#.visited [
       text "(visited)"
     ],
-    unless countries.visited [
+    unless countries.#.visited [
       text "(not visited)"
     ]
   ]
@@ -528,19 +528,19 @@ test one {! comment here } ending
 
 [] [
   range .bookstore [
-    range bookstore.sections [
+    range bookstore.#.sections [
       text "Section:",
-      var bookstore.sections.name,
-      when bookstore.sections.popular [
+      var bookstore.#.sections.#.name,
+      when bookstore.#.sections.#.popular [
         text "- Popular section!"
       ],
-      range bookstore.sections.books [
-        when bookstore.sections.books.bestseller [
-          var bookstore.sections.books.title,
+      range bookstore.#.sections.#.books [
+        when bookstore.#.sections.#.books.#.bestseller [
+          var bookstore.#.sections.#.books.#.title,
           text "(bestseller)"
         ],
-        unless bookstore.sections.books.bestseller [
-          var bookstore.sections.books.title
+        unless bookstore.#.sections.#.books.#.bestseller [
+          var bookstore.#.sections.#.books.#.title
         ]
       ]
     ]
@@ -562,14 +562,14 @@ test one {! comment here } ending
 
 [] [
   range .menu [
-    when menu.available [
-      var menu.dish,
+    when menu.#.available [
+      var menu.#.dish,
       text "($",
-      var menu.price,
+      var menu.#.price,
       text ")"
     ],
-    unless menu.available [
-      var menu.dish,
+    unless menu.#.available [
+      var menu.#.dish,
       text "(unavailable)"
     ]
   ]
@@ -600,21 +600,21 @@ test one {! comment here } ending
 [] [
   range .classes [
     text "Class:",
-    var classes.name,
-    when classes.full [
+    var classes.#.name,
+    when classes.#.full [
       text "(Full)"
     ],
-    unless classes.full [
+    unless classes.#.full [
       text "Spots open:",
-      var classes.spots.remaining
+      var classes.#.spots.remaining
     ],
-    range classes.students [
-      when classes.students.passed [
-        var classes.students.name,
+    range classes.#.students [
+      when classes.#.students.#.passed [
+        var classes.#.students.#.name,
         text ": Passed"
       ],
-      unless classes.students.passed [
-        var classes.students.name,
+      unless classes.#.students.#.passed [
+        var classes.#.students.#.name,
         text ": Failed"
       ]
     ]
@@ -659,43 +659,43 @@ test one {! comment here } ending
 
 [] [
   range .catalog [
-    section [ class var catalog.section.class ] [
-      when catalog.featured [
-        h1 [] [ var catalog.section.title ]
+    section [ class var catalog.#.section.class ] [
+      when catalog.#.featured [
+        h1 [] [ var catalog.#.section.title ]
       ],
-      unless catalog.featured [
-        h2 [] [ var catalog.section.title ]
+      unless catalog.#.featured [
+        h2 [] [ var catalog.#.section.title ]
       ],
-      range catalog.products [
-        article [ id var catalog.products.sku ] [
+      range catalog.#.products [
+        article [ id var catalog.#.products.#.sku ] [
           img [
-            src var catalog.products.image.url,
-            alt var catalog.products.image.alt
+            src var catalog.#.products.#.image.url,
+            alt var catalog.#.products.#.image.alt
           ][],
-          when catalog.products.onSale [
+          when catalog.#.products.#.onSale [
             span [ class text "discount" ] [
-              var catalog.products.discount,
+              var catalog.#.products.#.discount,
               text "% OFF"
             ]
           ],
           footer [] [
-            range catalog.products.reviews [
-              when catalog.products.reviews.highlighted [
+            range catalog.#.products.#.reviews [
+              when catalog.#.products.#.reviews.#.highlighted [
                 p [ class text "highlight" ] [
-                  var catalog.products.reviews.text,
+                  var catalog.#.products.#.reviews.#.text,
                   text "- by",
-                  var catalog.products.reviews.author.name
+                  var catalog.#.products.#.reviews.#.author.name
                 ]
               ],
-              unless catalog.products.reviews.highlighted [
+              unless catalog.#.products.#.reviews.#.highlighted [
                 p [] [
-                  var catalog.products.reviews.text,
+                  var catalog.#.products.#.reviews.#.text,
                   text "- by",
-                  var catalog.products.reviews.author.name
+                  var catalog.#.products.#.reviews.#.author.name
                 ]
               ]
             ],
-            unless catalog.products.reviews [
+            unless catalog.#.products.#.reviews [
               p [] [ text "No reviews yet." ]
             ]
           ]
@@ -739,31 +739,31 @@ test one {! comment here } ending
 [] [
   div [ id text "dashboard" ] [
     range .users [
-      div [ class var users.role ] [
+      div [ class var users.#.role ] [
         span [] [
-          var users.name.first,
-          var users.name.last
+          var users.#.name.first,
+          var users.#.name.last
         ],
-        when users.online [
+        when users.#.online [
           span [ class text "status online" ] [ text "Online" ]
         ],
-        unless users.online [
+        unless users.#.online [
           span [ class text "status offline" ] [
             text "Offline since",
-            var users.lastSeen
+            var users.#.lastSeen
           ]
         ],
-        range users.tasks [
-          li [ data-task-id var users.tasks.id ] [
-            when users.tasks.completed [
-              span [ class text "done" ] [ var users.tasks.title ]
+        range users.#.tasks [
+          li [ data-task-id var users.#.tasks.#.id ] [
+            when users.#.tasks.#.completed [
+              span [ class text "done" ] [ var users.#.tasks.#.title ]
             ],
-            unless users.tasks.completed [
-              span [] [ var users.tasks.title ]
+            unless users.#.tasks.#.completed [
+              span [] [ var users.#.tasks.#.title ]
             ]
           ]
         ],
-        unless users.tasks [
+        unless users.#.tasks [
           p [] [ text "No tasks assigned." ]
         ]
       ]
@@ -805,33 +805,33 @@ test one {! comment here } ending
 
 [] [
   range .projects [
-    div [ data-project var projects.id, class var projects.status ] [
+    div [ data-project var projects.#.id, class var projects.#.status ] [
       header [] [
-        h3 [] [ var projects.name ],
-        when projects.archived [
+        h3 [] [ var projects.#.name ],
+        when projects.#.archived [
           span [ class text "badge" ] [ text "Archived" ]
         ]
       ],
       ul [] [
-        range projects.milestones [
+        range projects.#.milestones [
           li [] [
-            strong [] [ var projects.milestones.title ],
-            when projects.milestones.dueDate [
+            strong [] [ var projects.#.milestones.#.title ],
+            when projects.#.milestones.#.dueDate [
               em [] [
                 text "Due:",
-                var projects.milestones.dueDate
+                var projects.#.milestones.#.dueDate
               ]
             ],
-            range projects.milestones.tasks [
+            range projects.#.milestones.#.tasks [
               input [
                 type text "checkbox",
-                data-assignee var projects.milestones.tasks.assignee.id
+                data-assignee var projects.#.milestones.#.tasks.#.assignee.id
               ][],
-              label [] [ var projects.milestones.tasks.description ]
+              label [] [ var projects.#.milestones.#.tasks.#.description ]
             ]
           ]
         ],
-        unless projects.milestones [
+        unless projects.#.milestones [
           li [] [ text "No milestones defined." ]
         ]
       ]
