@@ -5,6 +5,7 @@ import (
 	"io"
 	"slices"
 
+	iradix "github.com/hashicorp/go-immutable-radix/v2"
 	"golang.org/x/net/html/atom"
 )
 
@@ -37,6 +38,9 @@ type parser struct {
 	tt   TokenType
 	path []PathSegment
 	sc   bool // has self closing token
+
+	depsTrie  *iradix.Tree[int]
+	dependsOn []int
 }
 
 func initialIM(p *parser) bool {
@@ -77,6 +81,12 @@ func inBodyIM(p *parser) bool {
 				IsExpr: isExpr,
 			})
 			hasAttr = more
+		}
+
+		if p.depsTrie != nil {
+			if idx, ok := p.depsTrie.Root().Get(name); ok {
+				p.dependsOn = append(p.dependsOn, idx)
+			}
 		}
 
 		p.oe.top().AppendChild(elem)
@@ -198,16 +208,22 @@ func (p *parser) parse() error {
 	return nil
 }
 
-func Parse(r io.Reader) (*Node, error) {
+func Parse(r io.Reader) (nodes *Node, err error) {
+	nodes, _, err = ParseWithDependencies(r, nil)
+	return
+}
+
+func ParseWithDependencies(r io.Reader, componentTrie *iradix.Tree[int]) (*Node, []int, error) {
 	p := &parser{
 		z:  NewTokenizer(r),
 		im: initialIM,
 		doc: &Node{
 			Type: ComponentNode,
 		},
+		depsTrie: componentTrie,
 	}
 	if err := p.parse(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return p.doc, nil
+	return p.doc, p.dependsOn, nil
 }
