@@ -209,11 +209,11 @@ func (p *parser) parse() error {
 }
 
 func Parse(r io.Reader) (nodes *Node, err error) {
-	nodes, _, err = ParseWithDependencies(r, nil)
+	nodes, _, err = parseWithDependencies(r, nil)
 	return
 }
 
-func ParseWithDependencies(r io.Reader, componentTrie *iradix.Tree[int]) (*Node, []int, error) {
+func parseWithDependencies(r io.Reader, componentTrie *iradix.Tree[int]) (*Node, []int, error) {
 	p := &parser{
 		z:  NewTokenizer(r),
 		im: initialIM,
