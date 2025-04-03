@@ -26,6 +26,11 @@ type Attribute struct {
 	IsExpr bool
 }
 
+type PathSegment struct {
+	Key     []byte
+	IsRange bool
+}
+
 type Node struct {
 	Parent, FirstChild, LastChild, PrevSibling, NextSibling *Node
 
@@ -139,7 +144,7 @@ func (s *nodeStack) popUntil(a atom.Atom, name []byte) bool {
 	return false
 }
 
-func (s *nodeStack) popCtrl(name []byte) (*Node, bool) {
+func (s *nodeStack) popControl(name []byte) (*Node, bool) {
 	for len(*s) > 1 {
 		n := s.pop()
 		if (n.Type == RangeNode || n.Type == WhenNode || n.Type == UnlessNode) &&

@@ -9,40 +9,29 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-var voidAtoms = map[atom.Atom]bool{
-	atom.Area:   true,
-	atom.Br:     true,
-	atom.Embed:  true,
-	atom.Img:    true,
-	atom.Input:  true,
-	atom.Wbr:    true,
-	atom.Col:    true,
-	atom.Hr:     true,
-	atom.Link:   true,
-	atom.Track:  true,
-	atom.Source: true,
-} // meta, base, param, keygen not included
+// voidElements only have a start tag; ends tags are not specified.
+var voidElements = map[atom.Atom]bool{
+	atom.Area: true, atom.Br: true, atom.Embed: true, atom.Img: true,
+	atom.Input: true, atom.Wbr: true, atom.Col: true, atom.Hr: true,
+	atom.Link: true, atom.Track: true, atom.Source: true,
+}
 
 type insertionMode func(*parser) bool
-
-type PathSegment struct {
-	Key     []byte
-	IsRange bool
-}
 
 type parser struct {
 	z    *Tokenizer
 	oe   nodeStack
-	doc  *Node // root node
+	doc  *Node
 	im   insertionMode
 	tt   TokenType
 	path []PathSegment
-	sc   bool // has self closing token
-
-	depsTrie  *iradix.Tree[int]
-	dependsOn []int
+	sc   bool              // indicates self closing token
+	dt   *iradix.Tree[int] // dependency trie
+	deps []int             // dependency index
 }
 
+// initialIM is the first insertion mode used.
+// It switches to inBodyIM after adding the root document.
 func initialIM(p *parser) bool {
 	p.oe = append(p.oe, p.doc)
 	p.im = inBodyIM
@@ -52,13 +41,13 @@ func initialIM(p *parser) bool {
 func inBodyIM(p *parser) bool {
 	switch p.tt {
 	case TextToken:
-		text := bytes.Clone(bytes.TrimSpace(p.z.Raw()))
-		if len(text) == 0 {
+		raw := bytes.TrimSpace(p.z.Raw())
+		if len(raw) == 0 {
 			return true
 		}
 		n := &Node{
 			Type: TextNode,
-			Data: text,
+			Data: bytes.Clone(raw),
 		}
 		p.oe.top().AppendChild(n)
 		return true
@@ -72,7 +61,7 @@ func inBodyIM(p *parser) bool {
 			DataAtom: atom.Lookup(name),
 			Path:     slices.Clone(p.path),
 		}
-
+		// Gather attributes
 		for hasAttr {
 			key, val, isExpr, more := p.z.TagAttr()
 			elem.Attr = append(elem.Attr, Attribute{
@@ -82,25 +71,27 @@ func inBodyIM(p *parser) bool {
 			})
 			hasAttr = more
 		}
-
-		if p.depsTrie != nil {
-			if idx, ok := p.depsTrie.Root().Get(name); ok {
-				p.dependsOn = append(p.dependsOn, idx)
+		// If a trie of dependencies available, see if tag name is in it:
+		if p.dt != nil {
+			if idx, ok := p.dt.Root().Get(name); ok {
+				// add to dependencies
+				p.deps = append(p.deps, idx)
 			}
 		}
-
 		p.oe.top().AppendChild(elem)
 
-		if p.sc || voidAtoms[elem.DataAtom] {
+		// If it's self-closing tag, or void element, don't push onto the stack:
+		if p.sc || voidElements[elem.DataAtom] {
 			p.sc = false
 			return true
 		}
-
+		// else push onto stack
 		p.oe = append(p.oe, elem)
 		return true
 
 	case EndTagToken:
 		name, _ := p.z.TagName()
+		// pop stack until a matching element is found
 		p.oe.popUntil(atom.Lookup(name), name)
 		return true
 
@@ -162,7 +153,8 @@ func inBodyIM(p *parser) bool {
 			n     *Node
 			found bool
 		)
-		if n, found = p.oe.popCtrl(name); found && n.Type == RangeNode {
+		// If it's a range node, restore the path
+		if n, found = p.oe.popControl(name); found && n.Type == RangeNode {
 			p.path = n.Path
 		}
 		return true
@@ -174,13 +166,14 @@ func inBodyIM(p *parser) bool {
 				Data: bytes.Clone(bytes.TrimSpace(p.z.Comment())),
 			},
 		)
-
 		return true
 	}
 
 	return false
 }
 
+// parseCurrentTokens call the current insertion mode; it sets the self-closing-tag
+// mode (p.sc) on, if a SelfClosingTagToken is encountered.
 func (p *parser) parseCurrentToken() {
 	if p.tt == SelfClosingTagToken {
 		p.sc = true
@@ -208,22 +201,24 @@ func (p *parser) parse() error {
 	return nil
 }
 
+// Parse parses a single Node with no dependencies.
 func Parse(r io.Reader) (nodes *Node, err error) {
-	nodes, _, err = parseWithDependencies(r, nil)
+	nodes, _, err = parseWithDeps(r, nil)
 	return
 }
 
-func parseWithDependencies(r io.Reader, componentTrie *iradix.Tree[int]) (*Node, []int, error) {
+// parseWithDeps also tracks references to component indexes in the given trie.
+func parseWithDeps(r io.Reader, componentTrie *iradix.Tree[int]) (*Node, []int, error) {
 	p := &parser{
 		z:  NewTokenizer(r),
 		im: initialIM,
 		doc: &Node{
 			Type: ComponentNode,
 		},
-		depsTrie: componentTrie,
+		dt: componentTrie,
 	}
 	if err := p.parse(); err != nil {
 		return nil, nil, err
 	}
-	return p.doc, p.dependsOn, nil
+	return p.doc, p.deps, nil
 }
