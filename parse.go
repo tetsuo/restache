@@ -5,7 +5,6 @@ import (
 	"io"
 	"slices"
 
-	iradix "github.com/hashicorp/go-immutable-radix/v2"
 	"golang.org/x/net/html/atom"
 )
 
@@ -18,6 +17,10 @@ var voidElements = map[atom.Atom]bool{
 
 type insertionMode func(*parser) bool
 
+type DependencyResolver interface {
+	Get([]byte) (int, bool)
+}
+
 type parser struct {
 	z    *Tokenizer
 	oe   nodeStack
@@ -25,9 +28,9 @@ type parser struct {
 	im   insertionMode
 	tt   TokenType
 	path []PathSegment
-	sc   bool              // indicates self closing token
-	dt   *iradix.Tree[int] // dependency trie
-	deps []int             // dependency index
+	sc   bool  // indicates self closing token
+	deps []int // found deps
+	dt   DependencyResolver
 }
 
 // initialIM is the first insertion mode used.
@@ -73,7 +76,7 @@ func inBodyIM(p *parser) bool {
 		}
 		// If a trie of dependencies available, see if tag name is in it:
 		if p.dt != nil {
-			if idx, ok := p.dt.Root().Get(name); ok {
+			if idx, ok := p.dt.Get(name); ok {
 				// add to dependencies
 				p.deps = append(p.deps, idx)
 			}
@@ -203,19 +206,19 @@ func (p *parser) parse() error {
 
 // Parse parses a single Node with no dependencies.
 func Parse(r io.Reader) (nodes *Node, err error) {
-	nodes, _, err = parseWithDeps(r, nil)
+	nodes, _, err = ParseWithDependencies(r, nil)
 	return
 }
 
-// parseWithDeps also tracks references to component indexes in the given trie.
-func parseWithDeps(r io.Reader, componentTrie *iradix.Tree[int]) (*Node, []int, error) {
+// ParseWithDependencies also tracks references to component indexes in the given trie.
+func ParseWithDependencies(r io.Reader, resolver DependencyResolver) (*Node, []int, error) {
 	p := &parser{
 		z:  NewTokenizer(r),
 		im: initialIM,
 		doc: &Node{
 			Type: ComponentNode,
 		},
-		dt: componentTrie,
+		dt: resolver,
 	}
 	if err := p.parse(); err != nil {
 		return nil, nil, err
