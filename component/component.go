@@ -29,7 +29,7 @@ type Component struct {
 	// Render state
 	phase renderPhase
 	buf   *bytes.Buffer
-	jsx   *jsxRenderer
+	rd    *stache.Renderer
 }
 
 // Read implements io.Reader for streaming JSX rendering.
@@ -65,15 +65,10 @@ func (c *Component) Read(p []byte) (int, error) {
 			c.phase = phaseBody
 
 		case phaseBody:
-			if c.jsx == nil {
-				c.jsx = &jsxRenderer{
-					w:      c.buf,
-					indent: 2,
-					doc:    c.Root,
-				}
+			if c.rd == nil {
+				c.rd = stache.NewRenderer(c.buf, 2, c.Root)
 			}
-
-			if !c.jsx.renderNext() {
+			if !c.rd.RenderNext() {
 				c.phase = phaseClose
 			}
 

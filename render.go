@@ -1,22 +1,28 @@
-package component
+package stache
 
 import (
 	"bytes"
 	"io"
-
-	"github.com/tetsuo/stache"
 )
 
-type jsxRenderer struct {
+type Renderer struct {
 	w        io.Writer
 	indent   int
-	doc      *stache.Node // top-level component node
-	cur      *stache.Node // pointer to current child
-	started  bool         // fragment open
-	finished bool         // fragmend closed
+	doc      *Node // top-level component node
+	cur      *Node // pointer to current child
+	started  bool  // fragment open
+	finished bool  // fragmend closed
 }
 
-func (r *jsxRenderer) renderNext() bool {
+func NewRenderer(w io.Writer, indent int, doc *Node) *Renderer {
+	return &Renderer{
+		w:      w,
+		indent: indent,
+		doc:    doc,
+	}
+}
+
+func (r *Renderer) RenderNext() bool {
 	if r.doc == nil || r.finished {
 		return false
 	}
@@ -48,10 +54,10 @@ func (r *jsxRenderer) renderNext() bool {
 	r.cur = r.cur.NextSibling // advance pointer
 
 	// Handle conditional group logic
-	if node.Type == stache.WhenNode || node.Type == stache.UnlessNode {
-		group := []*stache.Node{}
+	if node.Type == WhenNode || node.Type == UnlessNode {
+		group := []*Node{}
 		cond := node.Data
-		for node != nil && (node.Type == stache.WhenNode || node.Type == stache.UnlessNode) && bytes.Equal(node.Data, cond) {
+		for node != nil && (node.Type == WhenNode || node.Type == UnlessNode) && bytes.Equal(node.Data, cond) {
 			group = append(group, node)
 			node = node.NextSibling
 			r.cur = node // update current after grouped block
@@ -69,7 +75,7 @@ func (r *jsxRenderer) renderNext() bool {
 type conditionalBlock struct {
 	Cond   []byte
 	Negate bool
-	Body   *stache.Node
+	Body   *Node
 }
 
 // renderSingleConditionBlock renders a conditional JSX expression.
@@ -80,7 +86,7 @@ type conditionalBlock struct {
 // or
 //
 //	{ !props.foo && ( ... ) }
-func (r *jsxRenderer) renderSingleConditionBlock(b *conditionalBlock) {
+func (r *Renderer) renderSingleConditionBlock(b *conditionalBlock) {
 	r.writeIndent()
 	r.w.Write([]byte("{"))
 	if b.Negate {
@@ -102,7 +108,7 @@ func (r *jsxRenderer) renderSingleConditionBlock(b *conditionalBlock) {
 // Example:
 //
 //	{ props.foo ? ( ... ) : ( ... ) }
-func (r *jsxRenderer) renderTwoWayTernaryBlock(a, b conditionalBlock) {
+func (r *Renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) {
 	r.writeIndent()
 	r.w.Write([]byte("{"))
 	if a.Negate {
@@ -131,7 +137,7 @@ func (r *jsxRenderer) renderTwoWayTernaryBlock(a, b conditionalBlock) {
 // Example:
 //
 //	{ props.cond1 ? (...) : props.cond2 ? (...) : ... : null }
-func (r *jsxRenderer) renderMultiTernaryBlocks(blocks []conditionalBlock) {
+func (r *Renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) {
 	for i, b := range blocks {
 		if i == 0 {
 			r.writeIndent()
@@ -159,13 +165,13 @@ func (r *jsxRenderer) renderMultiTernaryBlocks(blocks []conditionalBlock) {
 
 // renderConditionalGroup renders a conditional JSX expression based on the node group.
 // The function selects the appropriate rendering method (single, ternary, or multi-ternary).
-func (r *jsxRenderer) renderConditionalGroup(group []*stache.Node) {
+func (r *Renderer) renderConditionalGroup(group []*Node) {
 	// Convert each node into a conditionalBlock
 	blocks := make([]conditionalBlock, len(group))
 	for i, n := range group {
 		blocks[i] = conditionalBlock{
 			Cond:   n.Data,
-			Negate: (n.Type == stache.UnlessNode),
+			Negate: (n.Type == UnlessNode),
 			Body:   n,
 		}
 	}
@@ -200,7 +206,7 @@ func (r *jsxRenderer) renderConditionalGroup(group []*stache.Node) {
 
 // renderComponentNode renders a top-level component node, wrapping children in a React
 // fragment (<>...</>) if multiple children are present.
-func (r *jsxRenderer) renderComponentNode(n *stache.Node) {
+func (r *Renderer) renderComponentNode(n *Node) {
 	needsFragment := numChildren(n) > 1
 	if needsFragment {
 		r.writeIndent()
@@ -210,18 +216,18 @@ func (r *jsxRenderer) renderComponentNode(n *stache.Node) {
 
 	for c := n.FirstChild; c != nil; {
 		// Check if we have a consecutive group of conditionals with the same .Data
-		if c.Type == stache.WhenNode || c.Type == stache.UnlessNode {
-			group := []*stache.Node{}
+		if c.Type == WhenNode || c.Type == UnlessNode {
+			group := []*Node{}
 			cond := c.Data
 
 			for c != nil {
 				// Skip pure-whitespace text nodes
-				if c.Type == stache.TextNode && isAllWhitespace(c.Data) {
+				if c.Type == TextNode && isAllWhitespace(c.Data) {
 					c = c.NextSibling
 					continue
 				}
 				// If next is same condition; group it
-				if (c.Type == stache.WhenNode || c.Type == stache.UnlessNode) && bytes.Equal(c.Data, cond) {
+				if (c.Type == WhenNode || c.Type == UnlessNode) && bytes.Equal(c.Data, cond) {
 					group = append(group, c)
 					c = c.NextSibling
 				} else {
@@ -245,7 +251,7 @@ func (r *jsxRenderer) renderComponentNode(n *stache.Node) {
 }
 
 // renderElementNode renders a normal element.
-func (r *jsxRenderer) renderElementNode(n *stache.Node) {
+func (r *Renderer) renderElementNode(n *Node) {
 	r.writeIndent()
 	r.w.Write([]byte("<"))
 	r.w.Write(n.Data)
@@ -259,10 +265,10 @@ func (r *jsxRenderer) renderElementNode(n *stache.Node) {
 	r.indent++
 
 	for c := n.FirstChild; c != nil; {
-		if c.Type == stache.WhenNode || c.Type == stache.UnlessNode {
-			group := []*stache.Node{}
+		if c.Type == WhenNode || c.Type == UnlessNode {
+			group := []*Node{}
 			cond := c.Data
-			for c != nil && (c.Type == stache.WhenNode || c.Type == stache.UnlessNode) && bytes.Equal(c.Data, cond) {
+			for c != nil && (c.Type == WhenNode || c.Type == UnlessNode) && bytes.Equal(c.Data, cond) {
 				group = append(group, c)
 				c = c.NextSibling
 			}
@@ -285,10 +291,10 @@ func (r *jsxRenderer) renderElementNode(n *stache.Node) {
 //
 //	{ props.foo && ( ... ) }
 //	{ !props.foo && ( ... ) }
-func (r *jsxRenderer) renderConditionalNode(n *stache.Node) {
+func (r *Renderer) renderConditionalNode(n *Node) {
 	r.writeIndent()
 	r.w.Write([]byte("{"))
-	if n.Type == stache.UnlessNode {
+	if n.Type == UnlessNode {
 		r.w.Write([]byte("!"))
 	}
 	r.w.Write([]byte("props."))
@@ -307,7 +313,7 @@ func (r *jsxRenderer) renderConditionalNode(n *stache.Node) {
 // Example:
 //
 //	"Hello, world!"
-func (r *jsxRenderer) renderTextNode(n *stache.Node) {
+func (r *Renderer) renderTextNode(n *Node) {
 	r.writeIndent()
 	r.w.Write(n.Data)
 	r.w.Write([]byte("\n"))
@@ -317,7 +323,7 @@ func (r *jsxRenderer) renderTextNode(n *stache.Node) {
 // Example:
 //
 //	{props.someValue}
-func (r *jsxRenderer) renderVariableNode(n *stache.Node) {
+func (r *Renderer) renderVariableNode(n *Node) {
 	r.writeIndent()
 	r.w.Write([]byte("{props."))
 	r.w.Write(n.Data)
@@ -328,7 +334,7 @@ func (r *jsxRenderer) renderVariableNode(n *stache.Node) {
 // Example:
 //
 //	{/* comment */}
-func (r *jsxRenderer) renderCommentNode(n *stache.Node) {
+func (r *Renderer) renderCommentNode(n *Node) {
 	r.writeIndent()
 	r.w.Write([]byte("{/* "))
 	r.w.Write(n.Data)
@@ -336,21 +342,21 @@ func (r *jsxRenderer) renderCommentNode(n *stache.Node) {
 }
 
 // renderNode is the central switch that dispatches by node type.
-func (r *jsxRenderer) renderNode(n *stache.Node) {
+func (r *Renderer) renderNode(n *Node) {
 	switch n.Type {
-	case stache.TextNode:
+	case TextNode:
 		r.renderTextNode(n)
-	case stache.VariableNode:
+	case VariableNode:
 		r.renderVariableNode(n)
-	case stache.ElementNode:
+	case ElementNode:
 		r.renderElementNode(n)
-	case stache.WhenNode, stache.UnlessNode:
+	case WhenNode, UnlessNode:
 		r.renderConditionalNode(n)
-	case stache.ComponentNode:
+	case ComponentNode:
 		r.renderComponentNode(n)
-	case stache.CommentNode:
+	case CommentNode:
 		r.renderCommentNode(n)
-	case stache.RangeNode:
+	case RangeNode:
 		// TODO: Range/loop not implemented yet
 	default:
 		// No-op
@@ -358,14 +364,14 @@ func (r *jsxRenderer) renderNode(n *stache.Node) {
 }
 
 // renderChildren just calls renderNode on all children in order.
-func (r *jsxRenderer) renderChildren(n *stache.Node) {
+func (r *Renderer) renderChildren(n *Node) {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		r.renderNode(c)
 	}
 }
 
 // writeIndent writes "  " * indentLevel.
-func (r *jsxRenderer) writeIndent() {
+func (r *Renderer) writeIndent() {
 	for range r.indent {
 		r.w.Write([]byte("  "))
 	}
@@ -385,7 +391,7 @@ func isAllWhitespace(b []byte) bool {
 }
 
 // numChildren counts the number of direct children of a node.
-func numChildren(n *stache.Node) int {
+func numChildren(n *Node) int {
 	i := 0
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		i++
