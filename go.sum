@@ -1,5 +1,5 @@
-github.com/tetsuo/fnvtable v0.0.2 h1:wgLynr/lXUNxLfyOH9THoWqHMpCzBdf6kL8a5w6frxo=
-github.com/tetsuo/fnvtable v0.0.2/go.mod h1:ugDfUWaJo4XgUoHZdpfzFJaqB/+HyT3La37jZhJUKJU=
+github.com/tetsuo/fnvtable v0.0.3 h1:ZlTdOQt5WgwC/LbFojbMoqFR127AP/VkDyI8Wp6k2Bo=
+github.com/tetsuo/fnvtable v0.0.3/go.mod h1:ugDfUWaJo4XgUoHZdpfzFJaqB/+HyT3La37jZhJUKJU=
 github.com/tetsuo/toposort v0.0.6 h1:jYisqM2ycMLEreSZZner0fePeY2zsZDPefNVPOMxas4=
 github.com/tetsuo/toposort v0.0.6/go.mod h1:FfiRLBrmDCuAmqDy3HELnaVn2GNJ2sQZBX/UTKUwolE=
 golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d h1:1n1fc535VhN8SYtD4cDUyNlfpAF2ROMM9+11equK3hs=

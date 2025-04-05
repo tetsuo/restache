@@ -2,6 +2,7 @@ package stache
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"slices"
@@ -55,10 +56,15 @@ func ParseFile(path string) (node *Node, err error) {
 	var f *os.File
 	f, err = os.Open(path)
 	if err != nil {
+		err = fmt.Errorf("error opening file %s: %w", path, err)
 		return
 	}
 	defer f.Close()
-	return Parse(f)
+	node, err = Parse(f)
+	if err != nil {
+		err = fmt.Errorf("error parsing file %s: %w", path, err)
+	}
+	return
 }
 
 // initialIM is the first insertion mode used.

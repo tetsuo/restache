@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -108,12 +109,42 @@ func main() {
 
 	for dir, includes := range dirIncludes {
 		if len(includes) == 1 {
-			_, err := stache.ParseFile(filepath.Join(dir, includes[0]))
+			path := includes[0]
+			node, err := stache.ParseFile(filepath.Join(dir, path))
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error parsing file %q: %v\n", includes[0], err)
+				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			continue
+			src := jsx.NewReader(node)
+			ext := filepath.Ext(path)
+			if ext != "" {
+				path = path[:len(path)-len(ext)]
+			}
+			path += ".jsx"
+			if outdir != "" {
+				if !filepath.IsAbs(outdir) {
+					outdir = filepath.Join(baseDir, outdir)
+				}
+				if err := os.MkdirAll(outdir, 0755); err != nil {
+					fmt.Fprintf(os.Stderr, "error creating output directory %q: %v", outdir, err)
+					os.Exit(1)
+				}
+				path = filepath.Join(outdir, path)
+			} else {
+				path = filepath.Join(dir, path)
+			}
+			dst, err := os.Create(path)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error creating file %q: %v\n", path, err)
+				os.Exit(1)
+			}
+			code := 0
+			if _, err = io.Copy(dst, src); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				code = 1
+			}
+			dst.Close()
+			os.Exit(code)
 		}
 		_, err := stache.ParseDir(dir, includes, stache.WithParallelism(parallelism))
 		if err != nil {
