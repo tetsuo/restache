@@ -88,4 +88,69 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
+	baseDir, err := os.Getwd()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	dirIncludes, err := resolveGlobs(baseDir, patterns)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	if len(dirIncludes) == 0 {
+		fmt.Fprintln(os.Stderr, "no files matched the given patterns")
+		os.Exit(1)
+	}
+
+	for dir, includes := range dirIncludes {
+		if len(includes) == 1 {
+			_, err := stache.ParseFile(filepath.Join(dir, includes[0]))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error parsing file %q: %v\n", includes[0], err)
+				os.Exit(1)
+			}
+			continue
+		}
+		_, err := stache.ParseDir(dir, includes, stache.WithParallelism(parallelism))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error parsing dir %q: %v\n", dir, err)
+			os.Exit(1)
+		}
+	}
+}
+
+func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string, err error) {
+	var (
+		matches []string
+		info    os.FileInfo
+		dir     string
+		p       string
+	)
+	dirs = make(map[string][]string, 0)
+	for _, p = range patterns {
+		matches, err = filepath.Glob(filepath.Join(baseDir, p))
+		if err != nil {
+			err = fmt.Errorf("failed to match files with %q: %w", p, err)
+			return
+		}
+		for _, p = range matches {
+			info, err = os.Lstat(p) // will ignore symlinks
+			if err != nil {
+				err = fmt.Errorf("could not lstat file %q: %w", p, err)
+				return
+			}
+			if info.IsDir() {
+				continue
+			}
+			dir = filepath.Dir(p)
+			dirs[dir] = append(dirs[dir], info.Name())
+		}
+	}
+	return
+}
+
 }
