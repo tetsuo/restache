@@ -73,6 +73,9 @@ func main() {
 	n := len(patterns)
 
 	if n == 0 || patterns[0] == "-" {
+		if outdir != "" {
+			fmt.Fprintln(os.Stderr, "WARNING: --outdir option is ignored (no input files)")
+		}
 		node, err := stache.Parse(os.Stdin)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
