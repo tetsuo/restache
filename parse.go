@@ -3,8 +3,10 @@ package stache
 import (
 	"bytes"
 	"io"
+	"os"
 	"slices"
 
+	"github.com/tetsuo/fnvtable"
 	"golang.org/x/net/html/atom"
 )
 
@@ -17,10 +19,6 @@ var voidElements = map[atom.Atom]bool{
 
 type insertionMode func(*parser) bool
 
-type DependencyResolver interface {
-	Get([]byte) (int, bool)
-}
-
 type parser struct {
 	z    *Tokenizer
 	oe   nodeStack
@@ -28,9 +26,39 @@ type parser struct {
 	im   insertionMode
 	tt   TokenType
 	path []PathSegment
-	sc   bool  // indicates self closing token
-	deps []int // found deps
-	dt   DependencyResolver
+	sc   bool            // indicates self closing token
+	dtbl *fnvtable.Table // custom tag lookup table
+	deps []int           // marked dependencies
+}
+
+func newParser(r io.Reader) *parser {
+	return &parser{
+		z:  NewTokenizer(r),
+		im: initialIM,
+		doc: &Node{
+			Type: ComponentNode,
+		},
+	}
+}
+
+// Parse parses a single Node with no dependencies.
+func Parse(r io.Reader) (node *Node, err error) {
+	p := newParser(r)
+	if err = p.parse(); err != nil {
+		return
+	}
+	node = p.doc
+	return
+}
+
+func ParseFile(path string) (node *Node, err error) {
+	var f *os.File
+	f, err = os.Open(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	return Parse(f)
 }
 
 // initialIM is the first insertion mode used.
@@ -74,10 +102,8 @@ func inBodyIM(p *parser) bool {
 			})
 			hasAttr = more
 		}
-		// If a trie of dependencies available, see if tag name is in it:
-		if p.dt != nil {
-			if idx, ok := p.dt.Get(name); ok {
-				// add to dependencies
+		if p.dtbl != nil {
+			if idx, ok := p.dtbl.Lookup(name); ok {
 				p.deps = append(p.deps, idx)
 			}
 		}
@@ -202,26 +228,4 @@ func (p *parser) parse() error {
 		p.parseCurrentToken()
 	}
 	return nil
-}
-
-// Parse parses a single Node with no dependencies.
-func Parse(r io.Reader) (nodes *Node, err error) {
-	nodes, _, err = ParseWithDependencies(r, nil)
-	return
-}
-
-// ParseWithDependencies also tracks references to component indexes in the given trie.
-func ParseWithDependencies(r io.Reader, resolver DependencyResolver) (*Node, []int, error) {
-	p := &parser{
-		z:  NewTokenizer(r),
-		im: initialIM,
-		doc: &Node{
-			Type: ComponentNode,
-		},
-		dt: resolver,
-	}
-	if err := p.parse(); err != nil {
-		return nil, nil, err
-	}
-	return p.doc, p.deps, nil
 }

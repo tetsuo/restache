@@ -1,12 +1,8 @@
-github.com/hashicorp/go-immutable-radix/v2 v2.1.0 h1:CUW5RYIcysz+D3B+l1mDeXrQ7fUvGGCwJfdASSzbrfo=
-github.com/hashicorp/go-immutable-radix/v2 v2.1.0/go.mod h1:hgdqLXA4f6NIjRVisM1TJ9aOJVNRqKZj+xDGF6m7PBw=
-github.com/hashicorp/go-uuid v1.0.3 h1:2gKiV6YVmrJ1i2CKKa9obLvRieoRGviZFL26PcT/Co8=
-github.com/hashicorp/go-uuid v1.0.3/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
-github.com/hashicorp/golang-lru/v2 v2.0.0 h1:Lf+9eD8m5pncvHAOCQj49GSN6aQI8XGfI5OpXNkoWaA=
-github.com/hashicorp/golang-lru/v2 v2.0.0/go.mod h1:QeFd9opnmA6QUJc5vARoKUSoFhyfM2/ZepoAG6RGpeM=
+github.com/tetsuo/fnvtable v0.0.2 h1:wgLynr/lXUNxLfyOH9THoWqHMpCzBdf6kL8a5w6frxo=
+github.com/tetsuo/fnvtable v0.0.2/go.mod h1:ugDfUWaJo4XgUoHZdpfzFJaqB/+HyT3La37jZhJUKJU=
 github.com/tetsuo/toposort v0.0.6 h1:jYisqM2ycMLEreSZZner0fePeY2zsZDPefNVPOMxas4=
 github.com/tetsuo/toposort v0.0.6/go.mod h1:FfiRLBrmDCuAmqDy3HELnaVn2GNJ2sQZBX/UTKUwolE=
-golang.org/x/exp v0.0.0-20221215174704-0915cd710c24 h1:6w3iSY8IIkp5OQtbYj8NeuKG1jS9d+kYaubXqsoOiQ8=
-golang.org/x/exp v0.0.0-20221215174704-0915cd710c24/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
 golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d h1:1n1fc535VhN8SYtD4cDUyNlfpAF2ROMM9+11equK3hs=
 golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
+golang.org/x/sync v0.13.0 h1:AauUjRAJ9OSnvULf/ARrrVywoJDy0YS2AwQ98I37610=
+golang.org/x/sync v0.13.0/go.mod h1:1dzgHSNfp02xaA81J2MS99Qcpr2w7fw1gpm99rleRqA=
