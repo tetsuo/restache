@@ -1,4 +1,4 @@
-package component
+package jsx
 
 import (
 	"bytes"
@@ -19,21 +19,21 @@ const (
 	phaseDone
 )
 
-// Component represents a parsed template file.
-type Component struct {
+// Reader represents a parsed template file.
+type Reader struct {
 	Name string
 	Path string
 	Root *stache.Node
-	Deps []*Component
+	Deps []*Reader
 
 	// Render state
 	phase renderPhase
 	buf   *bytes.Buffer
-	rd    *stache.Renderer
+	rd    *Renderer
 }
 
 // Read implements io.Reader for streaming JSX rendering.
-func (c *Component) Read(p []byte) (int, error) {
+func (c *Reader) Read(p []byte) (int, error) {
 	if c.buf == nil {
 		c.buf = &bytes.Buffer{}
 		c.phase = phaseStart
@@ -66,7 +66,7 @@ func (c *Component) Read(p []byte) (int, error) {
 
 		case phaseBody:
 			if c.rd == nil {
-				c.rd = stache.NewRenderer(c.buf, 2, c.Root)
+				c.rd = NewRenderer(c.buf, 2, c.Root)
 			}
 			if !c.rd.RenderNext() {
 				c.phase = phaseClose
@@ -84,6 +84,4 @@ func (c *Component) Read(p []byte) (int, error) {
 	}
 
 	return c.buf.Read(p)
-}
-
 }

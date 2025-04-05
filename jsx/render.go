@@ -1,20 +1,22 @@
-package stache
+package jsx
 
 import (
 	"bytes"
 	"io"
+
+	"github.com/tetsuo/stache"
 )
 
 type Renderer struct {
 	w        io.Writer
 	indent   int
-	doc      *Node // top-level component node
-	cur      *Node // pointer to current child
-	started  bool  // fragment open
-	finished bool  // fragmend closed
+	doc      *stache.Node // top-level component node
+	cur      *stache.Node // pointer to current child
+	started  bool         // fragment open
+	finished bool         // fragmend closed
 }
 
-func NewRenderer(w io.Writer, indent int, doc *Node) *Renderer {
+func NewRenderer(w io.Writer, indent int, doc *stache.Node) *Renderer {
 	return &Renderer{
 		w:      w,
 		indent: indent,
@@ -54,10 +56,10 @@ func (r *Renderer) RenderNext() bool {
 	r.cur = r.cur.NextSibling // advance pointer
 
 	// Handle conditional group logic
-	if node.Type == WhenNode || node.Type == UnlessNode {
-		group := []*Node{}
+	if node.Type == stache.WhenNode || node.Type == stache.UnlessNode {
+		group := []*stache.Node{}
 		cond := node.Data
-		for node != nil && (node.Type == WhenNode || node.Type == UnlessNode) && bytes.Equal(node.Data, cond) {
+		for node != nil && (node.Type == stache.WhenNode || node.Type == stache.UnlessNode) && bytes.Equal(node.Data, cond) {
 			group = append(group, node)
 			node = node.NextSibling
 			r.cur = node // update current after grouped block
@@ -75,7 +77,7 @@ func (r *Renderer) RenderNext() bool {
 type conditionalBlock struct {
 	Cond   []byte
 	Negate bool
-	Body   *Node
+	Body   *stache.Node
 }
 
 // renderSingleConditionBlock renders a conditional JSX expression.
@@ -165,13 +167,13 @@ func (r *Renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) {
 
 // renderConditionalGroup renders a conditional JSX expression based on the node group.
 // The function selects the appropriate rendering method (single, ternary, or multi-ternary).
-func (r *Renderer) renderConditionalGroup(group []*Node) {
+func (r *Renderer) renderConditionalGroup(group []*stache.Node) {
 	// Convert each node into a conditionalBlock
 	blocks := make([]conditionalBlock, len(group))
 	for i, n := range group {
 		blocks[i] = conditionalBlock{
 			Cond:   n.Data,
-			Negate: (n.Type == UnlessNode),
+			Negate: (n.Type == stache.UnlessNode),
 			Body:   n,
 		}
 	}
@@ -206,7 +208,7 @@ func (r *Renderer) renderConditionalGroup(group []*Node) {
 
 // renderComponentNode renders a top-level component node, wrapping children in a React
 // fragment (<>...</>) if multiple children are present.
-func (r *Renderer) renderComponentNode(n *Node) {
+func (r *Renderer) renderComponentNode(n *stache.Node) {
 	needsFragment := numChildren(n) > 1
 	if needsFragment {
 		r.writeIndent()
@@ -216,18 +218,18 @@ func (r *Renderer) renderComponentNode(n *Node) {
 
 	for c := n.FirstChild; c != nil; {
 		// Check if we have a consecutive group of conditionals with the same .Data
-		if c.Type == WhenNode || c.Type == UnlessNode {
-			group := []*Node{}
+		if c.Type == stache.WhenNode || c.Type == stache.UnlessNode {
+			group := []*stache.Node{}
 			cond := c.Data
 
 			for c != nil {
 				// Skip pure-whitespace text nodes
-				if c.Type == TextNode && isAllWhitespace(c.Data) {
+				if c.Type == stache.TextNode && isAllWhitespace(c.Data) {
 					c = c.NextSibling
 					continue
 				}
 				// If next is same condition; group it
-				if (c.Type == WhenNode || c.Type == UnlessNode) && bytes.Equal(c.Data, cond) {
+				if (c.Type == stache.WhenNode || c.Type == stache.UnlessNode) && bytes.Equal(c.Data, cond) {
 					group = append(group, c)
 					c = c.NextSibling
 				} else {
@@ -251,7 +253,7 @@ func (r *Renderer) renderComponentNode(n *Node) {
 }
 
 // renderElementNode renders a normal element.
-func (r *Renderer) renderElementNode(n *Node) {
+func (r *Renderer) renderElementNode(n *stache.Node) {
 	r.writeIndent()
 	r.w.Write([]byte("<"))
 	r.w.Write(n.Data)
@@ -265,10 +267,10 @@ func (r *Renderer) renderElementNode(n *Node) {
 	r.indent++
 
 	for c := n.FirstChild; c != nil; {
-		if c.Type == WhenNode || c.Type == UnlessNode {
-			group := []*Node{}
+		if c.Type == stache.WhenNode || c.Type == stache.UnlessNode {
+			group := []*stache.Node{}
 			cond := c.Data
-			for c != nil && (c.Type == WhenNode || c.Type == UnlessNode) && bytes.Equal(c.Data, cond) {
+			for c != nil && (c.Type == stache.WhenNode || c.Type == stache.UnlessNode) && bytes.Equal(c.Data, cond) {
 				group = append(group, c)
 				c = c.NextSibling
 			}
@@ -291,10 +293,10 @@ func (r *Renderer) renderElementNode(n *Node) {
 //
 //	{ props.foo && ( ... ) }
 //	{ !props.foo && ( ... ) }
-func (r *Renderer) renderConditionalNode(n *Node) {
+func (r *Renderer) renderConditionalNode(n *stache.Node) {
 	r.writeIndent()
 	r.w.Write([]byte("{"))
-	if n.Type == UnlessNode {
+	if n.Type == stache.UnlessNode {
 		r.w.Write([]byte("!"))
 	}
 	r.w.Write([]byte("props."))
@@ -313,7 +315,7 @@ func (r *Renderer) renderConditionalNode(n *Node) {
 // Example:
 //
 //	"Hello, world!"
-func (r *Renderer) renderTextNode(n *Node) {
+func (r *Renderer) renderTextNode(n *stache.Node) {
 	r.writeIndent()
 	r.w.Write(n.Data)
 	r.w.Write([]byte("\n"))
@@ -323,7 +325,7 @@ func (r *Renderer) renderTextNode(n *Node) {
 // Example:
 //
 //	{props.someValue}
-func (r *Renderer) renderVariableNode(n *Node) {
+func (r *Renderer) renderVariableNode(n *stache.Node) {
 	r.writeIndent()
 	r.w.Write([]byte("{props."))
 	r.w.Write(n.Data)
@@ -334,7 +336,7 @@ func (r *Renderer) renderVariableNode(n *Node) {
 // Example:
 //
 //	{/* comment */}
-func (r *Renderer) renderCommentNode(n *Node) {
+func (r *Renderer) renderCommentNode(n *stache.Node) {
 	r.writeIndent()
 	r.w.Write([]byte("{/* "))
 	r.w.Write(n.Data)
@@ -342,21 +344,21 @@ func (r *Renderer) renderCommentNode(n *Node) {
 }
 
 // renderNode is the central switch that dispatches by node type.
-func (r *Renderer) renderNode(n *Node) {
+func (r *Renderer) renderNode(n *stache.Node) {
 	switch n.Type {
-	case TextNode:
+	case stache.TextNode:
 		r.renderTextNode(n)
-	case VariableNode:
+	case stache.VariableNode:
 		r.renderVariableNode(n)
-	case ElementNode:
+	case stache.ElementNode:
 		r.renderElementNode(n)
-	case WhenNode, UnlessNode:
+	case stache.WhenNode, stache.UnlessNode:
 		r.renderConditionalNode(n)
-	case ComponentNode:
+	case stache.ComponentNode:
 		r.renderComponentNode(n)
-	case CommentNode:
+	case stache.CommentNode:
 		r.renderCommentNode(n)
-	case RangeNode:
+	case stache.RangeNode:
 		// TODO: Range/loop not implemented yet
 	default:
 		// No-op
@@ -364,7 +366,7 @@ func (r *Renderer) renderNode(n *Node) {
 }
 
 // renderChildren just calls renderNode on all children in order.
-func (r *Renderer) renderChildren(n *Node) {
+func (r *Renderer) renderChildren(n *stache.Node) {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		r.renderNode(c)
 	}
@@ -391,7 +393,7 @@ func isAllWhitespace(b []byte) bool {
 }
 
 // numChildren counts the number of direct children of a node.
-func numChildren(n *Node) int {
+func numChildren(n *stache.Node) int {
 	i := 0
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		i++
