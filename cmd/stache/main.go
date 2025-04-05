@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/tetsuo/stache"
-	"github.com/tetsuo/stache/component"
+	"github.com/tetsuo/stache/jsx"
 )
 
 const PROGRAM_NAME = "restache"
@@ -81,8 +81,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		c := &component.Component{Root: node}
-		if _, err = io.Copy(os.Stdout, c); err != nil {
+		src := jsx.NewReader(node)
+		if _, err = io.Copy(os.Stdout, src); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
