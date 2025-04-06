@@ -147,7 +147,7 @@ func main() {
 			dst.Close()
 			os.Exit(code)
 		}
-		_, err := stache.ParseDir(dir, includes, stache.WithParallelism(parallelism))
+		_, err := stache.ParseDir(dir, includes, stache.WithParallelism(min(parallelism, 32)))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error parsing dir %q: %v\n", dir, err)
 			os.Exit(1)
