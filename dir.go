@@ -121,7 +121,7 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 		return nil, err
 	}
 
-	shouldsort := false
+	shouldSort := false
 
 	for i, tagName := range tags {
 		doc := parsers[i].doc
@@ -129,7 +129,7 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 		afters := parsers[i].afters
 		n := len(afters)
 		if n > 0 {
-			shouldsort = true
+			shouldSort = true
 			doc.Attr = make([]Attribute, n)
 			for j, k := range afters {
 				doc.Attr[j] = Attribute{Key: tags[k], Val: stems[k]}
@@ -137,7 +137,7 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 		}
 	}
 
-	if shouldsort {
+	if shouldSort {
 		if err := toposort.BFS(parsers); err != nil {
 			return nil, fmt.Errorf("error sorting files in %s: %w", dir, err)
 		}
