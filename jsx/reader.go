@@ -19,12 +19,8 @@ const (
 	phaseDone
 )
 
-// Reader represents a parsed template file.
 type Reader struct {
-	name string
-	deps []*Reader
-	root *stache.Node
-	// Render state
+	root  *stache.Node
 	phase renderPhase
 	buf   *bytes.Buffer
 	rd    *Renderer
@@ -34,16 +30,14 @@ func NewReader(root *stache.Node) *Reader {
 	if root.Type != stache.ComponentNode {
 		panic("stache: root must be a component node")
 	}
-	return &Reader{root: root}
+	c := &Reader{root: root}
+	c.buf = &bytes.Buffer{}
+	c.phase = phaseStart
+	return c
 }
 
 // Read implements io.Reader for streaming JSX rendering.
 func (c *Reader) Read(p []byte) (int, error) {
-	if c.buf == nil {
-		c.buf = &bytes.Buffer{}
-		c.phase = phaseStart
-	}
-
 	for c.buf.Len() == 0 && c.phase != phaseDone {
 		switch c.phase {
 		case phaseStart:
@@ -51,19 +45,17 @@ func (c *Reader) Read(p []byte) (int, error) {
 
 		case phaseDeps:
 			fmt.Fprintln(c.buf, "import * as React from 'react';")
-			for _, dep := range c.deps {
-				fmt.Fprintf(c.buf, "import %s from \"./%s.jsx\";\n", dep.name, dep.name)
+			for _, attr := range c.root.Attr {
+				fmt.Fprintf(c.buf, "import %s from \"./%s.jsx\";\n", attr.Key, attr.Val)
 			}
-			if len(c.deps) > 0 {
-				fmt.Fprintln(c.buf)
-			}
+			fmt.Fprintln(c.buf)
 			c.phase = phaseOpen
 
 		case phaseOpen:
 			fmt.Fprint(c.buf, "export default function")
-			if c.name != "" {
+			if len(c.root.Data) != 0 {
 				c.buf.WriteRune(' ')
-				c.buf.WriteString(c.name)
+				c.buf.Write(c.root.Data)
 			}
 			fmt.Fprint(c.buf, "(props) {\n")
 			fmt.Fprintln(c.buf, "  return (")
