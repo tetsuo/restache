@@ -7,7 +7,6 @@ import (
 	"os"
 	"slices"
 
-	"github.com/tetsuo/fnvtable"
 	"golang.org/x/net/html/atom"
 )
 
@@ -20,31 +19,38 @@ var voidElements = map[atom.Atom]bool{
 
 type insertionMode func(*parser) bool
 
+type lookupFunc func(s []byte) (int, bool)
+
 type parser struct {
-	z    *Tokenizer
-	oe   nodeStack
-	doc  *Node
-	im   insertionMode
-	tt   TokenType
-	path []PathSegment
-	sc   bool            // indicates self closing token
-	dtbl *fnvtable.Table // custom tag lookup table
-	deps []int           // marked dependencies
+	z      *Tokenizer
+	oe     nodeStack
+	doc    *Node
+	im     insertionMode
+	tt     TokenType
+	path   []PathSegment
+	sc     bool         // indicates self closing token
+	lookup lookupFunc   // dependency lookup func
+	afters map[int]bool // marked dependencies
 }
 
-func newParser(r io.Reader) *parser {
-	return &parser{
-		z:  NewTokenizer(r),
-		im: initialIM,
+func newParser(r io.Reader, lookup lookupFunc) *parser {
+	p := &parser{
+		z:      NewTokenizer(r),
+		im:     initialIM,
+		lookup: lookup,
 		doc: &Node{
 			Type: ComponentNode,
 		},
 	}
+	if p.lookup != nil {
+		p.afters = make(map[int]bool)
+	}
+	return p
 }
 
 // Parse parses a single Node with no dependencies.
 func Parse(r io.Reader) (node *Node, err error) {
-	p := newParser(r)
+	p := newParser(r, nil)
 	if err = p.parse(); err != nil {
 		return
 	}
@@ -108,12 +114,16 @@ func inBodyIM(p *parser) bool {
 			})
 			hasAttr = more
 		}
-		if p.dtbl != nil {
-			if idx, ok := p.dtbl.Lookup(name); ok {
-				p.deps = append(p.deps, idx)
+
+		p.oe.top().AppendChild(elem)
+
+		if p.lookup != nil {
+			if idx, ok := p.lookup(name); ok {
+				if _, ok = p.afters[idx]; !ok {
+					p.afters[idx] = true // Mark dependency
+				}
 			}
 		}
-		p.oe.top().AppendChild(elem)
 
 		// If it's self-closing tag, or void element, don't push onto the stack:
 		if p.sc || voidElements[elem.DataAtom] {
@@ -204,7 +214,7 @@ func inBodyIM(p *parser) bool {
 		return true
 	}
 
-	return false
+	panic(fmt.Sprintf("unknown token type: %d", int(p.tt)))
 }
 
 // parseCurrentTokens call the current insertion mode; it sets the self-closing-tag

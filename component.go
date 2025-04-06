@@ -1,12 +1,13 @@
 package stache
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
+	"slices"
 
 	"github.com/tetsuo/fnvtable"
 	"github.com/tetsuo/toposort"
@@ -25,49 +26,44 @@ func WithParallelism(limit int) Option {
 	}
 }
 
-type Component struct {
-	Name     string
-	FullPath string
-	RelPath  string
-	Doc      *Node
-	Deps     []*Component
+type fileParser struct {
+	doc    *Node
+	file   string
+	lookup lookupFunc
+	afters []int
 }
 
-type depsInfo struct {
-	afters    []int
-	component *Component
-}
-
-func (n depsInfo) Afters() []int {
-	return n.afters
-}
-
-func parseWithDeps(file string, tbl *fnvtable.Table, info *depsInfo) error {
-	f, err := os.Open(file)
+func (fp *fileParser) parse() error {
+	f, err := os.Open(fp.file)
 	if err != nil {
-		return fmt.Errorf("error opening file %s: %w", file, err)
+		return fmt.Errorf("error opening file %s: %w", fp.file, err)
 	}
 	defer f.Close()
 
-	p := newParser(f)
-	p.dtbl = tbl
+	p := newParser(f, fp.lookup)
 	if err := p.parse(); err != nil {
-		return fmt.Errorf("error parsing file %s: %w", file, err)
+		return fmt.Errorf("error parsing file %s: %w", fp.file, err)
 	}
 
-	*info = depsInfo{afters: p.deps, component: &Component{Doc: p.doc, FullPath: file}}
+	fp.afters = slices.Collect(maps.Keys(p.afters))
+	fp.doc = p.doc
 	return nil
+}
+
+func (fp *fileParser) Afters() []int {
+	return fp.afters
 }
 
 // ParseDir reads the provided directory for files listed in includes, parses each file to
 // build a dependency graph, and returns a slice of components in topologically sorted order.
-func ParseDir(dir string, includes []string, opts ...Option) ([]*Component, error) {
-	if len(includes) < 1 {
+func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
+	n := len(includes)
+	if n < 1 {
 		return nil, fmt.Errorf("includes must contain at least one file")
 	}
 
-	tagIndex := make(map[string]int, len(includes))
-	tagNames := make([][]byte, len(includes))
+	stems := make([][]byte, n) // filenames without extensions
+	tags := make([][]byte, n)  // tags are lowercase stems
 
 	for i, file := range includes {
 		if filepath.Base(file) != file {
@@ -81,20 +77,20 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Component, erro
 		if ext != "" {
 			tag = file[:len(file)-len(ext)]
 		}
-		tag, err = sanitizeTagName(tag)
+		stems[i] = []byte(tag)
+		var hasUpper bool
+		hasUpper, err = validateTagName(stems[i])
 		if err != nil {
-			return nil, fmt.Errorf("include entry '%s': %w", file, err)
+			return nil, fmt.Errorf("include entry '%s' %v", file, err)
 		}
-
-		if prev, exists := tagIndex[tag]; exists {
-			return nil, fmt.Errorf("tag name collision: '%s' from both '%q' and '%s'", tag, includes[prev], file)
+		if hasUpper {
+			tags[i] = lower(bytes.Clone(stems[i]))
+		} else {
+			tags[i] = stems[i]
 		}
-
-		tagIndex[tag] = i
-		tagNames[i] = []byte(tag)
 	}
 
-	tbl, err := fnvtable.New(tagNames)
+	tbl, err := fnvtable.New(tags)
 	if err != nil {
 		return nil, err
 	}
@@ -107,19 +103,18 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Component, erro
 	if cfg.parallelism < 1 {
 		cfg.parallelism = runtime.NumCPU()
 	} else {
-		cfg.parallelism = min(len(includes), cfg.parallelism)
+		cfg.parallelism = min(n, cfg.parallelism)
 	}
 
-	depsInfos := make([]depsInfo, len(includes))
+	parsers := make([]*fileParser, n)
 
 	var g errgroup.Group
 	g.SetLimit(cfg.parallelism)
 
 	for i, path := range includes {
 		i, path := i, filepath.Join(dir, path)
-		g.Go(func() error {
-			return parseWithDeps(path, tbl, &depsInfos[i])
-		})
+		parsers[i] = &fileParser{file: path, lookup: tbl.Lookup}
+		g.Go(parsers[i].parse)
 	}
 
 	if err := g.Wait(); err != nil {
@@ -128,62 +123,62 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Component, erro
 
 	shouldsort := false
 
-	for tag, idx := range tagIndex {
-		c := depsInfos[idx].component
-		c.Name = tag
-		c.RelPath = includes[idx]
-		afters := depsInfos[idx].afters
+	for i, tagName := range tags {
+		doc := parsers[i].doc
+		doc.Data = tagName
+		afters := parsers[i].afters
 		n := len(afters)
 		if n > 0 {
 			shouldsort = true
-			c.Deps = make([]*Component, n)
+			doc.Attr = make([]Attribute, n)
 			for j, k := range afters {
-				c.Deps[j] = depsInfos[k].component
+				doc.Attr[j] = Attribute{Key: tags[k], Val: stems[k]}
 			}
 		}
 	}
 
 	if shouldsort {
-		if err := toposort.BFS(depsInfos); err != nil {
+		if err := toposort.BFS(parsers); err != nil {
 			return nil, fmt.Errorf("error sorting files in %s: %w", dir, err)
 		}
 	}
 
-	components := make([]*Component, len(depsInfos))
-	for i, n := range depsInfos {
-		components[i] = n.component
+	nodes := make([]*Node, n)
+	for i, p := range parsers {
+		nodes[i] = p.doc
 	}
 
-	return components, nil
+	return nodes, nil
 }
 
-func validTagRune(r rune) rune {
-	switch {
-	case 'a' <= r && r <= 'z',
-		'A' <= r && r <= 'Z',
-		'0' <= r && r <= '9',
-		r == '-', r == '_':
-		return r
-	default:
-		return -1
+// validateTagName checks if the provided name is valid and returns true if it contains
+// at least one upper case letter.
+func validateTagName(name []byte) (bool, error) {
+	if len(name) == 0 {
+		return false, fmt.Errorf("must have a length")
 	}
+	var hasUpper bool
+	c := name[0]
+	if 'A' <= c && c <= 'Z' {
+		hasUpper = true
+	} else if 'a' > c || c > 'z' {
+		return false, fmt.Errorf("must start with a letter")
+	}
+	for _, c = range name[1:] {
+		if 'A' <= c && c <= 'Z' {
+			hasUpper = true
+		} else if !('a' <= c && c <= 'z' || '0' <= c && c <= '9') {
+			return false, fmt.Errorf("contains invalid character '%c'", c)
+		}
+	}
+	return hasUpper, nil
 }
 
-func sanitizeTagName(name string) (string, error) {
-	if name == "" {
-		return "", errors.New("tag name cannot be empty")
+func lower(b []byte) []byte {
+	for i, c := range b {
+		if 'A' <= c && c <= 'Z' {
+			b[i] = c + 'a' - 'A'
+		}
 	}
-
-	sanitized := strings.Map(validTagRune, name)
-
-	if sanitized == "" {
-		return "", errors.New("tag name contains only invalid characters")
-	}
-
-	first := sanitized[0]
-	if !((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z')) {
-		return "", errors.New("tag name must start with a letter")
-	}
-
-	return strings.ToLower(sanitized), nil
+	return b
 }
