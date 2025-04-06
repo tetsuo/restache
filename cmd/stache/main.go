@@ -115,11 +115,12 @@ func main() {
 				fmt.Fprintln(os.Stderr, err)
 				os.Exit(1)
 			}
-			src := jsx.NewReader(node)
 			ext := filepath.Ext(path)
 			if ext != "" {
 				path = path[:len(path)-len(ext)]
 			}
+			node.Data = []byte(path)
+			src := jsx.NewReader(node)
 			path += ".jsx"
 			if outdir != "" {
 				if !filepath.IsAbs(outdir) {
