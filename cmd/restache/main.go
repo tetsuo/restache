@@ -77,14 +77,7 @@ func main() {
 		if outdir != "" {
 			fmt.Fprintf(os.Stderr, "%s: ignoring --outdir (no input files)\n", PROGRAM_NAME)
 		}
-		node, err := restache.Parse(os.Stdin)
-		if err != nil {
-			fatalf("failed to parse stdin: %v", err)
-		}
-		src := jsx.NewReader(node)
-		if _, err = io.Copy(os.Stdout, src); err != nil {
-			fatalf("failed to write to stdout: %v", err)
-		}
+		compileStdin()
 		os.Exit(0)
 	}
 
@@ -99,42 +92,15 @@ func main() {
 		fatalf("no files matched the provided pattern")
 	}
 
+	if outdir != "" {
+		if !filepath.IsAbs(outdir) {
+			outdir = filepath.Join(baseDir, outdir)
+		}
+	}
+
 	for dir, includes := range dirIncludes {
 		if len(includes) == 1 {
-			path := includes[0]
-			node, err := restache.ParseFile(filepath.Join(dir, path))
-			if err != nil {
-				fatalf("failed to parse file %q: %v", path, err)
-			}
-			ext := filepath.Ext(path)
-			if ext != "" {
-				path = path[:len(path)-len(ext)]
-			}
-			node.Data = []byte(path)
-			src := jsx.NewReader(node)
-			path += ".jsx"
-			if outdir != "" {
-				if !filepath.IsAbs(outdir) {
-					outdir = filepath.Join(baseDir, outdir)
-				}
-				if err := os.MkdirAll(outdir, 0755); err != nil {
-					fatalf("could not create output directory %q: %v", outdir, err)
-				}
-				path = filepath.Join(outdir, path)
-			} else {
-				path = filepath.Join(dir, path)
-			}
-			dst, err := os.Create(path)
-			if err != nil {
-				fatalf("could not create file %q: %v", path, err)
-			}
-			code := 0
-			if _, err = io.Copy(dst, src); err != nil {
-				fmt.Fprintf(os.Stderr, "%s: failed to write output: %v\n", PROGRAM_NAME, err)
-				code = 1
-			}
-			dst.Close()
-			os.Exit(code)
+			os.Exit(compileSingle(dir, outdir, includes[0]))
 		}
 		parallelism = min(parallelism, 32)
 		nodes, err := restache.ParseDir(dir, includes, restache.WithParallelism(parallelism))
@@ -143,6 +109,50 @@ func main() {
 		}
 		fmt.Println(nodes)
 	}
+}
+
+func compileStdin() {
+	node, err := restache.Parse(os.Stdin)
+	if err != nil {
+		fatalf("failed to parse stdin: %v", err)
+	}
+	src := jsx.NewReader(node)
+	if _, err = io.Copy(os.Stdout, src); err != nil {
+		fatalf("failed to write to stdout: %v", err)
+	}
+}
+
+func compileSingle(dir, outdir, filename string) int {
+	node, err := restache.ParseFile(filepath.Join(dir, filename))
+	if err != nil {
+		fatalf("failed to parse file %q: %v", filename, err)
+	}
+	ext := filepath.Ext(filename)
+	if ext != "" {
+		filename = filename[:len(filename)-len(ext)]
+	}
+	node.Data = []byte(filename)
+	src := jsx.NewReader(node)
+	filename += ".jsx"
+	if outdir != "" {
+		if err := os.MkdirAll(outdir, 0755); err != nil {
+			fatalf("could not create output directory %q: %v", outdir, err)
+		}
+		filename = filepath.Join(outdir, filename)
+	} else {
+		filename = filepath.Join(dir, filename)
+	}
+	dst, err := os.Create(filename)
+	if err != nil {
+		fatalf("could not create file %q: %v", filename, err)
+	}
+	code := 0
+	if _, err = io.Copy(dst, src); err != nil {
+		fmt.Fprintf(os.Stderr, "%s: failed to write output: %v\n", PROGRAM_NAME, err)
+		code = 1
+	}
+	dst.Close()
+	return code
 }
 
 func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) {
