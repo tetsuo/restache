@@ -37,9 +37,10 @@ type componentEntry struct {
 	afters []int      // collected dependency indexes
 }
 
+// componentEntry parses a template with dependencies; it implements toposort.Vertex.
 func newComponentEntry(dir, path string) (*componentEntry, error) {
 	if filepath.Base(path) != path {
-		return nil, fmt.Errorf("include path '%s' is not a basename", path)
+		return nil, fmt.Errorf("input %q must be a filename", path)
 	}
 	entry := &componentEntry{ext: filepath.Ext(path)}
 	if entry.ext != "" {
@@ -47,11 +48,13 @@ func newComponentEntry(dir, path string) (*componentEntry, error) {
 	} else {
 		entry.stem = []byte(path)
 	}
-
+	if len(entry.stem) == 0 {
+		return nil, fmt.Errorf("input filename %q is not valid", path)
+	}
 	var hasUpper bool
 	hasUpper, err := validateTagName(entry.stem)
 	if err != nil {
-		return nil, fmt.Errorf("include path '%s' %v", path, err)
+		return nil, fmt.Errorf("input filename %q %v", path, err)
 	}
 
 	if hasUpper {
@@ -69,13 +72,13 @@ func newComponentEntry(dir, path string) (*componentEntry, error) {
 func (e *componentEntry) parse() error {
 	f, err := os.Open(e.path)
 	if err != nil {
-		return fmt.Errorf("error opening file %s: %w", e.path, err)
+		return fmt.Errorf("could not open file %q: %w", e.path, err)
 	}
 	defer f.Close()
 
 	p := newParser(f, e.lookup)
 	if err := p.parse(); err != nil {
-		return fmt.Errorf("error parsing file %s: %w", e.path, err)
+		return fmt.Errorf("failed to parse file %q: %w", e.path, err)
 	}
 
 	e.doc = p.doc
@@ -109,7 +112,7 @@ func buildDependencyTable(entries []*componentEntry, n int) (*fnvtable.Table, er
 func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 	n := len(includes)
 	if n < 1 {
-		return nil, fmt.Errorf("includes must contain at least one file")
+		return nil, fmt.Errorf("no input files provided")
 	}
 
 	var err error
@@ -161,6 +164,8 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 
 	if sort {
 		if err := toposort.BFS(entries); err != nil {
+			// TODO: will detect recursive entries earlier; this only returns ErrCircular,
+			// should rather panic after recursive detection.
 			return nil, fmt.Errorf("error sorting files in %s: %w", dir, err)
 		}
 	}
@@ -176,9 +181,6 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 // validateTagName checks if the provided name is valid and returns true if it contains
 // at least one upper case letter.
 func validateTagName(name []byte) (bool, error) {
-	if len(name) == 0 {
-		return false, fmt.Errorf("must have a length")
-	}
 	var hasUpper bool
 	c := name[0]
 	if 'A' <= c && c <= 'Z' {
@@ -190,7 +192,7 @@ func validateTagName(name []byte) (bool, error) {
 		if 'A' <= c && c <= 'Z' {
 			hasUpper = true
 		} else if !('a' <= c && c <= 'z' || '0' <= c && c <= '9') {
-			return false, fmt.Errorf("contains invalid character '%c'", c)
+			return false, fmt.Errorf("contains invalid character %q", c)
 		}
 	}
 	return hasUpper, nil
