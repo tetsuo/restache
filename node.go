@@ -1,4 +1,4 @@
-package stache
+package restache
 
 import (
 	"bytes"
@@ -48,7 +48,7 @@ type Node struct {
 // It will panic if newChild already has a parent or siblings.
 func (n *Node) InsertBefore(newChild, oldChild *Node) {
 	if newChild.Parent != nil || newChild.PrevSibling != nil || newChild.NextSibling != nil {
-		panic("stache: InsertBefore called for an attached child Node")
+		panic("restache: InsertBefore called for an attached child Node")
 	}
 	var prev, next *Node
 	if oldChild != nil {
@@ -76,7 +76,7 @@ func (n *Node) InsertBefore(newChild, oldChild *Node) {
 // It will panic if c already has a parent or siblings.
 func (n *Node) AppendChild(c *Node) {
 	if c.Parent != nil || c.PrevSibling != nil || c.NextSibling != nil {
-		panic("stache: AppendChild called for an attached child Node")
+		panic("restache: AppendChild called for an attached child Node")
 	}
 	last := n.LastChild
 	if last != nil {
@@ -95,7 +95,7 @@ func (n *Node) AppendChild(c *Node) {
 // It will panic if c's parent is not n.
 func (n *Node) RemoveChild(c *Node) {
 	if c.Parent != n {
-		panic("stache: RemoveChild called for a non-child Node")
+		panic("restache: RemoveChild called for a non-child Node")
 	}
 	if n.FirstChild == c {
 		n.FirstChild = c.NextSibling

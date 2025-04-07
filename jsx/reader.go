@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/tetsuo/stache"
+	"github.com/tetsuo/restache"
 )
 
 type renderPhase int
@@ -20,15 +20,15 @@ const (
 )
 
 type Reader struct {
-	root  *stache.Node
+	root  *restache.Node
 	phase renderPhase
 	buf   *bytes.Buffer
 	rd    *Renderer
 }
 
-func NewReader(root *stache.Node) *Reader {
-	if root.Type != stache.ComponentNode {
-		panic("stache: root must be a component node")
+func NewReader(root *restache.Node) *Reader {
+	if root.Type != restache.ComponentNode {
+		panic("restache: root must be a component node")
 	}
 	c := &Reader{root: root}
 	c.buf = &bytes.Buffer{}
@@ -82,3 +82,4 @@ func (c *Reader) Read(p []byte) (int, error) {
 
 	return c.buf.Read(p)
 }
+

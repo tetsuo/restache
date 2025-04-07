@@ -1,4 +1,4 @@
-module github.com/tetsuo/stache
+module github.com/tetsuo/restache
 
 go 1.24.2
 

@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/tetsuo/stache"
-	"github.com/tetsuo/stache/jsx"
+	"github.com/tetsuo/restache"
+	"github.com/tetsuo/restache/jsx"
 )
 
 const PROGRAM_NAME = "restache"
@@ -77,7 +77,7 @@ func main() {
 		if outdir != "" {
 			fmt.Fprintf(os.Stderr, "%s: ignoring --outdir (no input files)\n", PROGRAM_NAME)
 		}
-		node, err := stache.Parse(os.Stdin)
+		node, err := restache.Parse(os.Stdin)
 		if err != nil {
 			fatalf("failed to parse stdin: %v", err)
 		}
@@ -102,7 +102,7 @@ func main() {
 	for dir, includes := range dirIncludes {
 		if len(includes) == 1 {
 			path := includes[0]
-			node, err := stache.ParseFile(filepath.Join(dir, path))
+			node, err := restache.ParseFile(filepath.Join(dir, path))
 			if err != nil {
 				fatalf("failed to parse file %q: %v", path, err)
 			}
@@ -137,7 +137,7 @@ func main() {
 			os.Exit(code)
 		}
 		parallelism = min(parallelism, 32)
-		nodes, err := stache.ParseDir(dir, includes, stache.WithParallelism(parallelism))
+		nodes, err := restache.ParseDir(dir, includes, restache.WithParallelism(parallelism))
 		if err != nil {
 			fatalf("failed to parse directory %q: %v", dir, err)
 		}
@@ -175,4 +175,25 @@ func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) 
 func fatalf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "%s: %s\n", PROGRAM_NAME, fmt.Sprintf(format, args...))
 	os.Exit(1)
+}
+
+var sep = string(filepath.Separator)
+
+func commonBaseDir(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+
+	segments := strings.Split(filepath.Clean(paths[0]), sep)
+	for _, path := range paths[1:] {
+		curr := strings.Split(filepath.Clean(path), sep)
+		n := min(len(segments), len(curr))
+		i := 0
+		for i < n && segments[i] == curr[i] {
+			i++
+		}
+		segments = segments[:i]
+	}
+
+	return sep + filepath.Join(segments...)
 }

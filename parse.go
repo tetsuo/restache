@@ -1,4 +1,4 @@
-package stache
+package restache
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package stache_test
+package restache_test
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tetsuo/stache"
+	"github.com/tetsuo/restache"
 )
 
 func TestParse(t *testing.T) {
@@ -14,7 +14,7 @@ func TestParse(t *testing.T) {
 	for _, tc := range buildTestcases(t, file) {
 		t.Run(fmt.Sprintf("%s L%d", file, tc.line), func(t *testing.T) {
 			r := strings.NewReader(tc.data)
-			root, err := stache.Parse(r)
+			root, err := restache.Parse(r)
 			if err != nil {
 				t.Fatalf("Parse error: %v", err)
 			}
@@ -29,7 +29,7 @@ func TestParse(t *testing.T) {
 	}
 
 	t.Run("faulty reader", func(t *testing.T) {
-		node, err := stache.Parse(&errorReader{})
+		node, err := restache.Parse(&errorReader{})
 		if err.Error() != "test error" {
 			t.Errorf("expected test error, got %v", err)
 		}
@@ -39,7 +39,7 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("skip empty text", func(t *testing.T) {
-		root, err := stache.Parse(strings.NewReader("  "))
+		root, err := restache.Parse(strings.NewReader("  "))
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
@@ -51,7 +51,7 @@ func TestParse(t *testing.T) {
 	})
 }
 
-func dumpResolvedTree(n *stache.Node) string {
+func dumpResolvedTree(n *restache.Node) string {
 	var b strings.Builder
 	b.WriteString("[] [ ")
 	dumpResolvedNode(&b, n, 0)
@@ -59,28 +59,28 @@ func dumpResolvedTree(n *stache.Node) string {
 	return b.String()
 }
 
-func dumpResolvedNode(b *strings.Builder, n *stache.Node, indent int) {
+func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		indentLine(b, indent)
 
 		switch c.Type {
-		case stache.TextNode:
+		case restache.TextNode:
 			b.WriteString(`text "`)
 			b.Write(c.Data)
 			b.WriteString(`"`)
 
-		case stache.CommentNode:
+		case restache.CommentNode:
 			b.WriteString(`comment "`)
 			b.Write(c.Data)
 			b.WriteString(`"`)
 
-		case stache.VariableNode:
+		case restache.VariableNode:
 			b.WriteString(`var `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
 			b.Write(c.Data)
 
-		case stache.WhenNode:
+		case restache.WhenNode:
 			b.WriteString(`when `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
@@ -91,7 +91,7 @@ func dumpResolvedNode(b *strings.Builder, n *stache.Node, indent int) {
 			indentLine(b, indent)
 			b.WriteString(`]`)
 
-		case stache.UnlessNode:
+		case restache.UnlessNode:
 			b.WriteString(`unless `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
@@ -102,7 +102,7 @@ func dumpResolvedNode(b *strings.Builder, n *stache.Node, indent int) {
 			indentLine(b, indent)
 			b.WriteString(`]`)
 
-		case stache.RangeNode:
+		case restache.RangeNode:
 			b.WriteString(`range `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
@@ -113,7 +113,7 @@ func dumpResolvedNode(b *strings.Builder, n *stache.Node, indent int) {
 			indentLine(b, indent)
 			b.WriteString(`]`)
 
-		case stache.ElementNode:
+		case restache.ElementNode:
 			b.Write(c.Data)     // tag name
 			b.WriteString(" [") // attributes
 			for j, attr := range c.Attr {
@@ -164,7 +164,7 @@ func dumpResolvedNode(b *strings.Builder, n *stache.Node, indent int) {
 	}
 }
 
-func writeResolvedPath(b *strings.Builder, n *stache.Node) {
+func writeResolvedPath(b *strings.Builder, n *restache.Node) {
 	for i, seg := range n.Path {
 		if i > 0 {
 			b.WriteByte('.')

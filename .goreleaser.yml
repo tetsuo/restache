@@ -1,12 +1,12 @@
-project_name: stache
+project_name: restache
 
 before:
   hooks:
     - go mod tidy -v
 
 builds:
-  - id: stache
-    main: ./main.go
+  - id: restache
+    main: ./cmd/restache/main.go
     flags:
       - -trimpath
       - -tags=netgo
@@ -26,8 +26,8 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
 
 archives:
-  - id: stache
-    name_template: "stache-{{.Version}}-{{.Os}}-{{.Arch}}{{ if .Arm }}v{{.Arm }}{{ end }}"
+  - id: restache
+    name_template: "restache-{{.Version}}-{{.Os}}-{{.Arch}}{{ if .Arm }}v{{.Arm }}{{ end }}"
     format: tar.gz
 
 checksum:

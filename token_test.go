@@ -1,4 +1,4 @@
-package stache_test
+package restache_test
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tetsuo/stache"
+	"github.com/tetsuo/restache"
 )
 
 type testCase struct {
@@ -30,12 +30,12 @@ func TestTokenizer(t *testing.T) {
 	for _, tc := range buildTestcases(t, file) {
 		t.Run(fmt.Sprintf("%s L%d", file, tc.line), func(t *testing.T) {
 			r := strings.NewReader(tc.data)
-			z := stache.NewTokenizer(r)
+			z := restache.NewTokenizer(r)
 
 			var ops []string
 			for {
 				tt := z.Next()
-				if tt == stache.ErrorToken {
+				if tt == restache.ErrorToken {
 					if err := z.Err(); err != io.EOF {
 						t.Errorf("expected io.EOF, got %v", err)
 					}
@@ -44,9 +44,9 @@ func TestTokenizer(t *testing.T) {
 				var op string
 
 				switch tt {
-				case stache.StartTagToken, stache.SelfClosingTagToken:
+				case restache.StartTagToken, restache.SelfClosingTagToken:
 					tagName, hasAttr := z.TagName()
-					if tt == stache.StartTagToken {
+					if tt == restache.StartTagToken {
 						op += "open(" + string(tagName)
 					} else {
 						op += "openclose(" + string(tagName)
@@ -73,28 +73,28 @@ func TestTokenizer(t *testing.T) {
 						}
 					}
 					op += ")"
-				case stache.EndTagToken:
+				case restache.EndTagToken:
 					tagName, _ := z.TagName()
 					op += "close(" + string(tagName) + ")"
-				case stache.WhenToken:
+				case restache.WhenToken:
 					controlName := z.ControlName()
 					op += "when(" + string(controlName) + ")"
-				case stache.UnlessToken:
+				case restache.UnlessToken:
 					controlName := z.ControlName()
 					op += "unless(" + string(controlName) + ")"
-				case stache.RangeToken:
+				case restache.RangeToken:
 					controlName := z.ControlName()
 					op += "range(" + string(controlName) + ")"
-				case stache.EndControlToken:
+				case restache.EndControlToken:
 					controlName := z.ControlName()
 					op += "endctl(" + string(controlName) + ")"
-				case stache.VariableToken:
+				case restache.VariableToken:
 					varName := z.Raw()
 					op += "expr(" + string(varName) + ")"
-				case stache.CommentToken:
+				case restache.CommentToken:
 					comment := z.Comment()
 					op += "comment(" + string(comment) + ")"
-				case stache.TextToken:
+				case restache.TextToken:
 					text := z.Raw()
 					if len(bytes.TrimSpace(text)) == 0 {
 						continue
@@ -112,10 +112,10 @@ func TestTokenizer(t *testing.T) {
 	}
 
 	t.Run("call after error", func(t *testing.T) {
-		z := stache.NewTokenizer(strings.NewReader(""))
+		z := restache.NewTokenizer(strings.NewReader(""))
 		for range 2 {
 			tt := z.Next()
-			if tt != stache.ErrorToken {
+			if tt != restache.ErrorToken {
 				t.Errorf("expected ErrorToken, got %v", tt)
 			}
 			if err := z.Err(); err != io.EOF {
@@ -125,9 +125,9 @@ func TestTokenizer(t *testing.T) {
 	})
 
 	t.Run("faulty reader", func(t *testing.T) {
-		z := stache.NewTokenizer(&errorReader{})
+		z := restache.NewTokenizer(&errorReader{})
 		tt := z.Next()
-		if tt != stache.ErrorToken {
+		if tt != restache.ErrorToken {
 			t.Errorf("expected ErrorToken, got %v", tt)
 		}
 		if err := z.Err().Error(); err != "test error" {
