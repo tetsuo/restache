@@ -82,3 +82,7 @@ func (c *Reader) Read(p []byte) (int, error) {
 
 	return c.buf.Read(p)
 }
+
+func (c *Reader) WriteTo(w io.Writer) (int64, error) {
+	return c.buf.WriteTo(w)
+}
