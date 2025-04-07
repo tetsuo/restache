@@ -26,32 +26,82 @@ func WithParallelism(limit int) Option {
 	}
 }
 
-type fileParser struct {
-	doc    *Node
-	file   string
-	lookup lookupFunc
-	afters []int
+type componentEntry struct {
+	path string // full path (e.g. /foo/Bar.stache)
+	ext  string // extension (e.g. .stache)
+	stem []byte // filename without extension (e.g. Bar)
+	tag  []byte // lowercase stem (e.g. bar)
+
+	doc    *Node      // the root component node
+	lookup lookupFunc // dependency lookup
+	afters []int      // collected dependency indexes
 }
 
-func (fp *fileParser) parse() error {
-	f, err := os.Open(fp.file)
+func newComponentEntry(dir, path string) (*componentEntry, error) {
+	if filepath.Base(path) != path {
+		return nil, fmt.Errorf("include path '%s' is not a basename", path)
+	}
+	entry := &componentEntry{ext: filepath.Ext(path)}
+	if entry.ext != "" {
+		entry.stem = []byte(path[:len(path)-len(entry.ext)])
+	} else {
+		entry.stem = []byte(path)
+	}
+
+	var hasUpper bool
+	hasUpper, err := validateTagName(entry.stem)
 	if err != nil {
-		return fmt.Errorf("error opening file %s: %w", fp.file, err)
+		return nil, fmt.Errorf("include path '%s' %v", path, err)
+	}
+
+	if hasUpper {
+		// Clone and lowercase when the stem contains an uppercase char
+		entry.tag = lower(bytes.Clone(entry.stem))
+	} else {
+		entry.tag = entry.stem
+	}
+
+	entry.path = filepath.Join(dir, path)
+
+	return entry, nil
+}
+
+func (e *componentEntry) parse() error {
+	f, err := os.Open(e.path)
+	if err != nil {
+		return fmt.Errorf("error opening file %s: %w", e.path, err)
 	}
 	defer f.Close()
 
-	p := newParser(f, fp.lookup)
+	p := newParser(f, e.lookup)
 	if err := p.parse(); err != nil {
-		return fmt.Errorf("error parsing file %s: %w", fp.file, err)
+		return fmt.Errorf("error parsing file %s: %w", e.path, err)
 	}
 
-	fp.afters = slices.Collect(maps.Keys(p.afters))
-	fp.doc = p.doc
+	e.doc = p.doc
+	e.doc.Data = e.tag
+	e.doc.Path = []PathSegment{{Key: e.stem}, {Key: []byte(e.ext)}}
+
+	e.afters = slices.Collect(maps.Keys(p.afters))
+	e.doc.Attr = make([]Attribute, len(e.afters))
+
 	return nil
 }
 
-func (fp *fileParser) Afters() []int {
+func (fp *componentEntry) Afters() []int {
 	return fp.afters
+}
+
+func buildDependencyTable(entries []*componentEntry, n int) (*fnvtable.Table, error) {
+	components := make([][]byte, n)
+	for i, e := range entries {
+		components[i] = e.tag
+	}
+	tbl, err := fnvtable.New(components)
+	if err != nil {
+		return nil, err
+	}
+	return tbl, nil
 }
 
 // ParseDir reads the provided directory for files listed in includes, parses each file to
@@ -62,90 +112,62 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 		return nil, fmt.Errorf("includes must contain at least one file")
 	}
 
-	stems := make([][]byte, n) // filenames without extensions
-	tags := make([][]byte, n)  // tags are lowercase stems
-
-	for i, file := range includes {
-		if filepath.Base(file) != file {
-			return nil, fmt.Errorf("include entry '%s' is not a basename", file)
-		}
-		var (
-			tag = file
-			err error
-		)
-		ext := filepath.Ext(file)
-		if ext != "" {
-			tag = file[:len(file)-len(ext)]
-		}
-		stems[i] = []byte(tag)
-		var hasUpper bool
-		hasUpper, err = validateTagName(stems[i])
+	var err error
+	entries := make([]*componentEntry, n)
+	for i, path := range includes {
+		entries[i], err = newComponentEntry(dir, path)
 		if err != nil {
-			return nil, fmt.Errorf("include entry '%s' %v", file, err)
+			return nil, err
 		}
-		if hasUpper {
-			tags[i] = lower(bytes.Clone(stems[i]))
-		} else {
-			tags[i] = stems[i]
-		}
-	}
-
-	tbl, err := fnvtable.New(tags)
-	if err != nil {
-		return nil, err
 	}
 
 	cfg := config{}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
-
 	if cfg.parallelism < 1 {
 		cfg.parallelism = runtime.NumCPU()
 	} else {
 		cfg.parallelism = min(n, cfg.parallelism)
 	}
 
-	parsers := make([]*fileParser, n)
-
 	var g errgroup.Group
 	g.SetLimit(cfg.parallelism)
 
-	for i, path := range includes {
-		i, path := i, filepath.Join(dir, path)
-		parsers[i] = &fileParser{file: path, lookup: tbl.Lookup}
-		g.Go(parsers[i].parse)
+	deps, err := buildDependencyTable(entries, n)
+	if err != nil {
+		return nil, err
 	}
 
+	for _, e := range entries {
+		e.lookup = deps.Lookup
+		g.Go(e.parse)
+	}
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
-	shouldSort := false
+	sort := false
 
-	for i, tagName := range tags {
-		doc := parsers[i].doc
-		doc.Data = tagName
-		afters := parsers[i].afters
-		n := len(afters)
-		if n > 0 {
-			shouldSort = true
-			doc.Attr = make([]Attribute, n)
-			for j, k := range afters {
-				doc.Attr[j] = Attribute{Key: tags[k], Val: stems[k]}
+	// Before sorting collect imports:
+	for _, e := range entries {
+		if e.doc.Attr != nil {
+			for i, other := range e.afters {
+				e.doc.Attr[i] = Attribute{Key: entries[other].tag, Val: entries[other].stem}
 			}
+			sort = true
 		}
 	}
 
-	if shouldSort {
-		if err := toposort.BFS(parsers); err != nil {
+	if sort {
+		if err := toposort.BFS(entries); err != nil {
 			return nil, fmt.Errorf("error sorting files in %s: %w", dir, err)
 		}
 	}
 
 	nodes := make([]*Node, n)
-	for i, p := range parsers {
-		nodes[i] = p.doc
+	for i, entry := range entries {
+		nodes[i] = entry.doc
 	}
 
 	return nodes, nil
