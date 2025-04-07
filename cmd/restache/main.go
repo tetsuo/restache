@@ -147,7 +147,7 @@ func emitFile(dir, outdir, file string) {
 	if ext != "" {
 		file = file[:len(file)-len(ext)]
 	}
-	node.Data = []byte(file)
+	node.Data = file
 	file += ".jsx"
 	if outdir != "" {
 		file = filepath.Join(outdir, file)
@@ -181,7 +181,7 @@ func emitModule(dir, outdir string, files []string, parallelism int) {
 	for _, node := range nodes {
 		node := node
 		g.Go(func() error {
-			outfile := filepath.Join(outdir, string(node.Path[:len(node.Path)-1][0].Key)+".jsx")
+			outfile := filepath.Join(outdir, node.Path[:len(node.Path)-1][0].Key) + ".jsx"
 			dst, err := os.Create(outfile)
 			if err != nil {
 				return fmt.Errorf("could not create file %q: %v", outfile, err)

@@ -1,7 +1,6 @@
 package restache_test
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -66,25 +65,25 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 		switch c.Type {
 		case restache.TextNode:
 			b.WriteString(`text "`)
-			b.Write(c.Data)
+			b.WriteString(c.Data)
 			b.WriteString(`"`)
 
 		case restache.CommentNode:
 			b.WriteString(`comment "`)
-			b.Write(c.Data)
+			b.WriteString(c.Data)
 			b.WriteString(`"`)
 
 		case restache.VariableNode:
 			b.WriteString(`var `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
-			b.Write(c.Data)
+			b.WriteString(c.Data)
 
 		case restache.WhenNode:
 			b.WriteString(`when `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
-			b.Write(c.Data)
+			b.WriteString(c.Data)
 			b.WriteString(` [`)
 			b.WriteByte('\n')
 			dumpResolvedNode(b, c, indent+2)
@@ -95,7 +94,7 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 			b.WriteString(`unless `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
-			b.Write(c.Data)
+			b.WriteString(c.Data)
 			b.WriteString(` [`)
 			b.WriteByte('\n')
 			dumpResolvedNode(b, c, indent+2)
@@ -106,7 +105,7 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 			b.WriteString(`range `)
 			writeResolvedPath(b, c)
 			b.WriteByte('.')
-			b.Write(c.Data)
+			b.WriteString(c.Data)
 			b.WriteString(` [`)
 			b.WriteByte('\n')
 			dumpResolvedNode(b, c, indent+2)
@@ -114,13 +113,13 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 			b.WriteString(`]`)
 
 		case restache.ElementNode:
-			b.Write(c.Data)     // tag name
-			b.WriteString(" [") // attributes
+			b.WriteString(c.Data) // tag name
+			b.WriteString(" [")   // attributes
 			for j, attr := range c.Attr {
 				if j > 0 {
 					b.WriteString(", ")
 				}
-				b.Write(attr.Key)
+				b.WriteString(attr.Key)
 				if len(attr.Val) > 0 {
 					b.WriteString(" ")
 					if attr.IsExpr {
@@ -129,20 +128,20 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 							if i > 0 {
 								b.WriteByte('.')
 							}
-							b.Write(seg.Key)
+							b.WriteString(seg.Key)
 							if seg.IsRange {
 								b.WriteString(".#")
 							}
 						}
 
-						segments := bytes.Split(attr.Val, []byte("."))
+						segments := strings.Split(attr.Val, ".")
 						for _, seg := range segments {
 							b.WriteByte('.')
-							b.Write(seg)
+							b.WriteString(seg)
 						}
 					} else {
 						b.WriteString(`text "`)
-						b.Write(attr.Val)
+						b.WriteString(attr.Val)
 						b.WriteString(`"`)
 					}
 				}
@@ -169,7 +168,7 @@ func writeResolvedPath(b *strings.Builder, n *restache.Node) {
 		if i > 0 {
 			b.WriteByte('.')
 		}
-		b.Write(seg.Key)
+		b.WriteString(seg.Key)
 		if seg.IsRange {
 			b.WriteString(".#")
 		}

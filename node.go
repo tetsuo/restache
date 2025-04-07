@@ -1,8 +1,6 @@
 package restache
 
 import (
-	"bytes"
-
 	"golang.org/x/net/html/atom"
 )
 
@@ -21,13 +19,13 @@ const (
 )
 
 type Attribute struct {
-	Key    []byte
-	Val    []byte
+	Key    string
+	Val    string
 	IsExpr bool
 }
 
 type PathSegment struct {
-	Key     []byte
+	Key     string
 	IsRange bool
 }
 
@@ -36,7 +34,7 @@ type Node struct {
 
 	Type     NodeType
 	DataAtom atom.Atom
-	Data     []byte
+	Data     string
 	Attr     []Attribute
 	Path     []PathSegment
 }
@@ -136,7 +134,7 @@ func (s *nodeStack) top() *Node {
 func (s *nodeStack) popUntil(a atom.Atom, name []byte) bool {
 	for i := len(*s) - 1; i >= 0; i-- {
 		n := (*s)[i]
-		if (a != 0 && n.DataAtom == a) || (a == 0 && bytes.Equal(n.Data, name)) {
+		if (a != 0 && n.DataAtom == a) || (a == 0 && equal(n.Data, name)) {
 			*s = (*s)[:i]
 			return true
 		}
@@ -148,9 +146,21 @@ func (s *nodeStack) popControl(name []byte) (*Node, bool) {
 	for len(*s) > 1 {
 		n := s.pop()
 		if (n.Type == RangeNode || n.Type == WhenNode || n.Type == UnlessNode) &&
-			bytes.Equal(n.Data, name) {
+			equal(n.Data, name) {
 			return n, true
 		}
 	}
 	return nil, false
+}
+
+func equal(a string, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }

@@ -2,13 +2,12 @@ package jsx
 
 import (
 	"bytes"
-	"io"
 
 	"github.com/tetsuo/restache"
 )
 
 type Renderer struct {
-	w        io.Writer
+	w        *bytes.Buffer
 	indent   int
 	doc      *restache.Node // top-level component node
 	cur      *restache.Node // pointer to current child
@@ -16,7 +15,7 @@ type Renderer struct {
 	finished bool           // fragmend closed
 }
 
-func NewRenderer(w io.Writer, indent int, doc *restache.Node) *Renderer {
+func NewRenderer(w *bytes.Buffer, indent int, doc *restache.Node) *Renderer {
 	return &Renderer{
 		w:      w,
 		indent: indent,
@@ -33,7 +32,7 @@ func (r *Renderer) RenderNext() bool {
 		// First call; open fragment if needed
 		if numChildren(r.doc) > 1 {
 			r.writeIndent()
-			r.w.Write([]byte("<>\n"))
+			r.w.WriteString("<>\n")
 			r.indent++
 		}
 		r.cur = r.doc.FirstChild
@@ -45,7 +44,7 @@ func (r *Renderer) RenderNext() bool {
 		if numChildren(r.doc) > 1 {
 			r.indent--
 			r.writeIndent()
-			r.w.Write([]byte("</>\n"))
+			r.w.WriteString("</>\n")
 		}
 		r.finished = true
 		return false
@@ -59,7 +58,7 @@ func (r *Renderer) RenderNext() bool {
 	if node.Type == restache.WhenNode || node.Type == restache.UnlessNode {
 		group := []*restache.Node{}
 		cond := node.Data
-		for node != nil && (node.Type == restache.WhenNode || node.Type == restache.UnlessNode) && bytes.Equal(node.Data, cond) {
+		for node != nil && (node.Type == restache.WhenNode || node.Type == restache.UnlessNode) && node.Data == cond {
 			group = append(group, node)
 			node = node.NextSibling
 			r.cur = node // update current after grouped block
@@ -75,7 +74,7 @@ func (r *Renderer) RenderNext() bool {
 
 // conditionalBlock is a small struct for when/unless blocks in a group.
 type conditionalBlock struct {
-	Cond   []byte
+	Cond   string
 	Negate bool
 	Body   *restache.Node
 }
@@ -90,20 +89,20 @@ type conditionalBlock struct {
 //	{ !props.foo && ( ... ) }
 func (r *Renderer) renderSingleConditionBlock(b *conditionalBlock) {
 	r.writeIndent()
-	r.w.Write([]byte("{"))
+	r.w.WriteString("{")
 	if b.Negate {
-		r.w.Write([]byte("!"))
+		r.w.WriteString("!")
 	}
-	r.w.Write([]byte("props."))
-	r.w.Write(b.Cond)
-	r.w.Write([]byte(" && (\n"))
+	r.w.WriteString("props.")
+	r.w.WriteString(b.Cond)
+	r.w.WriteString(" && (\n")
 
 	r.indent++
 	r.renderChildren(b.Body)
 	r.indent--
 
 	r.writeIndent()
-	r.w.Write([]byte(")}\n"))
+	r.w.WriteString(")}\n")
 }
 
 // renderTwoWayTernaryBlock renders a two-way ternary JSX expression.
@@ -112,27 +111,27 @@ func (r *Renderer) renderSingleConditionBlock(b *conditionalBlock) {
 //	{ props.foo ? ( ... ) : ( ... ) }
 func (r *Renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) {
 	r.writeIndent()
-	r.w.Write([]byte("{"))
+	r.w.WriteString("{")
 	if a.Negate {
-		r.w.Write([]byte("!"))
+		r.w.WriteString("!")
 	}
-	r.w.Write([]byte("props."))
-	r.w.Write(a.Cond)
-	r.w.Write([]byte(" ? (\n"))
+	r.w.WriteString("props.")
+	r.w.WriteString(a.Cond)
+	r.w.WriteString(" ? (\n")
 
 	r.indent++
 	r.renderChildren(a.Body)
 	r.indent--
 
 	r.writeIndent()
-	r.w.Write([]byte(") : (\n"))
+	r.w.WriteString(") : (\n")
 
 	r.indent++
 	r.renderChildren(b.Body)
 	r.indent--
 
 	r.writeIndent()
-	r.w.Write([]byte(")}\n"))
+	r.w.WriteString(")}\n")
 }
 
 // renderMultiTernaryBlocks renders a multi-way ternary JSX expression.
@@ -143,26 +142,26 @@ func (r *Renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) {
 	for i, b := range blocks {
 		if i == 0 {
 			r.writeIndent()
-			r.w.Write([]byte("{"))
+			r.w.WriteString("{")
 		}
 
 		if b.Negate {
-			r.w.Write([]byte("!props."))
+			r.w.WriteString("!props.")
 		} else {
-			r.w.Write([]byte("props."))
+			r.w.WriteString("props.")
 		}
-		r.w.Write(b.Cond)
-		r.w.Write([]byte(" ? (\n"))
+		r.w.WriteString(b.Cond)
+		r.w.WriteString(" ? (\n")
 
 		r.indent++
 		r.renderChildren(b.Body)
 		r.indent--
 
 		r.writeIndent()
-		r.w.Write([]byte(") : "))
+		r.w.WriteString(") : ")
 	}
 	// final fallback
-	r.w.Write([]byte("null}\n"))
+	r.w.WriteString("null}\n")
 }
 
 // renderConditionalGroup renders a conditional JSX expression based on the node group.
@@ -185,7 +184,7 @@ func (r *Renderer) renderConditionalGroup(group []*restache.Node) {
 	case 2:
 		// Possibly an if/else if they share the same .Cond but differ in Negate
 		a, b := blocks[0], blocks[1]
-		if bytes.Equal(a.Cond, b.Cond) &&
+		if a.Cond == b.Cond &&
 			((!a.Negate && b.Negate) || (a.Negate && !b.Negate)) {
 			// Same condition, one if, one unless; single ternary
 			if a.Negate {
@@ -212,7 +211,7 @@ func (r *Renderer) renderComponentNode(n *restache.Node) {
 	needsFragment := numChildren(n) > 1
 	if needsFragment {
 		r.writeIndent()
-		r.w.Write([]byte("<>\n"))
+		r.w.WriteString("<>\n")
 		r.indent++
 	}
 
@@ -229,7 +228,7 @@ func (r *Renderer) renderComponentNode(n *restache.Node) {
 					continue
 				}
 				// If next is same condition; group it
-				if (c.Type == restache.WhenNode || c.Type == restache.UnlessNode) && bytes.Equal(c.Data, cond) {
+				if (c.Type == restache.WhenNode || c.Type == restache.UnlessNode) && c.Data == cond {
 					group = append(group, c)
 					c = c.NextSibling
 				} else {
@@ -248,29 +247,29 @@ func (r *Renderer) renderComponentNode(n *restache.Node) {
 	if needsFragment {
 		r.indent--
 		r.writeIndent()
-		r.w.Write([]byte("</>\n"))
+		r.w.WriteString("</>\n")
 	}
 }
 
 // renderElementNode renders a normal element.
 func (r *Renderer) renderElementNode(n *restache.Node) {
 	r.writeIndent()
-	r.w.Write([]byte("<"))
-	r.w.Write(n.Data)
+	r.w.WriteString("<")
+	r.w.WriteString(n.Data)
 	// TODO: render attrs
 	if n.FirstChild == nil {
-		r.w.Write([]byte(" />\n"))
+		r.w.WriteString(" />\n")
 		return
 	}
 
-	r.w.Write([]byte(">\n"))
+	r.w.WriteString(">\n")
 	r.indent++
 
 	for c := n.FirstChild; c != nil; {
 		if c.Type == restache.WhenNode || c.Type == restache.UnlessNode {
 			group := []*restache.Node{}
 			cond := c.Data
-			for c != nil && (c.Type == restache.WhenNode || c.Type == restache.UnlessNode) && bytes.Equal(c.Data, cond) {
+			for c != nil && (c.Type == restache.WhenNode || c.Type == restache.UnlessNode) && c.Data == cond {
 				group = append(group, c)
 				c = c.NextSibling
 			}
@@ -283,9 +282,9 @@ func (r *Renderer) renderElementNode(n *restache.Node) {
 
 	r.indent--
 	r.writeIndent()
-	r.w.Write([]byte("</"))
-	r.w.Write(n.Data)
-	r.w.Write([]byte(">\n"))
+	r.w.WriteString("</")
+	r.w.WriteString(n.Data)
+	r.w.WriteString(">\n")
 }
 
 // renderConditionalNode renders a single When or Unless conditional JSX expression.
@@ -295,20 +294,20 @@ func (r *Renderer) renderElementNode(n *restache.Node) {
 //	{ !props.foo && ( ... ) }
 func (r *Renderer) renderConditionalNode(n *restache.Node) {
 	r.writeIndent()
-	r.w.Write([]byte("{"))
+	r.w.WriteString("{")
 	if n.Type == restache.UnlessNode {
-		r.w.Write([]byte("!"))
+		r.w.WriteString("!")
 	}
-	r.w.Write([]byte("props."))
-	r.w.Write(n.Data)
-	r.w.Write([]byte(" && (\n"))
+	r.w.WriteString("props.")
+	r.w.WriteString(n.Data)
+	r.w.WriteString(" && (\n")
 
 	r.indent++
 	r.renderChildren(n)
 	r.indent--
 
 	r.writeIndent()
-	r.w.Write([]byte(")}\n"))
+	r.w.WriteString(")}\n")
 }
 
 // renderTextNode renders a text JSX expression.
@@ -317,8 +316,8 @@ func (r *Renderer) renderConditionalNode(n *restache.Node) {
 //	"Hello, world!"
 func (r *Renderer) renderTextNode(n *restache.Node) {
 	r.writeIndent()
-	r.w.Write(n.Data)
-	r.w.Write([]byte("\n"))
+	r.w.WriteString(n.Data)
+	r.w.WriteString("\n")
 }
 
 // renderVariableNode renders a variable JSX expression.
@@ -327,9 +326,9 @@ func (r *Renderer) renderTextNode(n *restache.Node) {
 //	{props.someValue}
 func (r *Renderer) renderVariableNode(n *restache.Node) {
 	r.writeIndent()
-	r.w.Write([]byte("{props."))
-	r.w.Write(n.Data)
-	r.w.Write([]byte("}\n"))
+	r.w.WriteString("{props.")
+	r.w.WriteString(n.Data)
+	r.w.WriteString("}\n")
 }
 
 // renderCommentNode renders a comment JSX expression.
@@ -338,9 +337,9 @@ func (r *Renderer) renderVariableNode(n *restache.Node) {
 //	{/* comment */}
 func (r *Renderer) renderCommentNode(n *restache.Node) {
 	r.writeIndent()
-	r.w.Write([]byte("{/* "))
-	r.w.Write(n.Data)
-	r.w.Write([]byte(" */}\n"))
+	r.w.WriteString("{/* ")
+	r.w.WriteString(n.Data)
+	r.w.WriteString(" */}\n")
 }
 
 // renderNode is the central switch that dispatches by node type.
@@ -375,12 +374,12 @@ func (r *Renderer) renderChildren(n *restache.Node) {
 // writeIndent writes "  " * indentLevel.
 func (r *Renderer) writeIndent() {
 	for range r.indent {
-		r.w.Write([]byte("  "))
+		r.w.WriteString("  ")
 	}
 }
 
 // isAllWhitespace checks if b consists only of whitespace.
-func isAllWhitespace(b []byte) bool {
+func isAllWhitespace(b string) bool {
 	for _, c := range b {
 		switch c {
 		case ' ', '\t', '\n', '\r':

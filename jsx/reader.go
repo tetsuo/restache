@@ -55,7 +55,7 @@ func (c *Reader) Read(p []byte) (int, error) {
 			fmt.Fprint(c.buf, "export default function")
 			if len(c.root.Data) != 0 {
 				c.buf.WriteRune(' ')
-				c.buf.Write(c.root.Data)
+				c.buf.WriteString(c.root.Data)
 			}
 			fmt.Fprint(c.buf, "(props) {\n")
 			fmt.Fprintln(c.buf, "  return (")
@@ -82,4 +82,3 @@ func (c *Reader) Read(p []byte) (int, error) {
 
 	return c.buf.Read(p)
 }
-

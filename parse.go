@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 
 	"golang.org/x/net/html/atom"
 )
@@ -19,21 +20,20 @@ var voidElements = map[atom.Atom]bool{
 
 type insertionMode func(*parser) bool
 
-type lookupFunc func(s []byte) (int, bool)
-
 type parser struct {
-	z      *Tokenizer
-	oe     nodeStack
-	doc    *Node
-	im     insertionMode
-	tt     TokenType
-	path   []PathSegment
-	sc     bool         // indicates self closing token
-	lookup lookupFunc   // dependency lookup func
-	afters map[int]bool // marked dependencies
+	z    *Tokenizer
+	oe   nodeStack
+	doc  *Node
+	im   insertionMode
+	tt   TokenType
+	path []PathSegment
+	sc   bool // indicates self closing token
+
+	lookup map[string]int // dependency lookup table
+	afters map[int]bool   // marked dependency indexes
 }
 
-func newParser(r io.Reader, lookup lookupFunc) *parser {
+func newParser(r io.Reader, lookup map[string]int) *parser {
 	p := &parser{
 		z:      NewTokenizer(r),
 		im:     initialIM,
@@ -90,7 +90,7 @@ func inBodyIM(p *parser) bool {
 		}
 		n := &Node{
 			Type: TextNode,
-			Data: bytes.Clone(raw),
+			Data: string(raw),
 		}
 		p.oe.top().AppendChild(n)
 		return true
@@ -100,7 +100,7 @@ func inBodyIM(p *parser) bool {
 
 		elem := &Node{
 			Type:     ElementNode,
-			Data:     name,
+			Data:     string(name),
 			DataAtom: atom.Lookup(name),
 			Path:     slices.Clone(p.path),
 		}
@@ -108,8 +108,8 @@ func inBodyIM(p *parser) bool {
 		for hasAttr {
 			key, val, isExpr, more := p.z.TagAttr()
 			elem.Attr = append(elem.Attr, Attribute{
-				Key:    bytes.Clone(key),
-				Val:    bytes.Clone(val),
+				Key:    string(key),
+				Val:    string(val),
 				IsExpr: isExpr,
 			})
 			hasAttr = more
@@ -117,8 +117,8 @@ func inBodyIM(p *parser) bool {
 
 		p.oe.top().AppendChild(elem)
 
-		if p.lookup != nil {
-			if idx, ok := p.lookup(name); ok {
+		if elem.DataAtom == 0 && p.lookup != nil {
+			if idx, ok := p.lookup[elem.Data]; ok {
 				if _, ok = p.afters[idx]; !ok {
 					p.afters[idx] = true // Mark dependency
 				}
@@ -144,7 +144,7 @@ func inBodyIM(p *parser) bool {
 		p.oe.top().AppendChild(
 			&Node{
 				Type: VariableNode,
-				Data: bytes.Clone(bytes.TrimSpace(p.z.Raw())),
+				Data: string(bytes.TrimSpace(p.z.Raw())),
 				Path: slices.Clone(p.path),
 			},
 		)
@@ -153,7 +153,7 @@ func inBodyIM(p *parser) bool {
 	case WhenToken:
 		node := &Node{
 			Type: WhenNode,
-			Data: bytes.Clone(bytes.TrimSpace(p.z.ControlName())),
+			Data: string(bytes.TrimSpace(p.z.ControlName())),
 			Path: slices.Clone(p.path),
 		}
 		p.oe.top().AppendChild(node)
@@ -163,7 +163,7 @@ func inBodyIM(p *parser) bool {
 	case UnlessToken:
 		node := &Node{
 			Type: UnlessNode,
-			Data: bytes.Clone(bytes.TrimSpace(p.z.ControlName())),
+			Data: string(bytes.TrimSpace(p.z.ControlName())),
 			Path: slices.Clone(p.path),
 		}
 		p.oe.top().AppendChild(node)
@@ -173,13 +173,13 @@ func inBodyIM(p *parser) bool {
 	case RangeToken:
 		node := &Node{
 			Type: RangeNode,
-			Data: bytes.Clone(bytes.TrimSpace(p.z.ControlName())),
+			Data: string(bytes.TrimSpace(p.z.ControlName())),
 			Path: slices.Clone(p.path),
 		}
-		parts := bytes.Split(node.Data, []byte("."))
+		parts := strings.Split(node.Data, ".")
 		var (
 			i    int
-			part []byte
+			part string
 			last = len(parts) - 1
 		)
 		for i, part = range parts {
@@ -208,7 +208,7 @@ func inBodyIM(p *parser) bool {
 		p.oe.top().AppendChild(
 			&Node{
 				Type: CommentNode,
-				Data: bytes.Clone(bytes.TrimSpace(p.z.Comment())),
+				Data: string(bytes.TrimSpace(p.z.Comment())),
 			},
 		)
 		return true

@@ -1,15 +1,14 @@
 package restache
 
 import (
-	"bytes"
 	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 
-	"github.com/tetsuo/fnvtable"
 	"github.com/tetsuo/toposort"
 	"golang.org/x/sync/errgroup"
 )
@@ -29,12 +28,12 @@ func WithParallelism(limit int) Option {
 type componentEntry struct {
 	path string // full path (e.g. /foo/Bar.stache)
 	ext  string // extension (e.g. .stache)
-	stem []byte // filename without extension (e.g. Bar)
-	tag  []byte // lowercase stem (e.g. bar)
+	stem string // filename without extension (e.g. Bar)
+	tag  string // lowercase stem (e.g. bar)
 
-	doc    *Node      // the root component node
-	lookup lookupFunc // dependency lookup
-	afters []int      // collected dependency indexes
+	doc    *Node          // the root component node
+	lookup map[string]int // dependency lookup table
+	afters []int          // collected dependency indexes
 }
 
 // componentEntry parses a template with dependencies; it implements toposort.Vertex.
@@ -44,9 +43,9 @@ func newComponentEntry(dir, path string) (*componentEntry, error) {
 	}
 	entry := &componentEntry{ext: filepath.Ext(path)}
 	if entry.ext != "" {
-		entry.stem = []byte(path[:len(path)-len(entry.ext)])
+		entry.stem = path[:len(path)-len(entry.ext)]
 	} else {
-		entry.stem = []byte(path)
+		entry.stem = path
 	}
 	if len(entry.stem) == 0 {
 		return nil, fmt.Errorf("input filename %q is not valid", path)
@@ -58,8 +57,7 @@ func newComponentEntry(dir, path string) (*componentEntry, error) {
 	}
 
 	if hasUpper {
-		// Clone and lowercase when the stem contains an uppercase char
-		entry.tag = lower(bytes.Clone(entry.stem))
+		entry.tag = strings.ToLower(entry.stem)
 	} else {
 		entry.tag = entry.stem
 	}
@@ -83,7 +81,7 @@ func (e *componentEntry) parse() error {
 
 	e.doc = p.doc
 	e.doc.Data = e.tag
-	e.doc.Path = []PathSegment{{Key: e.stem}, {Key: []byte(e.ext)}}
+	e.doc.Path = []PathSegment{{Key: e.stem}, {Key: e.ext}}
 
 	e.afters = slices.Collect(maps.Keys(p.afters))
 	e.doc.Attr = make([]Attribute, len(e.afters))
@@ -93,18 +91,6 @@ func (e *componentEntry) parse() error {
 
 func (fp *componentEntry) Afters() []int {
 	return fp.afters
-}
-
-func buildDependencyTable(entries []*componentEntry, n int) (*fnvtable.Table, error) {
-	components := make([][]byte, n)
-	for i, e := range entries {
-		components[i] = e.tag
-	}
-	tbl, err := fnvtable.New(components)
-	if err != nil {
-		return nil, err
-	}
-	return tbl, nil
 }
 
 // ParseDir reads the provided directory for files listed in includes, parses each file to
@@ -117,11 +103,13 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 
 	var err error
 	entries := make([]*componentEntry, n)
+	lup := make(map[string]int, n)
 	for i, path := range includes {
 		entries[i], err = newComponentEntry(dir, path)
 		if err != nil {
 			return nil, err
 		}
+		lup[entries[i].tag] = i
 	}
 
 	cfg := config{}
@@ -137,13 +125,8 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 	var g errgroup.Group
 	g.SetLimit(cfg.parallelism)
 
-	deps, err := buildDependencyTable(entries, n)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, e := range entries {
-		e.lookup = deps.Lookup
+		e.lookup = lup
 		g.Go(e.parse)
 	}
 	if err := g.Wait(); err != nil {
@@ -180,9 +163,9 @@ func ParseDir(dir string, includes []string, opts ...Option) ([]*Node, error) {
 
 // validateTagName checks if the provided name is valid and returns true if it contains
 // at least one upper case letter.
-func validateTagName(name []byte) (bool, error) {
+func validateTagName(name string) (bool, error) {
 	var hasUpper bool
-	c := name[0]
+	c := rune(name[0])
 	if 'A' <= c && c <= 'Z' {
 		hasUpper = true
 	} else if 'a' > c || c > 'z' {
@@ -196,13 +179,4 @@ func validateTagName(name []byte) (bool, error) {
 		}
 	}
 	return hasUpper, nil
-}
-
-func lower(b []byte) []byte {
-	for i, c := range b {
-		if 'A' <= c && c <= 'Z' {
-			b[i] = c + 'a' - 'A'
-		}
-	}
-	return b
 }
