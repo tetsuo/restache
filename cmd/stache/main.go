@@ -32,7 +32,7 @@ func main() {
 	// Reject single-dash long options like -parallelism
 	for _, arg := range os.Args[1:] {
 		if strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, "--") && len(arg) > 2 && !strings.Contains(arg, "=") {
-			fmt.Fprintf(os.Stderr, "invalid option: %s (did you mean '--%s'?)\n", arg, arg[1:])
+			fmt.Fprintf(os.Stderr, "%s: invalid option: %s (did you mean --%s?)\n", PROGRAM_NAME, arg, arg[1:])
 			fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", PROGRAM_NAME)
 			os.Exit(1)
 		}
@@ -75,36 +75,28 @@ func main() {
 
 	if n == 0 || patterns[0] == "-" {
 		if outdir != "" {
-			fmt.Fprintln(os.Stderr, "WARNING: --outdir option is ignored (no input files)")
+			fmt.Fprintf(os.Stderr, "%s: ignoring --outdir (no input files)\n", PROGRAM_NAME)
 		}
 		node, err := stache.Parse(os.Stdin)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			fatalf("failed to parse stdin: %v", err)
 		}
 		src := jsx.NewReader(node)
 		if _, err = io.Copy(os.Stdout, src); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			fatalf("failed to write to stdout: %v", err)
 		}
 		os.Exit(0)
 	}
 
 	baseDir, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		fatalf("could not get current directory: %v", err)
 	}
 
-	dirIncludes, err := resolveGlobs(baseDir, patterns)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	dirIncludes := resolveGlobs(baseDir, patterns)
 
 	if len(dirIncludes) == 0 {
-		fmt.Fprintln(os.Stderr, "no files matched the given patterns")
-		os.Exit(1)
+		fatalf("no files matched the provided pattern")
 	}
 
 	for dir, includes := range dirIncludes {
@@ -112,8 +104,7 @@ func main() {
 			path := includes[0]
 			node, err := stache.ParseFile(filepath.Join(dir, path))
 			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
+				fatalf("failed to parse file %q: %v", path, err)
 			}
 			ext := filepath.Ext(path)
 			if ext != "" {
@@ -127,8 +118,7 @@ func main() {
 					outdir = filepath.Join(baseDir, outdir)
 				}
 				if err := os.MkdirAll(outdir, 0755); err != nil {
-					fmt.Fprintf(os.Stderr, "error creating output directory %q: %v", outdir, err)
-					os.Exit(1)
+					fatalf("could not create output directory %q: %v", outdir, err)
 				}
 				path = filepath.Join(outdir, path)
 			} else {
@@ -136,44 +126,41 @@ func main() {
 			}
 			dst, err := os.Create(path)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "error creating file %q: %v\n", path, err)
-				os.Exit(1)
+				fatalf("could not create file %q: %v", path, err)
 			}
 			code := 0
 			if _, err = io.Copy(dst, src); err != nil {
-				fmt.Fprintln(os.Stderr, err)
+				fmt.Fprintf(os.Stderr, "%s: failed to write output: %v\n", PROGRAM_NAME, err)
 				code = 1
 			}
 			dst.Close()
 			os.Exit(code)
 		}
-		_, err := stache.ParseDir(dir, includes, stache.WithParallelism(min(parallelism, 32)))
+		parallelism = min(parallelism, 32)
+		nodes, err := stache.ParseDir(dir, includes, stache.WithParallelism(parallelism))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error parsing dir %q: %v\n", dir, err)
-			os.Exit(1)
+			fatalf("failed to parse directory %q: %v", dir, err)
 		}
+		fmt.Println(nodes)
 	}
 }
 
-func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string, err error) {
+func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) {
 	var (
-		matches []string
-		info    os.FileInfo
-		dir     string
-		p       string
+		info os.FileInfo
+		dir  string
+		p    string
 	)
-	dirs = make(map[string][]string, 0)
+	dirs = make(map[string][]string)
 	for _, p = range patterns {
-		matches, err = filepath.Glob(filepath.Join(baseDir, p))
+		matches, err := filepath.Glob(filepath.Join(baseDir, p))
 		if err != nil {
-			err = fmt.Errorf("failed to match files with %q: %w", p, err)
-			return
+			fatalf("invalid glob %q: %v", p, err)
 		}
 		for _, p = range matches {
 			info, err = os.Lstat(p) // will ignore symlinks
 			if err != nil {
-				err = fmt.Errorf("could not lstat file %q: %w", p, err)
-				return
+				fatalf("could not access file %q: %v", p, err)
 			}
 			if info.IsDir() {
 				continue
@@ -185,4 +172,7 @@ func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string, 
 	return
 }
 
+func fatalf(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "%s: %s\n", PROGRAM_NAME, fmt.Sprintf(format, args...))
+	os.Exit(1)
 }
