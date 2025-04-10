@@ -181,6 +181,8 @@ func emitModule(dir, outdir string, files []string, parallelism int) {
 	for _, node := range nodes {
 		node := node
 		g.Go(func() error {
+			// ParseDir guarantees that node.Path is always at least length 2,
+			// otherwise this might panic on certain input files:
 			outfile := filepath.Join(outdir, node.Path[:len(node.Path)-1][0].Key) + ".jsx"
 			dst, err := os.Create(outfile)
 			if err != nil {
