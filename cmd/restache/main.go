@@ -229,20 +229,27 @@ func fatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
-func commonBaseDir(paths []string) string {
-	if len(paths) == 0 {
+func commonBaseDir(dirPaths []string) string {
+	if len(dirPaths) == 0 {
 		return ""
 	}
-	sep := string(filepath.Separator)
-	segments := strings.Split(filepath.Clean(paths[0]), sep)
-	for _, path := range paths[1:] {
-		curr := strings.Split(filepath.Clean(path), sep)
-		n := min(len(segments), len(curr))
+	if len(dirPaths) == 1 {
+		return dirPaths[0]
+	}
+	first := filepath.Clean(dirPaths[0])
+	segments := strings.Split(first, string(os.PathSeparator))
+	n := len(segments)
+	for _, path := range dirPaths[1:] {
+		curr := strings.Split(filepath.Clean(path), string(os.PathSeparator))
+		n := min(n, len(curr))
 		i := 0
-		for i < n && segments[i] == curr[i] {
+		for i < n && strings.EqualFold(segments[i], curr[i]) { // EqualFold for Windows case-insensitivity
 			i++
 		}
 		segments = segments[:i]
+		if n == 0 {
+			break
+		}
 	}
-	return sep + filepath.Join(segments...)
+	return filepath.Join(segments...)
 }
