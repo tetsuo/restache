@@ -202,23 +202,22 @@ func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) 
 	var (
 		info os.FileInfo
 		dir  string
-		p    string
 	)
 	dirs = make(map[string][]string)
-	for _, p = range patterns {
-		matches, err := filepath.Glob(filepath.Join(baseDir, p))
+	for _, pat := range patterns {
+		matches, err := filepath.Glob(filepath.Join(baseDir, pat))
 		if err != nil {
-			fatalf("invalid glob %q: %v", p, err)
+			fatalf("invalid glob %q: %v", pat, err)
 		}
-		for _, p = range matches {
-			info, err = os.Lstat(p) // will ignore symlinks
+		for _, match := range matches {
+			info, err = os.Lstat(match) // will ignore symlinks
 			if err != nil {
-				fatalf("could not access file %q: %v", p, err)
+				fatalf("could not access file %q: %v", match, err)
 			}
 			if info.IsDir() {
 				continue
 			}
-			dir = filepath.Dir(p)
+			dir = filepath.Dir(match)
 			dirs[dir] = append(dirs[dir], info.Name())
 		}
 	}
