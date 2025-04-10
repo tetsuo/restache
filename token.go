@@ -88,7 +88,7 @@ func (t *Tokenizer) TagAttr() (key []byte, val []byte, isExpr bool, moreAttr boo
 	key, val, moreAttr = t.z.TagAttr()
 	i := 0
 	length := len(val)
-	for i < length && isSpace(val[i]) {
+	for i < length && spaceTable[val[i]] {
 		i++
 	}
 	if i == length || val[i] != '{' { // No starting '{' found; text node
@@ -106,7 +106,7 @@ func (t *Tokenizer) TagAttr() (key []byte, val []byte, isExpr bool, moreAttr boo
 	}
 	end := i + rpos + 1
 	for end < length {
-		if !isSpace(val[end]) { // If anything other than space; text node
+		if !spaceTable[val[end]] { // If anything other than space; text node
 			return
 		}
 		end++
@@ -214,7 +214,7 @@ func identifyKeyword(chunk []byte) TokenType {
 	// Skip leading spaces
 	i := 0
 	length := len(chunk)
-	for i < length && isSpace(chunk[i]) {
+	for i < length && spaceTable[chunk[i]] {
 		i++
 	}
 	if i >= length {
@@ -238,8 +238,4 @@ func identifyKeyword(chunk []byte) TokenType {
 
 var spaceTable = [256]bool{
 	' ': true, '\t': true, '\r': true, '\n': true,
-}
-
-func isSpace(b byte) bool {
-	return spaceTable[b]
 }
