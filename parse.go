@@ -4,19 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"slices"
 	"strings"
 
 	"golang.org/x/net/html/atom"
 )
-
-// voidElements only have a start tag; ends tags are not specified.
-var voidElements = map[atom.Atom]bool{
-	atom.Area: true, atom.Br: true, atom.Embed: true, atom.Img: true,
-	atom.Input: true, atom.Wbr: true, atom.Col: true, atom.Hr: true,
-	atom.Link: true, atom.Track: true, atom.Source: true,
-}
 
 type insertionMode func(*parser) bool
 
@@ -46,31 +38,6 @@ func newParser(r io.Reader, lookup map[string]int) *parser {
 		p.afters = make(map[int]bool)
 	}
 	return p
-}
-
-// Parse parses a single Node with no dependencies.
-func Parse(r io.Reader) (node *Node, err error) {
-	p := newParser(r, nil)
-	if err = p.parse(); err != nil {
-		return
-	}
-	node = p.doc
-	return
-}
-
-func ParseFile(path string) (node *Node, err error) {
-	var f *os.File
-	f, err = os.Open(path)
-	if err != nil {
-		err = fmt.Errorf("error opening file %s: %w", path, err)
-		return
-	}
-	defer f.Close()
-	node, err = Parse(f)
-	if err != nil {
-		err = fmt.Errorf("error parsing file %s: %w", path, err)
-	}
-	return
 }
 
 // initialIM is the first insertion mode used.
@@ -244,4 +211,11 @@ func (p *parser) parse() error {
 		p.parseCurrentToken()
 	}
 	return nil
+}
+
+// voidElements only have a start tag; ends tags are not specified.
+var voidElements = map[atom.Atom]bool{
+	atom.Area: true, atom.Br: true, atom.Embed: true, atom.Img: true,
+	atom.Input: true, atom.Wbr: true, atom.Col: true, atom.Hr: true,
+	atom.Link: true, atom.Track: true, atom.Source: true,
 }
