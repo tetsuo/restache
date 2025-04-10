@@ -3,12 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
-	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 
 	"github.com/tetsuo/restache"
@@ -99,9 +96,8 @@ func main() {
 		if !filepath.IsAbs(outdir) {
 			outdir = filepath.Join(baseDir, outdir)
 		}
+		baseDir = commonBaseDir(collectKeys(filesByDir))
 	}
-
-	commonDir := commonBaseDir(slices.Collect(maps.Keys(filesByDir)))
 
 	if parallelism < 1 {
 		parallelism = runtime.NumCPU()
@@ -117,15 +113,22 @@ func main() {
 			if outdir == "" {
 				dst = dir
 			} else {
-				dst, err = filepath.Rel(commonDir, dir)
+				dst, err = filepath.Rel(baseDir, dir)
 				if err != nil {
-					fatalf("could not determine relative path from %q to %q: %v", commonDir, dir, err)
+					fatalf("could not determine relative path from %q to %q: %v", baseDir, dir, err)
 				}
 				dst = filepath.Join(outdir, dst)
 			}
 			emitModule(dir, dst, files, parallelism)
 		}
 	}
+}
+
+func collectKeys[V any](m map[string]V) (keys []string) {
+	for key := range m {
+		keys = append(keys, key)
+	}
+	return
 }
 
 func processStdin() {
