@@ -22,10 +22,11 @@ func CommonPathUnix(paths []string) string {
 }
 
 func CommonPathWin(paths []string) string {
-	if len(paths) == 0 {
+	n := len(paths)
+	if n == 0 {
 		return ""
 	}
-	split := make([][]string, len(paths))
+	split := make([][]string, n)
 	for i, p := range paths {
 		p = strings.ReplaceAll(p, "\\", "/")
 		split[i] = strings.Split(p, "/")
