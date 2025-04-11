@@ -10,6 +10,16 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
+// Parse parses a single Node with no dependencies.
+func Parse(r io.Reader) (node *Node, err error) {
+	p := newParser(r, nil)
+	if err = p.parse(); err != nil {
+		return
+	}
+	node = p.doc
+	return
+}
+
 type insertionMode func(*parser) bool
 
 type parser struct {

@@ -1,9 +1,7 @@
 package restache
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 
@@ -28,16 +26,6 @@ func WithIncludes(includes []string) Option {
 	return func(cfg *config) {
 		cfg.includes = includes
 	}
-}
-
-// Parse parses a single Node with no dependencies.
-func Parse(r io.Reader) (node *Node, err error) {
-	p := newParser(r, nil)
-	if err = p.parse(); err != nil {
-		return
-	}
-	node = p.doc
-	return
 }
 
 func ParseFile(path string) (node *Node, err error) {
@@ -153,19 +141,6 @@ func ParseModule(inputDir string, opts ...Option) ([]*Node, error) {
 	}
 
 	return parseModule(inputDir, cfg.includes, min(n, cfg.parallelism))
-}
-
-func Render(w io.Writer, n *Node) error {
-	if x, ok := w.(writer); ok {
-		r := &renderer{w: x, indent: 2}
-		return r.render(n)
-	}
-	buf := bufio.NewWriter(w)
-	r := &renderer{w: buf, indent: 2}
-	if err := r.render(n); err != nil {
-		return err
-	}
-	return buf.Flush()
 }
 
 func TranspileFile(inputFile, outputFile string) error {

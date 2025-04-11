@@ -1,11 +1,25 @@
 package restache
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 )
+
+func Render(w io.Writer, n *Node) error {
+	if x, ok := w.(writer); ok {
+		r := &renderer{w: x, indent: 2}
+		return r.render(n)
+	}
+	buf := bufio.NewWriter(w)
+	r := &renderer{w: buf, indent: 2}
+	if err := r.render(n); err != nil {
+		return err
+	}
+	return buf.Flush()
+}
 
 type writer interface {
 	io.Writer
