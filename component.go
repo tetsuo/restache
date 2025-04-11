@@ -68,7 +68,7 @@ func (e *componentEntry) parse() error {
 	e.doc.Data = e.tag
 	e.doc.Path = []PathSegment{{Key: e.stem}, {Key: e.ext}}
 
-	e.afters = slices.Collect(maps.Keys(p.afters))
+	e.afters = collectKeys(p.afters)
 	e.doc.Attr = make([]Attribute, len(e.afters))
 
 	return nil
@@ -97,4 +97,11 @@ func validateTagName(name string) (bool, error) {
 	}
 
 	return hasUpper, nil
+}
+
+func collectKeys[K comparable, V any](m map[K]V) (keys []K) {
+	for key := range m {
+		keys = append(keys, key)
+	}
+	return
 }
