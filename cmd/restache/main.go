@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/tetsuo/restache"
-	"github.com/tetsuo/restache/internal/commonpath"
+	"github.com/tetsuo/restache/cmd/restache/commonpath"
 )
 
 const PROGRAM_NAME = "restache"

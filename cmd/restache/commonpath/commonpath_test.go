@@ -3,7 +3,7 @@ package commonpath_test
 import (
 	"testing"
 
-	"github.com/tetsuo/restache/internal/commonpath"
+	"github.com/tetsuo/restache/cmd/restache/commonpath"
 )
 
 func TestCommonPath(t *testing.T) {
