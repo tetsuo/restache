@@ -2,11 +2,10 @@ package restache
 
 import (
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
+	"unicode"
 )
 
 type componentEntry struct {
@@ -32,11 +31,13 @@ func newComponentEntry(dir, path string) (*componentEntry, error) {
 		entry.stem = path
 	}
 	if len(entry.stem) == 0 {
+		// This also catches when path = "."
 		return nil, fmt.Errorf("input filename %q is not valid", path)
 	}
 	var hasUpper bool
 	hasUpper, err := validateTagName(entry.stem)
 	if err != nil {
+		// This also catches ".."
 		return nil, fmt.Errorf("input filename %q %v", path, err)
 	}
 
@@ -77,22 +78,23 @@ func (fp *componentEntry) Afters() []int {
 	return fp.afters
 }
 
-// validateTagName checks if the provided name is valid and returns true if it contains
-// at least one upper case letter.
+// validateTagName checks if the provided name is valid as HTML tag and
+// returns true if it contains at least one upper case letter.
 func validateTagName(name string) (bool, error) {
-	var hasUpper bool
-	c := rune(name[0])
-	if 'A' <= c && c <= 'Z' {
-		hasUpper = true
-	} else if 'a' > c || c > 'z' {
+	r := rune(name[0])
+	if !unicode.IsLetter(r) {
 		return false, fmt.Errorf("must start with a letter")
 	}
-	for _, c = range name[1:] {
-		if 'A' <= c && c <= 'Z' {
+
+	hasUpper := unicode.IsUpper(r)
+
+	for _, r := range name[1:] {
+		if unicode.IsUpper(r) {
 			hasUpper = true
-		} else if !('a' <= c && c <= 'z' || '0' <= c && c <= '9') {
-			return false, fmt.Errorf("contains invalid character %q", c)
+		} else if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '-' {
+			return false, fmt.Errorf("contains invalid character %q", r)
 		}
 	}
+
 	return hasUpper, nil
 }
