@@ -9,8 +9,7 @@ import (
 	"strings"
 
 	"github.com/tetsuo/restache"
-	"github.com/tetsuo/restache/jsx"
-	"golang.org/x/sync/errgroup"
+	"github.com/tetsuo/restache/internal/commonpath"
 )
 
 const PROGRAM_NAME = "restache"
@@ -25,7 +24,6 @@ func usage() {
 	fmt.Println("  -v, --version         output version information and exit")
 	fmt.Println("  -p, --parallelism N   number of files to process in parallel (default: number of CPUs)")
 	fmt.Println("  -o, --outdir DIR      write output files to DIR (default: same as input files)")
-	fmt.Println("      --redux           generate components pre-wired for Redux")
 }
 
 func main() {
@@ -77,7 +75,14 @@ func main() {
 		if outdir != "" {
 			fmt.Fprintf(os.Stderr, "%s: ignoring --outdir (no input files)\n", PROGRAM_NAME)
 		}
-		processStdin()
+		// Process stdin:
+		node, err := restache.Parse(os.Stdin)
+		if err != nil {
+			fatalf("failed to parse stdin: %v", err)
+		}
+		if err = restache.Render(os.Stdout, node); err != nil {
+			fatalf("failed to write to stdout: %v", err)
+		}
 		os.Exit(0)
 	}
 
@@ -92,115 +97,85 @@ func main() {
 		fatalf("no files matched the provided pattern")
 	}
 
+	const maxParallelism = 32
+
+	if parallelism < 1 {
+		parallelism = numCPUS
+	} else if parallelism > maxParallelism {
+		parallelism = maxParallelism
+	}
+
+	var commonPath func(paths []string) string
+	if runtime.GOOS == "windows" {
+		commonPath = commonpath.CommonPathWin
+	} else {
+		commonPath = commonpath.CommonPathUnix
+	}
+
 	if outdir != "" {
 		if !filepath.IsAbs(outdir) {
 			outdir = filepath.Join(baseDir, outdir)
 		}
-		baseDir = commonBaseDir(collectKeys(filesByDir))
-	}
-
-	if parallelism < 1 {
-		parallelism = runtime.NumCPU()
-	}
-
-	parallelism = min(parallelism, 32)
-
-	for dir, files := range filesByDir {
-		if len(files) == 1 {
-			emitFile(dir, outdir, files[0])
-		} else {
-			var dst string
-			if outdir == "" {
-				dst = dir
-			} else {
-				dst, err = filepath.Rel(baseDir, dir)
-				if err != nil {
-					fatalf("could not determine relative path from %q to %q: %v", baseDir, dir, err)
-				}
-				dst = filepath.Join(outdir, dst)
+		if err := os.MkdirAll(outdir, 0755); err != nil {
+			fatalf("could not create output directory %q: %v", outdir, err)
+		}
+		common := commonPath(collectKeys(filesByDir))
+		for dir, files := range filesByDir {
+			actualOutDir, err := filepath.Rel(common, dir)
+			if err != nil {
+				fatalf("could not determine relative path from %q to %q: %v", common, dir, err)
 			}
-			emitModule(dir, dst, files, parallelism)
+			actualOutDir = filepath.Join(outdir, actualOutDir)
+			if err := os.MkdirAll(actualOutDir, 0755); err != nil {
+				fatalf("could not create output directory %q: %v", actualOutDir, err)
+			}
+			if len(files) == 1 {
+				file := files[0]
+				ext := filepath.Ext(file)
+				var stem string
+				if ext != "" {
+					stem = file[:len(file)-len(ext)]
+				} else {
+					stem = file
+				}
+				inputFile := filepath.Join(dir, file)
+				outputFile := filepath.Join(actualOutDir, stem+".jsx")
+				if err := restache.TranspileFile(inputFile, outputFile); err != nil {
+					fatal(err.Error())
+				}
+				continue
+			}
+			if err := restache.TranspileModule(dir, actualOutDir,
+				restache.WithIncludes(files),
+				restache.WithParallelism(parallelism),
+			); err != nil {
+				fatal(err.Error())
+			}
+		}
+	} else {
+		for dir, files := range filesByDir {
+			if len(files) == 1 {
+				file := files[0]
+				if err := restache.TranspileFile(filepath.Join(dir, file), ""); err != nil {
+					fatal(err.Error())
+				}
+				continue
+			}
+			if err := restache.TranspileModule(dir, "",
+				restache.WithIncludes(files),
+				restache.WithParallelism(parallelism),
+			); err != nil {
+				fatal(err.Error())
+			}
 		}
 	}
 }
 
-func collectKeys[V any](m map[string]V) (keys []string) {
+func collectKeys[K comparable, V any](m map[K]V) (keys []K) {
 	for key := range m {
 		keys = append(keys, key)
 	}
 	return
-}
-
-func processStdin() {
-	node, err := restache.Parse(os.Stdin)
-	if err != nil {
-		fatalf("failed to parse stdin: %v", err)
-	}
-	if _, err = io.Copy(os.Stdout, jsx.NewReader(node)); err != nil {
-		fatalf("failed to write to stdout: %v", err)
-	}
-}
-
-func emitFile(dir, outdir, file string) {
-	node, err := restache.ParseFile(filepath.Join(dir, file))
-	if err != nil {
-		fatalf("failed to parse file %q: %v", file, err)
-	}
-	ext := filepath.Ext(file)
-	if ext != "" {
-		file = file[:len(file)-len(ext)]
-	}
-	node.Data = file
-	file += ".jsx"
-	if outdir != "" {
-		file = filepath.Join(outdir, file)
-		if err := os.MkdirAll(outdir, 0755); err != nil {
-			fatalf("could not create output directory %q: %v", outdir, err)
-		}
-	} else {
-		file = filepath.Join(dir, file)
-	}
-	dst, err := os.Create(file)
-	if err != nil {
-		fatalf("could not create file %q: %v", file, err)
-	}
-	defer dst.Close()
-	if _, err = io.Copy(dst, jsx.NewReader(node)); err != nil {
-		dst.Close()
-		fatalf("failed to write file %q: %v", file, err)
-	}
-}
-
-func emitModule(dir, outdir string, files []string, parallelism int) {
-	nodes, err := restache.ParseDir(dir, files, restache.WithParallelism(parallelism))
-	if err != nil {
-		fatalf("failed to parse directory %q: %v", dir, err)
-	}
-	if err := os.MkdirAll(outdir, 0755); err != nil {
-		fatalf("could not create output directory %q: %v", outdir, err)
-	}
-	var g errgroup.Group
-	g.SetLimit(min(len(nodes), parallelism))
-	for _, node := range nodes {
-		node := node
-		g.Go(func() error {
-			// ParseDir guarantees that node.Path is always at least length 2,
-			// otherwise this might panic on certain input files:
-			outfile := filepath.Join(outdir, node.Path[:len(node.Path)-1][0].Key) + ".jsx"
-			dst, err := os.Create(outfile)
-			if err != nil {
-				return fmt.Errorf("could not create file %q: %v", outfile, err)
-			}
-			defer dst.Close()
-			if _, err = io.Copy(dst, jsx.NewReader(node)); err != nil {
-				return fmt.Errorf("failed to write file %q: %v", outfile, err)
-			}
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
-		fatalf("%s", err.Error())
-	}
 }
 
 func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) {
@@ -234,27 +209,7 @@ func fatalf(format string, args ...any) {
 	os.Exit(1)
 }
 
-func commonBaseDir(dirPaths []string) string {
-	if len(dirPaths) == 0 {
-		return ""
-	}
-	if len(dirPaths) == 1 {
-		return dirPaths[0]
-	}
-	first := filepath.Clean(dirPaths[0])
-	segments := strings.Split(first, string(os.PathSeparator))
-	n := len(segments)
-	for _, path := range dirPaths[1:] {
-		curr := strings.Split(filepath.Clean(path), string(os.PathSeparator))
-		n := min(n, len(curr))
-		i := 0
-		for i < n && strings.EqualFold(segments[i], curr[i]) { // EqualFold for Windows case-insensitivity
-			i++
-		}
-		segments = segments[:i]
-		if n == 0 {
-			break
-		}
-	}
-	return filepath.Join(segments...)
+func fatal(msg string) {
+	fmt.Fprintln(os.Stderr, msg)
+	os.Exit(1)
 }
