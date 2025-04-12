@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/tetsuo/commonpath"
 	"github.com/tetsuo/restache"
@@ -136,14 +137,17 @@ func main() {
 				}
 				inputFile := filepath.Join(dir, file)
 				outputFile := filepath.Join(actualOutDir, stem+".jsx")
-				if err := restache.TranspileFile(inputFile, outputFile); err != nil {
+				if art, err := restache.TranspileFile(inputFile, outputFile); err != nil {
 					fatal(err.Error())
+				} else {
+					logArtifact(art)
 				}
 				continue
 			}
-			if err := restache.TranspileModule(dir, actualOutDir,
+			if _, err := restache.TranspileModule(dir, actualOutDir,
 				restache.WithIncludes(files),
 				restache.WithParallelism(parallelism),
+				restache.WithCallback(logArtifact),
 			); err != nil {
 				fatal(err.Error())
 			}
@@ -152,14 +156,17 @@ func main() {
 		for dir, files := range filesByDir {
 			if len(files) == 1 {
 				file := files[0]
-				if err := restache.TranspileFile(filepath.Join(dir, file), ""); err != nil {
+				if art, err := restache.TranspileFile(filepath.Join(dir, file), ""); err != nil {
 					fatal(err.Error())
+				} else {
+					logArtifact(art)
 				}
 				continue
 			}
-			if err := restache.TranspileModule(dir, "",
+			if _, err := restache.TranspileModule(dir, "",
 				restache.WithIncludes(files),
 				restache.WithParallelism(parallelism),
+				restache.WithCallback(logArtifact),
 			); err != nil {
 				fatal(err.Error())
 			}
@@ -222,4 +229,9 @@ func logf(format string, args ...any) {
 func fatal(msg string) {
 	fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
+}
+
+func logArtifact(art restache.Artifact) {
+	logf("%d bytes written to %s (%.2fms) at %s",
+		art.Bytes, art.Path, float64(art.Elapsed.Microseconds())/1000, time.Now().Format("15:04:05"))
 }

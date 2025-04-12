@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"github.com/tetsuo/toposort"
 	"golang.org/x/sync/errgroup"
@@ -14,6 +16,7 @@ type Option func(*config)
 type config struct {
 	includes    []string
 	parallelism int
+	onEmit      func(Artifact)
 }
 
 func WithParallelism(parallelism int) Option {
@@ -25,6 +28,12 @@ func WithParallelism(parallelism int) Option {
 func WithIncludes(includes []string) Option {
 	return func(cfg *config) {
 		cfg.includes = includes
+	}
+}
+
+func WithCallback(onEmit func(Artifact)) Option {
+	return func(cfg *config) {
+		cfg.onEmit = onEmit
 	}
 }
 
@@ -143,26 +152,35 @@ func ParseModule(inputDir string, opts ...Option) ([]*Node, error) {
 	return parseModule(inputDir, cfg.includes, min(n, cfg.parallelism))
 }
 
-func TranspileFile(inputFile, outputFile string) error {
+type Artifact struct {
+	Source  string
+	Path    string
+	Bytes   int
+	Elapsed time.Duration
+}
+
+func TranspileFile(inputFile, outputFile string) (Artifact, error) {
 	if inputFile == "" {
-		return fmt.Errorf("input file path is empty")
+		return Artifact{}, fmt.Errorf("input file path is empty")
 	}
 
 	absInputFile, err := toAbsPath(inputFile)
 	if err != nil {
-		return fmt.Errorf("failed to resolve input file %q: %v", inputFile, err)
+		return Artifact{}, fmt.Errorf("failed to resolve input file %q: %v", inputFile, err)
 	}
 
 	absInputDir := filepath.Dir(absInputFile)
 
+	start := time.Now()
+
 	e, err := newFileParser(absInputFile)
 	if err != nil {
-		return err // returns descriptive error
+		return Artifact{}, err // returns descriptive error
 	}
 	e.lookup = map[string]int{e.tag: 0}
 
 	if err := e.parse(); err != nil {
-		return err // returns descriptive error
+		return Artifact{}, err // returns descriptive error
 	}
 
 	var absOutputFile string
@@ -171,49 +189,53 @@ func TranspileFile(inputFile, outputFile string) error {
 	} else {
 		absOutputFile, err = toAbsPath(outputFile)
 		if err != nil {
-			return fmt.Errorf("failed to resolve absolute path for output file %q: %v", outputFile, err)
+			return Artifact{}, fmt.Errorf("failed to resolve absolute path for output file %q: %v", outputFile, err)
 		}
 	}
 
-	return renderToFile(absOutputFile, e.doc)
+	if written, err := renderToFile(absOutputFile, e.doc); err != nil {
+		return Artifact{}, err
+	} else {
+		return Artifact{
+			Path:    absOutputFile,
+			Bytes:   written,
+			Source:  absInputFile,
+			Elapsed: time.Since(start),
+		}, nil
+	}
 }
 
-func renderToFile(absPath string, n *Node) error {
+func renderToFile(absPath string, n *Node) (int, error) {
 	f, err := os.Create(absPath)
 	if err != nil {
-		return fmt.Errorf("could not create output file %q: %v", absPath, err)
+		return 0, fmt.Errorf("could not create output file %q: %v", absPath, err)
 	}
 	defer f.Close()
 
-	if _, err := Render(f, n); err != nil {
-		return fmt.Errorf("failed to write output file %q: %v", absPath, err)
+	if written, err := Render(f, n); err != nil {
+		return 0, fmt.Errorf("failed to write output file %q: %v", absPath, err)
+	} else {
+		return written, nil
 	}
-
-	return nil
 }
 
-func TranspileModule(inputDir string, outputDir string, opts ...Option) error {
+func TranspileModule(inputDir string, outputDir string, opts ...Option) ([]Artifact, error) {
 	if inputDir == "" {
-		return fmt.Errorf("input directory path is empty")
+		return nil, fmt.Errorf("input directory path is empty")
 	}
 
 	absInputDir, err := toAbsPath(inputDir)
 	if err != nil {
-		return fmt.Errorf("failed to resolve input directory %q: %v", inputDir, err)
+		return nil, fmt.Errorf("failed to resolve input directory %q: %v", inputDir, err)
 	}
 
 	cfg := config{}
 	n, err := readConfig(&cfg, absInputDir, opts...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	parallelism := min(n, cfg.parallelism)
-
-	nodes, err := parseModule(inputDir, cfg.includes, parallelism)
-	if err != nil {
-		return fmt.Errorf("parse module %q: %v", inputDir, err)
-	}
 
 	var absOutputDir string
 	if outputDir == "" {
@@ -221,15 +243,26 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) error {
 	} else {
 		absOutputDir, err = toAbsPath(outputDir)
 		if err != nil {
-			return fmt.Errorf("failed to resolve absolute path for output directory %q: %v", outputDir, err)
+			return nil, fmt.Errorf("failed to resolve absolute path for output directory %q: %v", outputDir, err)
 		}
 	}
+
+	start := time.Now()
+
+	nodes, err := parseModule(inputDir, cfg.includes, parallelism)
+	if err != nil {
+		return nil, fmt.Errorf("parse module %q: %v", inputDir, err)
+	}
+
+	var mu sync.Mutex
+	artifacts := make([]Artifact, n)
 
 	var g errgroup.Group
 	g.SetLimit(min(n, cfg.parallelism))
 
-	for _, node := range nodes {
+	for i, node := range nodes {
 		node := node
+		i := i
 		g.Go(func() error {
 			// parseModule guarantees that node.Path is always at least length 2 (stem, ext),
 			// otherwise this might panic on certain input files:
@@ -238,17 +271,26 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) error {
 			if err != nil {
 				return fmt.Errorf("could not create file %q: %v", outfile, err)
 			}
-			defer dst.Close()
-			if _, err = Render(dst, node); err != nil {
+			if written, err := Render(dst, node); err != nil {
+				dst.Close()
 				return fmt.Errorf("failed to write file %q: %v", outfile, err)
+			} else {
+				dst.Close()
+				art := Artifact{Path: outfile, Bytes: written, Elapsed: time.Since(start)}
+				mu.Lock()
+				artifacts[i] = art
+				mu.Unlock()
+				if cfg.onEmit != nil {
+					cfg.onEmit(art)
+				}
 			}
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return artifacts, nil
 }
 
 func toAbsPath(path string) (string, error) {

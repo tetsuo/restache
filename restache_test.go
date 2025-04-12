@@ -60,7 +60,7 @@ func TestTranspileFileInvalidInputFile(t *testing.T) {
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			err := restache.TranspileFile(tt.inputFile, "")
+			_, err := restache.TranspileFile(tt.inputFile, "")
 			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 				t.Errorf("got err = %v, want err containing %q", err, tt.wantErr)
 			}
