@@ -94,7 +94,7 @@ func main() {
 	filesByDir := resolveGlobs(baseDir, patterns)
 
 	if len(filesByDir) == 0 {
-		fatalf("no files matched the provided pattern")
+		os.Exit(1)
 	}
 
 	const maxParallelism = 32
@@ -185,6 +185,10 @@ func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) 
 		if err != nil {
 			fatalf("invalid glob %q: %v", pat, err)
 		}
+		if len(matches) == 0 {
+			logf("no files matched the pattern: %s", pat)
+			continue
+		}
 		for _, match := range matches {
 			info, err = os.Lstat(match) // will ignore symlinks
 			if err != nil {
@@ -203,6 +207,10 @@ func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) 
 func fatalf(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, "%s: %s\n", PROGRAM_NAME, fmt.Sprintf(format, args...))
 	os.Exit(1)
+}
+
+func logf(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "%s: %s\n", PROGRAM_NAME, fmt.Sprintf(format, args...))
 }
 
 func fatal(msg string) {
