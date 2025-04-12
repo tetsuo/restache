@@ -73,10 +73,10 @@ func readConfig(cfg *config, inputDir string, opts ...Option) (int, error) {
 func parseModule(inputDir string, includes []string, parallelism int) ([]*Node, error) {
 	var err error
 	n := len(includes)
-	entries := make([]*componentEntry, n)
+	entries := make([]*fileParser, n)
 	lookupTable := make(map[string]int, n)
 	for i, path := range includes {
-		entries[i], err = newComponentEntry(inputDir, path)
+		entries[i], err = newFileParser(filepath.Join(inputDir, path))
 		if err != nil {
 			return nil, err
 		}
@@ -155,7 +155,7 @@ func TranspileFile(inputFile, outputFile string) error {
 
 	absInputDir := filepath.Dir(absInputFile)
 
-	e, err := newComponentEntry(absInputDir, filepath.Base(absInputFile))
+	e, err := newFileParser(absInputFile)
 	if err != nil {
 		return err // returns descriptive error
 	}
