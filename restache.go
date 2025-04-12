@@ -185,7 +185,7 @@ func renderToFile(absPath string, n *Node) error {
 	}
 	defer f.Close()
 
-	if err := Render(f, n); err != nil {
+	if _, err := Render(f, n); err != nil {
 		return fmt.Errorf("failed to write output file %q: %v", absPath, err)
 	}
 
@@ -239,7 +239,7 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) error {
 				return fmt.Errorf("could not create file %q: %v", outfile, err)
 			}
 			defer dst.Close()
-			if err = Render(dst, node); err != nil {
+			if _, err = Render(dst, node); err != nil {
 				return fmt.Errorf("failed to write file %q: %v", outfile, err)
 			}
 			return nil

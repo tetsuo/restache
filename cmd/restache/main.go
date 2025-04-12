@@ -80,7 +80,7 @@ func main() {
 		if err != nil {
 			fatalf("failed to parse stdin: %v", err)
 		}
-		if err = restache.Render(os.Stdout, node); err != nil {
+		if _, err := restache.Render(os.Stdout, node); err != nil {
 			fatalf("failed to write to stdout: %v", err)
 		}
 		os.Exit(0)

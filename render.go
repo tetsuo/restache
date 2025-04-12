@@ -8,17 +8,23 @@ import (
 	"strings"
 )
 
-func Render(w io.Writer, n *Node) error {
+func Render(w io.Writer, n *Node) (int, error) {
 	if x, ok := w.(writer); ok {
 		r := &renderer{w: x, indent: 2}
-		return r.render(n)
+		if err := r.render(n); err != nil {
+			return 0, err
+		}
+		return r.written, nil
 	}
 	buf := bufio.NewWriter(w)
 	r := &renderer{w: buf, indent: 2}
 	if err := r.render(n); err != nil {
-		return err
+		return 0, err
 	}
-	return buf.Flush()
+	if err := buf.Flush(); err != nil {
+		return 0, err
+	}
+	return r.written, nil
 }
 
 type writer interface {
@@ -30,37 +36,64 @@ type writer interface {
 type renderer struct {
 	w writer
 
-	indent int
+	indent  int
+	written int
+}
+
+func (r *renderer) print1(c byte) error {
+	if err := r.w.WriteByte(c); err != nil {
+		return err
+	} else {
+		r.written += 1
+	}
+	return nil
+}
+
+func (r *renderer) print(s string) error {
+	if n, err := r.w.WriteString(s); err != nil {
+		return err
+	} else {
+		r.written += n
+	}
+	return nil
+}
+
+func (r *renderer) printf(format string, args ...any) error {
+	if n, err := r.w.WriteString(fmt.Sprintf(format, args...)); err != nil {
+		return err
+	} else {
+		r.written += n
+	}
+	return nil
 }
 
 func (r *renderer) renderComponent(n *Node) error {
-	w := r.w
-	if _, err := w.WriteString("import * as React from 'react';"); err != nil {
+	if err := r.print("import * as React from 'react';"); err != nil {
 		return err
 	}
 	for _, attr := range n.Attr {
-		if _, err := w.WriteString(fmt.Sprintf("import %s from \"./%s.jsx\";\n", attr.Key, attr.Val)); err != nil {
+		if err := r.printf("import %s from \"./%s.jsx\";\n", attr.Key, attr.Val); err != nil {
 			return err
 		}
 	}
-	if err := w.WriteByte('\n'); err != nil {
+	if err := r.print1('\n'); err != nil {
 		return err
 	}
-	if _, err := w.WriteString("export default function"); err != nil {
+	if err := r.print("export default function"); err != nil {
 		return err
 	}
 	if n.Data != "" {
-		if err := w.WriteByte(' '); err != nil {
+		if err := r.print1(' '); err != nil {
 			return err
 		}
-		if _, err := w.WriteString(n.Data); err != nil {
+		if err := r.print(n.Data); err != nil {
 			return err
 		}
 	}
-	if _, err := w.WriteString("(props) {\n"); err != nil {
+	if err := r.print("(props) {\n"); err != nil {
 		return err
 	}
-	if _, err := w.WriteString("  return ("); err != nil {
+	if err := r.print("  return ("); err != nil {
 		return err
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
@@ -68,10 +101,10 @@ func (r *renderer) renderComponent(n *Node) error {
 			return err
 		}
 	}
-	if _, err := w.WriteString("  );"); err != nil {
+	if err := r.print("  );"); err != nil {
 		return err
 	}
-	if _, err := w.WriteString("}"); err != nil {
+	if err := r.print("}"); err != nil {
 		return err
 	}
 	return nil
@@ -79,7 +112,7 @@ func (r *renderer) renderComponent(n *Node) error {
 
 func (r *renderer) writeIndent() error {
 	for range r.indent {
-		if _, err := r.w.WriteString("  "); err != nil {
+		if err := r.print("  "); err != nil {
 			return err
 		}
 	}
@@ -87,12 +120,11 @@ func (r *renderer) writeIndent() error {
 }
 
 func (r *renderer) render(n *Node) error {
-	w := r.w
 	switch n.Type {
 	case ErrorNode:
 		return errors.New("html: cannot render an ErrorNode node")
 	case TextNode:
-		return escape(w, n.Data)
+		return escape(r.w, n.Data)
 	case ComponentNode:
 		return r.renderComponent(n)
 	case ElementNode:
@@ -108,36 +140,41 @@ func (r *renderer) render(n *Node) error {
 
 // renderElementNode renders a normal element.
 func (r *renderer) renderElement(n *Node) error {
-	w := r.w
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
 	// Render the <xxx> opening tag.
-	if err := w.WriteByte('<'); err != nil {
+	if err := r.print1('<'); err != nil {
 		return err
 	}
-	if _, err := w.WriteString(n.Data); err != nil {
+	if err := r.print(n.Data); err != nil {
 		return err
 	}
 	for _, a := range n.Attr {
-		if err := w.WriteByte(' '); err != nil {
+		if err := r.print1(' '); err != nil {
 			return err
 		}
-		if _, err := w.WriteString(a.Key); err != nil {
+		if err := r.print(a.Key); err != nil {
 			return err
 		}
-		if _, err := w.WriteString(`="`); err != nil {
+		if err := r.print(`="`); err != nil {
 			return err
 		}
-		if err := escape(w, a.Val); err != nil {
+		if err := escape(r.w, a.Val); err != nil {
 			return err
 		}
-		if err := w.WriteByte('"'); err != nil {
+		if err := r.print1('"'); err != nil {
 			return err
 		}
 	}
-	// TODO: check void elements
-	if _, err := w.WriteString(">\n"); err != nil {
+	// if voidElements[n.Data] {
+	// 	if n.FirstChild != nil {
+	// 		return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
+	// 	}
+	// 	err := r.print("/>")
+	// 	return err
+	// }
+	if err := r.print(">\n"); err != nil {
 		return err
 	}
 
@@ -145,7 +182,7 @@ func (r *renderer) renderElement(n *Node) error {
 	if c := n.FirstChild; c != nil && c.Type == TextNode && strings.HasPrefix(c.Data, "\n") {
 		switch n.Data {
 		case "pre", "listing", "textarea":
-			if err := w.WriteByte('\n'); err != nil {
+			if err := r.print1('\n'); err != nil {
 				return err
 			}
 		}
@@ -177,13 +214,13 @@ func (r *renderer) renderElement(n *Node) error {
 		return err
 	}
 	// Render the </xxx> closing tag.
-	if _, err := w.WriteString("</"); err != nil {
+	if err := r.print("</"); err != nil {
 		return err
 	}
-	if _, err := w.WriteString(n.Data); err != nil {
+	if err := r.print(n.Data); err != nil {
 		return err
 	}
-	if _, err := w.WriteString(">\n"); err != nil {
+	if err := r.print(">\n"); err != nil {
 		return err
 	}
 	return nil
@@ -197,13 +234,13 @@ func (r *renderer) renderVariable(n *Node) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString("{props."); err != nil {
+	if err := r.print("{props."); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(n.Data); err != nil {
+	if err := r.print(n.Data); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString("}\n"); err != nil {
+	if err := r.print("}\n"); err != nil {
 		return err
 	}
 	return nil
@@ -217,13 +254,13 @@ func (r *renderer) renderComment(n *Node) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString("{/* "); err != nil {
+	if err := r.print("{/* "); err != nil {
 		return err
 	}
 	if err := escapeComment(r.w, n.Data); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(" */}\n"); err != nil {
+	if err := r.print(" */}\n"); err != nil {
 		return err
 	}
 	return nil
@@ -290,21 +327,21 @@ func (r *renderer) renderSingleConditionBlock(b *conditionalBlock) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString("{"); err != nil {
+	if err := r.print("{"); err != nil {
 		return err
 	}
 	if b.Negate {
-		if _, err := r.w.WriteString("!"); err != nil {
+		if err := r.print("!"); err != nil {
 			return err
 		}
 	}
-	if _, err := r.w.WriteString("props."); err != nil {
+	if err := r.print("props."); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(b.Cond); err != nil {
+	if err := r.print(b.Cond); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(" && (\n"); err != nil {
+	if err := r.print(" && (\n"); err != nil {
 		return err
 	}
 
@@ -319,7 +356,7 @@ func (r *renderer) renderSingleConditionBlock(b *conditionalBlock) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(")}\n"); err != nil {
+	if err := r.print(")}\n"); err != nil {
 		return err
 	}
 
@@ -334,21 +371,21 @@ func (r *renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString("{"); err != nil {
+	if err := r.print("{"); err != nil {
 		return err
 	}
 	if a.Negate {
-		if _, err := r.w.WriteString("!"); err != nil {
+		if err := r.print("!"); err != nil {
 			return err
 		}
 	}
-	if _, err := r.w.WriteString("props."); err != nil {
+	if err := r.print("props."); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(a.Cond); err != nil {
+	if err := r.print(a.Cond); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(" ? (\n"); err != nil {
+	if err := r.print(" ? (\n"); err != nil {
 		return err
 	}
 
@@ -363,7 +400,7 @@ func (r *renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(") : (\n"); err != nil {
+	if err := r.print(") : (\n"); err != nil {
 		return err
 	}
 
@@ -378,7 +415,7 @@ func (r *renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
-	if _, err := r.w.WriteString(")}\n"); err != nil {
+	if err := r.print(")}\n"); err != nil {
 		return err
 	}
 
@@ -395,23 +432,23 @@ func (r *renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) error {
 			if err := r.writeIndent(); err != nil {
 				return err
 			}
-			if _, err := r.w.WriteString("{"); err != nil {
+			if err := r.print("{"); err != nil {
 				return err
 			}
 		}
 		if b.Negate {
-			if _, err := r.w.WriteString("!props."); err != nil {
+			if err := r.print("!props."); err != nil {
 				return err
 			}
 		} else {
-			if _, err := r.w.WriteString("props."); err != nil {
+			if err := r.print("props."); err != nil {
 				return err
 			}
 		}
-		if _, err := r.w.WriteString(b.Cond); err != nil {
+		if err := r.print(b.Cond); err != nil {
 			return err
 		}
-		if _, err := r.w.WriteString(" ? (\n"); err != nil {
+		if err := r.print(" ? (\n"); err != nil {
 			return err
 		}
 
@@ -426,12 +463,12 @@ func (r *renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) error {
 		if err := r.writeIndent(); err != nil {
 			return err
 		}
-		if _, err := r.w.WriteString(") : "); err != nil {
+		if err := r.print(") : "); err != nil {
 			return err
 		}
 	}
 	// final fallback
-	if _, err := r.w.WriteString("null}\n"); err != nil {
+	if err := r.print("null}\n"); err != nil {
 		return err
 	}
 	return nil
