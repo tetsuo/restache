@@ -8,8 +8,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/tetsuo/commonpath"
 	"github.com/tetsuo/restache"
-	"github.com/tetsuo/restache/cmd/restache/commonpath"
 )
 
 const PROGRAM_NAME = "restache"
@@ -105,13 +105,6 @@ func main() {
 		parallelism = maxParallelism
 	}
 
-	var commonPath func(paths []string) string
-	if runtime.GOOS == "windows" {
-		commonPath = commonpath.CommonPathWin
-	} else {
-		commonPath = commonpath.CommonPathUnix
-	}
-
 	if outdir != "" {
 		if !filepath.IsAbs(outdir) {
 			outdir = filepath.Join(baseDir, outdir)
@@ -119,7 +112,10 @@ func main() {
 		if err := os.MkdirAll(outdir, 0755); err != nil {
 			fatalf("could not create output directory %q: %v", outdir, err)
 		}
-		common := commonPath(collectKeys(filesByDir))
+		common, err := commonpath.CommonPath(collectKeys(filesByDir))
+		if err != nil {
+			fatalf("could not determine the common sub-path: %v", err)
+		}
 		for dir, files := range filesByDir {
 			actualOutDir, err := filepath.Rel(common, dir)
 			if err != nil {
