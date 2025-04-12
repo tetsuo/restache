@@ -30,7 +30,7 @@ func main() {
 	// Reject single-dash long options like -parallelism
 	for _, arg := range os.Args[1:] {
 		if strings.HasPrefix(arg, "-") && !strings.HasPrefix(arg, "--") && len(arg) > 2 && !strings.Contains(arg, "=") {
-			fmt.Fprintf(os.Stderr, "%s: invalid option: %s (did you mean --%s?)\n", PROGRAM_NAME, arg, arg[1:])
+			logf("invalid option: %s (did you mean --%s?)", arg, arg[1:])
 			fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", PROGRAM_NAME)
 			os.Exit(1)
 		}
@@ -73,7 +73,7 @@ func main() {
 
 	if n == 0 || patterns[0] == "-" {
 		if outdir != "" {
-			fmt.Fprintf(os.Stderr, "%s: ignoring --outdir (no input files)\n", PROGRAM_NAME)
+			logf("ignoring --outdir (no input files)")
 		}
 		// Process stdin:
 		node, err := restache.Parse(os.Stdin)
