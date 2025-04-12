@@ -14,6 +14,11 @@ func TestTranspileFileInvalidInputFile(t *testing.T) {
 		wantErr   string
 	}{
 		{
+			"empty input path",
+			"",
+			"input file path is empty",
+		},
+		{
 			"filename with invalid char",
 			"/components/bad$name.stache",
 			"contains invalid character '$'",
