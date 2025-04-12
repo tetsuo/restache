@@ -24,7 +24,7 @@ type Attribute struct {
 	IsExpr bool
 }
 
-type PathSegment struct {
+type PathComponent struct {
 	Key     string
 	IsRange bool
 }
@@ -36,7 +36,7 @@ type Node struct {
 	DataAtom atom.Atom
 	Data     string
 	Attr     []Attribute
-	Path     []PathSegment
+	Path     []PathComponent
 }
 
 // InsertBefore inserts newChild as a child of n, immediately before oldChild

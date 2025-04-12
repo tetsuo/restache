@@ -59,7 +59,7 @@ func (s *fileParser) parse() error {
 
 	s.doc = p.doc
 	s.doc.Data = s.tag
-	s.doc.Path = []PathSegment{{Key: s.stem}, {Key: s.ext}}
+	s.doc.Path = []PathComponent{{Key: s.stem}, {Key: s.ext}}
 
 	s.afters = collectKeys(p.afters)
 	s.doc.Attr = make([]Attribute, len(s.afters))

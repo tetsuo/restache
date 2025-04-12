@@ -28,7 +28,7 @@ type parser struct {
 	doc  *Node
 	im   insertionMode
 	tt   TokenType
-	path []PathSegment
+	path []PathComponent
 	sc   bool // indicates self closing token
 
 	lookup map[string]int // dependency lookup table
@@ -160,7 +160,7 @@ func inBodyIM(p *parser) bool {
 			last = len(parts) - 1
 		)
 		for i, part = range parts {
-			p.path = append(p.path, PathSegment{
+			p.path = append(p.path, PathComponent{
 				Key:     part,
 				IsRange: i == last,
 			})
