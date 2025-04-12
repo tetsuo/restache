@@ -181,7 +181,13 @@ func resolveGlobs(baseDir string, patterns []string) (dirs map[string][]string) 
 	)
 	dirs = make(map[string][]string)
 	for _, pat := range patterns {
-		matches, err := filepath.Glob(filepath.Join(baseDir, pat))
+		var ppat string
+		if filepath.IsAbs(pat) {
+			ppat = pat
+		} else {
+			ppat = filepath.Join(baseDir, pat)
+		}
+		matches, err := filepath.Glob(ppat)
 		if err != nil {
 			fatalf("invalid glob %q: %v", pat, err)
 		}
