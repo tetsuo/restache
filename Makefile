@@ -15,6 +15,9 @@ cover-html: cover
 build:
 	$(GO) build -a -trimpath -tags netgo $(GOFLAGS) -o bin/ ./cmd/...
 
+fast-build:
+	$(GO) build -o bin/ ./cmd/...
+
 testclean:
 	@rm -f coverage.out
 	@rm -fr output
