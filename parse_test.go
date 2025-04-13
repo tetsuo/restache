@@ -43,7 +43,7 @@ func TestParse(t *testing.T) {
 			t.Errorf("expected no error, got %v", err)
 		}
 		res := dumpResolvedTree(root)
-		expected := "[] [  ]"
+		expected := "[  ]"
 		if res != expected {
 			t.Errorf("expected %q, got %q", expected, res)
 		}
@@ -52,7 +52,7 @@ func TestParse(t *testing.T) {
 
 func dumpResolvedTree(n *restache.Node) string {
 	var b strings.Builder
-	b.WriteString("[] [ ")
+	b.WriteString("[ ")
 	dumpResolvedNode(&b, n, 0)
 	b.WriteString(" ]")
 	return b.String()
