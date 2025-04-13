@@ -9,7 +9,7 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	const file = "testdata/parser_testcases.txt"
+	const file = "testdata/parser_ast.txt"
 	for _, tc := range buildTestcases(t, file) {
 		t.Run(fmt.Sprintf("%s L%d", file, tc.line), func(t *testing.T) {
 			r := strings.NewReader(tc.data)

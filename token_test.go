@@ -26,7 +26,7 @@ func (e *errorReader) Read(_ []byte) (int, error) {
 }
 
 func TestTokenizer(t *testing.T) {
-	const file = "testdata/lexer_testcases.txt"
+	const file = "testdata/tokenizer.txt"
 	for _, tc := range buildTestcases(t, file) {
 		t.Run(fmt.Sprintf("%s L%d", file, tc.line), func(t *testing.T) {
 			r := strings.NewReader(tc.data)
