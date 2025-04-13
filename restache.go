@@ -76,6 +76,10 @@ func readConfig(cfg *config, inputDir string, opts ...Option) (int, error) {
 		}
 	}
 
+	if cfg.parallelism == 0 {
+		cfg.parallelism = runtime.NumCPU()
+	}
+
 	return n, nil
 }
 
