@@ -275,6 +275,8 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) ([]Artif
 		return nil, fmt.Errorf("parse module %q: %v", inputDir, err)
 	}
 
+	diff := time.Since(start)
+
 	var mu sync.Mutex
 	artifacts := make([]Artifact, n)
 
@@ -284,6 +286,7 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) ([]Artif
 	for i, node := range nodes {
 		node := node
 		i := i
+		start := time.Now()
 		g.Go(func() error {
 			// parseModule guarantees that node.Path is always at least length 2 (stem, ext),
 			// otherwise this might panic on certain input files:
@@ -297,7 +300,7 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) ([]Artif
 				return fmt.Errorf("failed to write file %q: %v", outfile, err)
 			} else {
 				dst.Close()
-				art := Artifact{Path: outfile, Bytes: written, Elapsed: time.Since(start)}
+				art := Artifact{Path: outfile, Bytes: written, Elapsed: time.Since(start) + diff}
 				mu.Lock()
 				artifacts[i] = art
 				mu.Unlock()
