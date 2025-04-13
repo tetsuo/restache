@@ -112,10 +112,27 @@ func parseModule(inputDir string, includes []string, parallelism int) ([]*Node, 
 	// Before sorting collect imports:
 	for _, e := range entries {
 		if e.doc.Attr != nil {
+			j := 0
 			for i, other := range e.afters {
-				e.doc.Attr[i] = Attribute{Key: entries[other].tag, Val: entries[other].stem}
+				// Recursive?
+				if entries[other].tag == e.tag {
+					e.doc.DataAtom = 1
+					continue
+				}
+				e.afters[j] = e.afters[i]
+				e.doc.Attr[j] = Attribute{
+					Key: entries[other].tag,
+					Val: entries[other].stem,
+				}
+				j++
 			}
-			sort = true
+			if e.doc.DataAtom == 1 {
+				e.afters = e.afters[:j]
+				e.doc.Attr = e.doc.Attr[:j]
+			}
+			if j > 0 {
+				sort = true
+			}
 		}
 	}
 
