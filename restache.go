@@ -170,7 +170,7 @@ func ParseModule(inputDir string, opts ...Option) ([]*Node, error) {
 		return nil, err
 	}
 
-	return parseModule(inputDir, cfg.includes, min(n, cfg.parallelism))
+	return parseModule(absInputDir, cfg.includes, min(n, cfg.parallelism))
 }
 
 type Artifact struct {
