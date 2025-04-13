@@ -227,7 +227,7 @@ func logf(format string, args ...any) {
 }
 
 func fatal(msg string) {
-	fmt.Fprintln(os.Stderr, msg)
+	fmt.Fprintf(os.Stderr, "%s: %s\n", PROGRAM_NAME, msg)
 	os.Exit(1)
 }
 
