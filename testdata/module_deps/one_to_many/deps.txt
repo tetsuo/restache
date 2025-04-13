@@ -1,0 +1,3 @@
+dashboard sum
+dashboard activity
+dashboard recommendations

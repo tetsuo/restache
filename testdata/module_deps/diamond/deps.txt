@@ -1,0 +1,4 @@
+root foo
+root bar
+foo shared
+bar shared

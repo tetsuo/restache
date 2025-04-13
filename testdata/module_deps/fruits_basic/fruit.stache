@@ -1,0 +1,7 @@
+<h1>{name}</h1>
+<h2>Vitamins</h2>
+<ul>
+  {#vitamins}
+    <li><vitamin /></li>
+  {/vitamins}
+</ul>

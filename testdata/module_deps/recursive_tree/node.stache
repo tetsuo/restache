@@ -1,0 +1,8 @@
+<li>
+  {label}
+  {?foo}
+    {#children}
+      <node />
+    {/children}
+  {/foo}
+</li>

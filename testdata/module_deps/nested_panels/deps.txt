@@ -1,0 +1,6 @@
+page mainpanel
+page sidebar
+mainpanel userlist
+mainpanel activityfeed
+sidebar quicklinks
+sidebar userlist

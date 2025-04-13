@@ -1,0 +1,5 @@
+<ul>
+  {#activities}
+    <li>{action}</li>
+  {/activities}
+</ul>
