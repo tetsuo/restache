@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"unicode"
+
+	"golang.org/x/net/html/atom"
 )
 
 // fileParser parses a template with dependencies; it implements toposort.Vertex.
@@ -30,6 +32,12 @@ func newFileParser(absPath string) (*fileParser, error) {
 	if len(z.stem) == 0 {
 		// This also catches when path = "."
 		return nil, fmt.Errorf("input filename %q is not valid", path)
+	}
+	a := atom.Lookup([]byte(z.stem))
+	if a != 0 {
+		if _, ok := elementAtoms[a]; ok {
+			return nil, fmt.Errorf("invalid filename %q: <%s> conflicts with standard element", path, z.stem)
+		}
 	}
 	var hasUpper bool
 	hasUpper, err := isTagNameValidAndUpper(z.stem)
