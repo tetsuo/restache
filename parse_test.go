@@ -113,13 +113,13 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 			b.WriteString(`]`)
 
 		case restache.ElementNode:
-			b.WriteString(c.Data) // tag name
-			b.WriteString(" [")   // attributes
+			b.WriteString(c.TagName()) // tag name
+			b.WriteString(" [")        // attributes
 			for j, attr := range c.Attr {
 				if j > 0 {
 					b.WriteString(", ")
 				}
-				b.WriteString(attr.Key)
+				b.WriteString(attr.KeyName())
 				if len(attr.Val) > 0 {
 					b.WriteString(" ")
 					if attr.IsExpr {

@@ -50,6 +50,16 @@ func newParser(r io.Reader, lookup map[string]int) *parser {
 	return p
 }
 
+func (p *parser) markDependency(data string) {
+	if p.lookup != nil {
+		if idx, ok := p.lookup[data]; ok {
+			if _, ok = p.afters[idx]; !ok {
+				p.afters[idx] = true
+			}
+		}
+	}
+}
+
 // initialIM is the first insertion mode used.
 // It switches to inBodyIM after adding the root document.
 func initialIM(p *parser) bool {
@@ -61,7 +71,7 @@ func initialIM(p *parser) bool {
 func lookupElementAtom(s []byte) atom.Atom {
 	a := atom.Lookup(s)
 	if a != 0 {
-		if _, ok := elementAtoms[a]; ok {
+		if _, ok := nativeElements[a]; ok {
 			return a
 		}
 	}
@@ -85,40 +95,51 @@ func inBodyIM(p *parser) bool {
 	case StartTagToken:
 		name, hasAttr := p.z.TagName()
 
-		elem := &Node{
+		e := &Node{
 			Type:     ElementNode,
-			Data:     string(name),
-			DataAtom: lookupElementAtom(name),
+			DataAtom: atom.Lookup(name),
 			Path:     slices.Clone(p.path),
 		}
-		// Gather attributes
+
+		if e.DataAtom != 0 {
+			if _, ok := nativeElements[e.DataAtom]; !ok {
+				e.Data = e.DataAtom.String()
+				e.DataAtom = 0
+				p.markDependency(e.Data)
+			}
+		} else {
+			e.Data = string(name)
+			p.markDependency(e.Data)
+		}
+
 		for hasAttr {
 			key, val, isExpr, more := p.z.TagAttr()
-			elem.Attr = append(elem.Attr, Attribute{
-				Key:    string(key),
-				Val:    string(val),
-				IsExpr: isExpr,
-			})
+			x := Attribute{
+				KeyAtom: atom.Lookup(key),
+				Val:     string(val),
+				IsExpr:  isExpr,
+			}
+			if x.KeyAtom != 0 {
+				if _, ok := nativeAttrs[x.KeyAtom]; !ok {
+					x.Key = x.KeyAtom.String()
+					x.KeyAtom = 0
+				}
+			} else {
+				x.Key = string(key)
+			}
+			e.Attr = append(e.Attr, x)
 			hasAttr = more
 		}
 
-		p.oe.top().AppendChild(elem)
-
-		if elem.DataAtom == 0 && p.lookup != nil {
-			if idx, ok := p.lookup[elem.Data]; ok {
-				if _, ok = p.afters[idx]; !ok {
-					p.afters[idx] = true // Mark dependency
-				}
-			}
-		}
+		p.oe.top().AppendChild(e)
 
 		// If it's self-closing tag, or void element, don't push onto the stack:
-		if p.sc || voidElements[elem.DataAtom] {
+		if p.sc || voidElements[e.DataAtom] {
 			p.sc = false
 			return true
 		}
 		// else push onto stack
-		p.oe = append(p.oe, elem)
+		p.oe = append(p.oe, e)
 		return true
 
 	case EndTagToken:
@@ -231,11 +252,4 @@ func (p *parser) parse() error {
 		p.parseCurrentToken()
 	}
 	return nil
-}
-
-// voidElements only have a start tag; ends tags are not specified.
-var voidElements = map[atom.Atom]bool{
-	atom.Area: true, atom.Br: true, atom.Embed: true, atom.Img: true,
-	atom.Input: true, atom.Wbr: true, atom.Col: true, atom.Hr: true,
-	atom.Link: true, atom.Track: true, atom.Source: true,
 }

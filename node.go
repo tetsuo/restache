@@ -19,9 +19,17 @@ const (
 )
 
 type Attribute struct {
-	Key    string
-	Val    string
-	IsExpr bool
+	Key     string
+	KeyAtom atom.Atom
+	Val     string
+	IsExpr  bool
+}
+
+func (a Attribute) KeyName() string {
+	if a.KeyAtom != 0 {
+		return a.KeyAtom.String()
+	}
+	return a.Key
 }
 
 type PathComponent struct {
@@ -37,6 +45,16 @@ type Node struct {
 	Data     string
 	Attr     []Attribute
 	Path     []PathComponent
+}
+
+func (n *Node) TagName() string {
+	if n.Type != ElementNode {
+		return ""
+	}
+	if n.DataAtom != 0 {
+		return n.DataAtom.String()
+	}
+	return n.Data
 }
 
 // InsertBefore inserts newChild as a child of n, immediately before oldChild
@@ -134,7 +152,7 @@ func (s *nodeStack) top() *Node {
 func (s *nodeStack) popUntil(a atom.Atom, name []byte) bool {
 	for i := len(*s) - 1; i >= 0; i-- {
 		n := (*s)[i]
-		if (a != 0 && n.DataAtom == a) || (a == 0 && equal(n.Data, name)) {
+		if n.Type == ElementNode && ((a != 0 && n.DataAtom == a) || (a == 0 && equal(n.Data, name))) {
 			*s = (*s)[:i]
 			return true
 		}

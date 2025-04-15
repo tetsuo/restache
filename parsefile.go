@@ -35,7 +35,7 @@ func newFileParser(absPath string) (*fileParser, error) {
 	}
 	a := atom.Lookup([]byte(z.stem))
 	if a != 0 {
-		if _, ok := elementAtoms[a]; ok {
+		if _, ok := nativeElements[a]; ok {
 			return nil, fmt.Errorf("invalid filename %q: <%s> conflicts with standard element", path, z.stem)
 		}
 	}
