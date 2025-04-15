@@ -167,13 +167,13 @@ func (r *renderer) renderElement(n *Node) error {
 			return err
 		}
 	}
-	// if voidElements[n.Data] {
-	// 	if n.FirstChild != nil {
-	// 		return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
-	// 	}
-	// 	err := r.print("/>")
-	// 	return err
-	// }
+	if voidElements[n.DataAtom] {
+		if n.FirstChild != nil {
+			return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
+		}
+		err := r.print("/>")
+		return err
+	}
 	if err := r.print(">\n"); err != nil {
 		return err
 	}
