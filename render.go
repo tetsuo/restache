@@ -180,8 +180,8 @@ func (r *renderer) renderElement(n *Node) error {
 
 	// Add initial newline where there is danger of a newline being ignored.
 	if c := n.FirstChild; c != nil && c.Type == TextNode && strings.HasPrefix(c.Data, "\n") {
-		switch n.Data {
-		case "pre", "listing", "textarea":
+		switch n.DataAtom {
+		case atom.Pre, atom.Listing, atom.Textarea:
 			if err := r.print1('\n'); err != nil {
 				return err
 			}
