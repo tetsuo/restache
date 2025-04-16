@@ -119,12 +119,7 @@ func inBodyIM(p *parser) bool {
 				Val:     string(val),
 				IsExpr:  isExpr,
 			}
-			if x.KeyAtom != 0 {
-				if _, ok := nativeAttrs[x.KeyAtom]; !ok {
-					x.Key = x.KeyAtom.String()
-					x.KeyAtom = 0
-				}
-			} else {
+			if x.KeyAtom == 0 {
 				x.Key = string(key)
 			}
 			e.Attr = append(e.Attr, x)
