@@ -670,3 +670,14 @@ openclose(img, src=expr(profile.picture) alt=expr(profile.name))
 openclose(meta, name=text(description) content=expr(page.description))
 open(link, rel=text(stylesheet) href=expr(theme.css))
 
+%
+
+<p>Hello &amp; welcome, {{name}}!</p>
+
+%
+
+open(p)
+text(Hello &amp; welcome, )
+expr({name)
+text(}!)
+close(p)
