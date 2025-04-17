@@ -681,3 +681,14 @@ text(Hello &amp; welcome, )
 expr({name)
 text(}!)
 close(p)
+
+%
+
+<p aria-yolo="beep" data-foo="bar" on-baz="onQux" onclick="onClick">quuz</p>
+
+%
+
+open(p, aria-yolo=text(beep) data-foo=text(bar) onBaz=text(onQux) onclick=text(onClick))
+text(quuz)
+close(p)
+

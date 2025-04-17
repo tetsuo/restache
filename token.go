@@ -86,26 +86,32 @@ func (t *Tokenizer) ControlName() []byte {
 // TagAttr retrieves the next attribute key and value from an HTML start tag.
 func (t *Tokenizer) TagAttr() (key []byte, val []byte, isExpr bool, moreAttr bool) {
 	key, val, moreAttr = t.z.TagAttr()
+	if !(len(key) > 5 &&
+		key[4] == '-' && key[3] == 'a' &&
+		((key[0] == 'd' && key[1] == 'a' && key[2] == 't') ||
+			(key[0] == 'a' && key[1] == 'r' && key[2] == 'i'))) {
+		key = kebabToCamel(key)
+	}
 	i := 0
-	length := len(val)
-	for i < length && spaceTable[val[i]] {
+	n := len(val)
+	for i < n && spaceTable[val[i]] {
 		i++
 	}
-	if i == length || val[i] != '{' { // No starting '{' found; text node
+	if i == n || val[i] != '{' { // No starting '{' found; text node
 		return
 	}
 	rpos := bytes.IndexByte(val[i:], '}')
 	if rpos < 0 { // It is text node if no closing '}' found
 		return
 	}
-	if i+rpos+1 == length {
+	if i+rpos+1 == n {
 		expr := val[i:][1:rpos]
 		val = expr
 		isExpr = true
 		return
 	}
 	end := i + rpos + 1
-	for end < length {
+	for end < n {
 		if !spaceTable[val[end]] { // If anything other than space; text node
 			return
 		}
@@ -238,4 +244,25 @@ func identifyKeyword(chunk []byte) TokenType {
 
 var spaceTable = [256]bool{
 	' ': true, '\t': true, '\r': true, '\n': true,
+}
+
+func kebabToCamel(b []byte) []byte {
+	n := 0
+	upperNext := false
+	for i := range b {
+		c := b[i]
+		if c == '-' {
+			upperNext = true
+			continue
+		}
+		if upperNext && 'a' <= c && c <= 'z' {
+			b[n] = c - 'a' + 'A'
+			upperNext = false
+		} else {
+			b[n] = c
+			upperNext = false
+		}
+		n++
+	}
+	return b[:n]
 }
