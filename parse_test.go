@@ -119,7 +119,7 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 				if j > 0 {
 					b.WriteString(", ")
 				}
-				b.WriteString(attr.KeyName())
+				b.WriteString(attrKeyName(attr))
 				if len(attr.Val) > 0 {
 					b.WriteString(" ")
 					if attr.IsExpr {
@@ -161,6 +161,13 @@ func dumpResolvedNode(b *strings.Builder, n *restache.Node, indent int) {
 			b.WriteByte('\n')
 		}
 	}
+}
+
+func attrKeyName(a restache.Attribute) string {
+	if a.KeyAtom != 0 {
+		return a.KeyAtom.String()
+	}
+	return a.Key
 }
 
 func writeResolvedPath(b *strings.Builder, n *restache.Node) {

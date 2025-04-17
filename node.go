@@ -25,13 +25,6 @@ type Attribute struct {
 	IsExpr  bool
 }
 
-func (a Attribute) KeyName() string {
-	if a.KeyAtom != 0 {
-		return a.KeyAtom.String()
-	}
-	return a.Key
-}
-
 type PathComponent struct {
 	Key     string
 	IsRange bool
