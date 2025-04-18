@@ -163,7 +163,11 @@ func inBodyIM(p *parser) bool {
 		p.oe.top().AppendChild(e)
 
 		// If it's self-closing tag, or void element, don't push onto the stack:
-		if p.sc || voidElements[e.DataAtom] {
+		if p.sc {
+			p.sc = false
+			return true
+		}
+		if _, ok := voidElements[e.DataAtom]; ok {
 			p.sc = false
 			return true
 		}

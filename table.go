@@ -5,103 +5,103 @@ import (
 )
 
 // voidElements only have a start tag; ends tags are not specified.
-var voidElements = map[atom.Atom]bool{
-	atom.Area: true, atom.Br: true, atom.Embed: true, atom.Img: true,
-	atom.Input: true, atom.Wbr: true, atom.Col: true, atom.Hr: true,
-	atom.Link: true, atom.Track: true, atom.Source: true,
+var voidElements = map[atom.Atom]struct{}{
+	atom.Area: {}, atom.Br: {}, atom.Embed: {}, atom.Img: {},
+	atom.Input: {}, atom.Wbr: {}, atom.Col: {}, atom.Hr: {},
+	atom.Link: {}, atom.Track: {}, atom.Source: {},
 }
 
-var commonElements = map[atom.Atom]bool{
+var commonElements = map[atom.Atom]struct{}{
 	// HTML
-	atom.A: true, atom.Abbr: true, atom.Address: true, atom.Area: true,
-	atom.Article: true, atom.Aside: true, atom.Audio: true, atom.B: true,
-	atom.Base: true, atom.Bdi: true, atom.Bdo: true, atom.Blockquote: true,
-	atom.Body: true, atom.Br: true, atom.Button: true, atom.Canvas: true,
-	atom.Caption: true, atom.Cite: true, atom.Code: true, atom.Col: true,
-	atom.Colgroup: true, atom.Command: true, atom.Data: true, atom.Datalist: true,
-	atom.Dd: true, atom.Del: true, atom.Details: true, atom.Dfn: true,
-	atom.Dialog: true, atom.Div: true, atom.Dl: true, atom.Dt: true,
-	atom.Em: true, atom.Embed: true, atom.Fieldset: true, atom.Figcaption: true,
-	atom.Figure: true, atom.Footer: true, atom.Form: true, atom.H1: true,
-	atom.H2: true, atom.H3: true, atom.H4: true, atom.H5: true,
-	atom.H6: true, atom.Head: true, atom.Header: true, atom.Hgroup: true,
-	atom.Hr: true, atom.Html: true, atom.I: true, atom.Iframe: true,
-	atom.Img: true, atom.Input: true, atom.Ins: true, atom.Kbd: true,
-	atom.Keygen: true, atom.Label: true, atom.Legend: true, atom.Li: true,
-	atom.Link: true, atom.Main: true, atom.Map: true, atom.Mark: true,
-	atom.Menu: true, atom.Menuitem: true, atom.Meta: true, atom.Meter: true,
-	atom.Nav: true, atom.Noscript: true, atom.Object: true, atom.Ol: true,
-	atom.Optgroup: true, atom.Option: true, atom.Output: true, atom.P: true,
-	atom.Param: true, atom.Picture: true, atom.Pre: true, atom.Progress: true,
-	atom.Q: true, atom.Rp: true, atom.Rt: true, atom.Ruby: true,
-	atom.S: true, atom.Samp: true, atom.Script: true, atom.Section: true,
-	atom.Select: true, atom.Slot: true, atom.Small: true, atom.Source: true,
-	atom.Span: true, atom.Strong: true, atom.Style: true, atom.Sub: true,
-	atom.Summary: true, atom.Sup: true, atom.Table: true, atom.Tbody: true,
-	atom.Td: true, atom.Template: true, atom.Textarea: true, atom.Tfoot: true,
-	atom.Th: true, atom.Thead: true, atom.Time: true, atom.Title: true,
-	atom.Tr: true, atom.Track: true, atom.U: true, atom.Ul: true,
-	atom.Var: true, atom.Video: true, atom.Wbr: true, atom.Frame: true,
-	atom.Frameset: true, atom.Malignmark: true, atom.Manifest: true, atom.Rb: true,
-	atom.Rtc: true,
+	atom.A: {}, atom.Abbr: {}, atom.Address: {}, atom.Area: {},
+	atom.Article: {}, atom.Aside: {}, atom.Audio: {}, atom.B: {},
+	atom.Base: {}, atom.Bdi: {}, atom.Bdo: {}, atom.Blockquote: {},
+	atom.Body: {}, atom.Br: {}, atom.Button: {}, atom.Canvas: {},
+	atom.Caption: {}, atom.Cite: {}, atom.Code: {}, atom.Col: {},
+	atom.Colgroup: {}, atom.Command: {}, atom.Data: {}, atom.Datalist: {},
+	atom.Dd: {}, atom.Del: {}, atom.Details: {}, atom.Dfn: {},
+	atom.Dialog: {}, atom.Div: {}, atom.Dl: {}, atom.Dt: {},
+	atom.Em: {}, atom.Embed: {}, atom.Fieldset: {}, atom.Figcaption: {},
+	atom.Figure: {}, atom.Footer: {}, atom.Form: {}, atom.H1: {},
+	atom.H2: {}, atom.H3: {}, atom.H4: {}, atom.H5: {},
+	atom.H6: {}, atom.Head: {}, atom.Header: {}, atom.Hgroup: {},
+	atom.Hr: {}, atom.Html: {}, atom.I: {}, atom.Iframe: {},
+	atom.Img: {}, atom.Input: {}, atom.Ins: {}, atom.Kbd: {},
+	atom.Keygen: {}, atom.Label: {}, atom.Legend: {}, atom.Li: {},
+	atom.Link: {}, atom.Main: {}, atom.Map: {}, atom.Mark: {},
+	atom.Menu: {}, atom.Menuitem: {}, atom.Meta: {}, atom.Meter: {},
+	atom.Nav: {}, atom.Noscript: {}, atom.Object: {}, atom.Ol: {},
+	atom.Optgroup: {}, atom.Option: {}, atom.Output: {}, atom.P: {},
+	atom.Param: {}, atom.Picture: {}, atom.Pre: {}, atom.Progress: {},
+	atom.Q: {}, atom.Rp: {}, atom.Rt: {}, atom.Ruby: {},
+	atom.S: {}, atom.Samp: {}, atom.Script: {}, atom.Section: {},
+	atom.Select: {}, atom.Slot: {}, atom.Small: {}, atom.Source: {},
+	atom.Span: {}, atom.Strong: {}, atom.Style: {}, atom.Sub: {},
+	atom.Summary: {}, atom.Sup: {}, atom.Table: {}, atom.Tbody: {},
+	atom.Td: {}, atom.Template: {}, atom.Textarea: {}, atom.Tfoot: {},
+	atom.Th: {}, atom.Thead: {}, atom.Time: {}, atom.Title: {},
+	atom.Tr: {}, atom.Track: {}, atom.U: {}, atom.Ul: {},
+	atom.Var: {}, atom.Video: {}, atom.Wbr: {}, atom.Frame: {},
+	atom.Frameset: {}, atom.Malignmark: {}, atom.Manifest: {}, atom.Rb: {},
+	atom.Rtc: {},
 
 	// SVG
-	atom.Svg: true, atom.Desc: true, atom.Foreignobject: true, atom.Image: true,
+	atom.Svg: {}, atom.Desc: {}, atom.Foreignobject: {}, atom.Image: {},
 
 	// MathML
-	atom.Math: true, atom.Mglyph: true, atom.Mi: true, atom.Mn: true,
-	atom.Mo: true, atom.Ms: true, atom.Mtext: true,
+	atom.Math: {}, atom.Mglyph: {}, atom.Mi: {}, atom.Mn: {},
+	atom.Mo: {}, atom.Ms: {}, atom.Mtext: {},
 
 	// Legacy
-	atom.Acronym:       true, // obsolete (use <abbr>)
-	atom.Xmp:           true, // obsolete or non-standard
-	atom.Applet:        true, // deprecated
-	atom.Annotation:    true, // technically MathML, but sometimes XML
-	atom.AnnotationXml: true, // technically MathML, but sometimes XML
-	atom.Basefont:      true, // deprecated
-	atom.Bgsound:       true, // obsolete or non-standard
-	atom.Big:           true, // deprecated
-	atom.Blink:         true, // obsolete or non-standard
-	atom.Center:        true, // deprecated
-	atom.Font:          true, // deprecated
-	atom.Isindex:       true, // obsolete or non-standard
-	atom.Listing:       true, // obsolete or non-standard
-	atom.Marquee:       true, // obsolete or non-standard
-	atom.Nobr:          true, // obsolete or non-standard
-	atom.Noembed:       true, // obsolete or non-standard
-	atom.Noframes:      true, // obsolete or non-standard
-	atom.Plaintext:     true, // obsolete or non-standard
-	atom.Scoped:        true, // also exists as attribute
-	atom.Spacer:        true, // obsolete or non-standard
-	atom.Strike:        true, // deprecated
-	atom.Tt:            true, // deprecated
+	atom.Acronym:       {}, // obsolete (use <abbr>)
+	atom.Xmp:           {}, // obsolete or non-standard
+	atom.Applet:        {}, // deprecated
+	atom.Annotation:    {}, // technically MathML, but sometimes XML
+	atom.AnnotationXml: {}, // technically MathML, but sometimes XML
+	atom.Basefont:      {}, // deprecated
+	atom.Bgsound:       {}, // obsolete or non-standard
+	atom.Big:           {}, // deprecated
+	atom.Blink:         {}, // obsolete or non-standard
+	atom.Center:        {}, // deprecated
+	atom.Font:          {}, // deprecated
+	atom.Isindex:       {}, // obsolete or non-standard
+	atom.Listing:       {}, // obsolete or non-standard
+	atom.Marquee:       {}, // obsolete or non-standard
+	atom.Nobr:          {}, // obsolete or non-standard
+	atom.Noembed:       {}, // obsolete or non-standard
+	atom.Noframes:      {}, // obsolete or non-standard
+	atom.Plaintext:     {}, // obsolete or non-standard
+	atom.Scoped:        {}, // also exists as attribute
+	atom.Spacer:        {}, // obsolete or non-standard
+	atom.Strike:        {}, // deprecated
+	atom.Tt:            {}, // deprecated
 }
 
-var camelAttrTags = map[atom.Atom]bool{
-	atom.A:        true,
-	atom.Area:     true,
-	atom.Audio:    true,
-	atom.Button:   true,
-	atom.Del:      true,
-	atom.Form:     true,
-	atom.Iframe:   true,
-	atom.Img:      true,
-	atom.Input:    true,
-	atom.Ins:      true,
-	atom.Label:    true,
-	atom.Link:     true,
-	atom.Meta:     true,
-	atom.Object:   true,
-	atom.Output:   true,
-	atom.Script:   true,
-	atom.Select:   true,
-	atom.Source:   true,
-	atom.Td:       true,
-	atom.Textarea: true,
-	atom.Th:       true,
-	atom.Time:     true,
-	atom.Track:    true,
-	atom.Video:    true,
+var camelAttrTags = map[atom.Atom]struct{}{
+	atom.A:        {},
+	atom.Area:     {},
+	atom.Audio:    {},
+	atom.Button:   {},
+	atom.Del:      {},
+	atom.Form:     {},
+	atom.Iframe:   {},
+	atom.Img:      {},
+	atom.Input:    {},
+	atom.Ins:      {},
+	atom.Label:    {},
+	atom.Link:     {},
+	atom.Meta:     {},
+	atom.Object:   {},
+	atom.Output:   {},
+	atom.Script:   {},
+	atom.Select:   {},
+	atom.Source:   {},
+	atom.Td:       {},
+	atom.Textarea: {},
+	atom.Th:       {},
+	atom.Time:     {},
+	atom.Track:    {},
+	atom.Video:    {},
 }
 
 var camelAttrTable = map[uint64]string{
@@ -165,21 +165,21 @@ var camelAttrTable = map[uint64]string{
 	0x4b8040002e80a: "httpEquiv",       // meta + http-equiv
 }
 
-var nonSpecCamelAttrTags = map[atom.Atom]bool{
-	atom.Img:      true,
-	atom.Link:     true,
-	atom.Script:   true,
-	atom.Select:   true,
-	atom.Frame:    true,
-	atom.Input:    true,
-	atom.Object:   true,
-	atom.Table:    true,
-	atom.Textarea: true,
-	atom.Video:    true,
-	atom.Audio:    true,
-	atom.Button:   true,
-	atom.Form:     true,
-	atom.Iframe:   true,
+var nonSpecCamelAttrTags = map[atom.Atom]struct{}{
+	atom.Img:      {},
+	atom.Link:     {},
+	atom.Script:   {},
+	atom.Select:   {},
+	atom.Frame:    {},
+	atom.Input:    {},
+	atom.Object:   {},
+	atom.Table:    {},
+	atom.Textarea: {},
+	atom.Video:    {},
+	atom.Audio:    {},
+	atom.Button:   {},
+	atom.Form:     {},
+	atom.Iframe:   {},
 }
 
 var nonSpecCamelAttrTable = map[uint64]string{
@@ -318,4 +318,34 @@ var globalCamelAttrTable = map[atom.Atom]string{
 	atom.Onvolumechange:            "onVolumeChange",
 	atom.Onwaiting:                 "onWaiting",
 	atom.Onwheel:                   "onWheel",
+
+// Following attributes always receive "true" regardless of the value set.
+// https://html.spec.whatwg.org/#boolean-attributes
+var boolAttrs = map[atom.Atom]struct{}{
+	atom.Allowfullscreen:     {},
+	atom.Allowpaymentrequest: {},
+	atom.Async:               {},
+	atom.Autofocus:           {},
+	atom.Autoplay:            {},
+	atom.Checked:             {},
+	atom.Controls:            {},
+	atom.Default:             {},
+	atom.Defer:               {},
+	atom.Disabled:            {},
+	atom.Formnovalidate:      {},
+	atom.Hidden:              {},
+	atom.Ismap:               {},
+	atom.Itemscope:           {},
+	atom.Loop:                {},
+	atom.Multiple:            {},
+	atom.Muted:               {},
+	atom.Nomodule:            {},
+	atom.Novalidate:          {},
+	atom.Open:                {},
+	atom.Playsinline:         {},
+	atom.Readonly:            {},
+	atom.Required:            {},
+	atom.Reversed:            {},
+	atom.Selected:            {},
 }
+

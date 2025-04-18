@@ -140,20 +140,19 @@ func (r *renderer) render(n *Node) error {
 	}
 }
 
-func (r *renderer) renderTextAttribute(key, val string) error {
+func (r *renderer) renderTextAttribute(a Attribute) error {
 	if err := r.print1(' '); err != nil {
 		return err
 	}
-	if err := r.print(key); err != nil {
+	if err := r.print(a.Key); err != nil {
 		return err
 	}
-	if err := r.print(`="`); err != nil {
-		return err
+	if a.Val == "" && a.KeyAtom != 0 {
+		if _, ok := boolAttrs[a.KeyAtom]; ok {
+			return nil
+		}
 	}
-	if err := escape(r.w, val); err != nil {
-		return err
-	}
-	if err := r.print1('"'); err != nil {
+	if err := r.printf(`="%s"`, a.Val); err != nil {
 		return err
 	}
 	return nil
@@ -181,40 +180,38 @@ func (r *renderer) renderElement(n *Node) error {
 	}
 
 	if len(n.Attr) > 0 {
-		var attrName string
 		if _, found := camelAttrTags[n.DataAtom]; found {
 			searchPrefix := uint64(n.DataAtom) << 32
 			for _, a := range n.Attr {
-				if a.KeyAtom == 0 {
-					attrName = a.Key
-				} else if alias, ok := globalCamelAttrTable[a.KeyAtom]; ok {
-					attrName = alias
-				} else if alias, ok := camelAttrTable[searchPrefix|uint64(a.KeyAtom)]; ok {
-					attrName = alias
-				} else {
-					attrName = a.KeyAtom.String()
+				if a.KeyAtom != 0 {
+					if alias, ok := globalCamelAttrTable[a.KeyAtom]; ok {
+						a.Key = alias
+					} else if alias, ok := camelAttrTable[searchPrefix|uint64(a.KeyAtom)]; ok {
+						a.Key = alias
+					} else {
+						a.Key = a.KeyAtom.String()
+					}
 				}
-				if err := r.renderTextAttribute(attrName, a.Val); err != nil {
+				if err := r.renderTextAttribute(a); err != nil {
 					return err
 				}
 			}
 		} else {
 			for _, a := range n.Attr {
-				var attrName string
-				if a.KeyAtom == 0 {
-					attrName = a.Key
-				} else if alias, ok := globalCamelAttrTable[a.KeyAtom]; ok {
-					attrName = alias
-				} else {
-					attrName = a.KeyAtom.String()
-				}
-				if err := r.renderTextAttribute(attrName, a.Val); err != nil {
-					return err
+				if a.KeyAtom != 0 {
+					if alias, ok := globalCamelAttrTable[a.KeyAtom]; ok {
+						a.Key = alias
+					} else {
+						a.Key = a.KeyAtom.String()
+					}
+					if err := r.renderTextAttribute(a); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
-	if voidElements[n.DataAtom] {
+	if _, ok := voidElements[n.DataAtom]; ok {
 		if n.FirstChild != nil {
 			return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
 		}
