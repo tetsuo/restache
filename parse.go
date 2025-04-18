@@ -124,9 +124,9 @@ func inBodyIM(p *parser) bool {
 					}
 					if x.KeyAtom == 0 {
 						if attrIsNotDataOrAria(key) {
-							h, camelSafe, _ := fnv(hash0, key)
-							if camelSafe {
-								x.Key = string(camelize(key))
+							h, camelSafe, i := fnv(hash0, key)
+							if camelSafe && i < len(key)-1 {
+								x.Key = string(camelize(key, i))
 							} else if match, known := nonSpecCamelAttrTable[searchPrefix|uint64(h)]; known {
 								x.Key = match
 							} else {
@@ -149,7 +149,7 @@ func inBodyIM(p *parser) bool {
 					}
 					if x.KeyAtom == 0 {
 						if attrIsNotDataOrAria(key) {
-							x.Key = string(camelize(key))
+							x.Key = string(camelize(key, 0))
 						} else {
 							x.Key = string(key)
 						}
@@ -292,7 +292,7 @@ const hash0 = 0x84f70e16
 func fnv(h uint32, s []byte) (uint32, bool, int) {
 	for i := range s {
 		if s[i] == '-' {
-			return 0, true, i
+			return 0, true, i // hyphen encountered; short-circuit
 		}
 		h ^= uint32(s[i])
 		h *= 16777619
@@ -307,10 +307,10 @@ func attrIsNotDataOrAria(s []byte) bool {
 			(s[0] == 'a' && s[1] == 'r' && s[2] == 'i')))
 }
 
-func camelize(b []byte) []byte {
-	n := 0
+func camelize(b []byte, offset int) []byte {
+	n := offset
 	upperNext := false
-	for i := range b {
+	for i := offset; i < len(b); i++ {
 		c := b[i]
 		if c == '-' {
 			upperNext = true
