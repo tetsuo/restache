@@ -71,7 +71,7 @@ func initialIM(p *parser) bool {
 func lookupElementAtom(s []byte) atom.Atom {
 	a := atom.Lookup(s)
 	if a != 0 {
-		if _, ok := nativeElements[a]; ok {
+		if _, ok := commonElements[a]; ok {
 			return a
 		}
 	}
@@ -102,7 +102,7 @@ func inBodyIM(p *parser) bool {
 		}
 
 		if e.DataAtom != 0 {
-			if _, ok := nativeElements[e.DataAtom]; !ok {
+			if _, ok := commonElements[e.DataAtom]; !ok {
 				e.Data = e.DataAtom.String()
 				e.DataAtom = 0
 				p.markDependency(e.Data)
