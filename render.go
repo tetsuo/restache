@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"golang.org/x/net/html/atom"
 )
 
 func Render(w io.Writer, n *Node) (int, error) {
@@ -138,6 +140,25 @@ func (r *renderer) render(n *Node) error {
 	}
 }
 
+func (r *renderer) renderTextAttribute(key, val string) error {
+	if err := r.print1(' '); err != nil {
+		return err
+	}
+	if err := r.print(key); err != nil {
+		return err
+	}
+	if err := r.print(`="`); err != nil {
+		return err
+	}
+	if err := escape(r.w, val); err != nil {
+		return err
+	}
+	if err := r.print1('"'); err != nil {
+		return err
+	}
+	return nil
+}
+
 // renderElementNode renders a normal element.
 func (r *renderer) renderElement(n *Node) error {
 	if err := r.writeIndent(); err != nil {
@@ -147,24 +168,50 @@ func (r *renderer) renderElement(n *Node) error {
 	if err := r.print1('<'); err != nil {
 		return err
 	}
-	if err := r.print(n.Data); err != nil {
+
+	var tagName string
+	if n.DataAtom != 0 {
+		tagName = n.DataAtom.String()
+	} else {
+		tagName = n.Data
+	}
+
+	if err := r.print(tagName); err != nil {
 		return err
 	}
-	for _, a := range n.Attr {
-		if err := r.print1(' '); err != nil {
-			return err
-		}
-		if err := r.print(a.Key); err != nil {
-			return err
-		}
-		if err := r.print(`="`); err != nil {
-			return err
-		}
-		if err := escape(r.w, a.Val); err != nil {
-			return err
-		}
-		if err := r.print1('"'); err != nil {
-			return err
+
+	if len(n.Attr) > 0 {
+		var attrName string
+		if _, found := camelAttrTags[n.DataAtom]; found {
+			searchPrefix := uint64(n.DataAtom) << 32
+			for _, a := range n.Attr {
+				if a.KeyAtom == 0 {
+					attrName = a.Key
+				} else if alias, ok := globalCamelAttrTable[a.KeyAtom]; ok {
+					attrName = alias
+				} else if alias, ok := camelAttrTable[searchPrefix|uint64(a.KeyAtom)]; ok {
+					attrName = alias
+				} else {
+					attrName = a.KeyAtom.String()
+				}
+				if err := r.renderTextAttribute(attrName, a.Val); err != nil {
+					return err
+				}
+			}
+		} else {
+			for _, a := range n.Attr {
+				var attrName string
+				if a.KeyAtom == 0 {
+					attrName = a.Key
+				} else if alias, ok := globalCamelAttrTable[a.KeyAtom]; ok {
+					attrName = alias
+				} else {
+					attrName = a.KeyAtom.String()
+				}
+				if err := r.renderTextAttribute(attrName, a.Val); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	if voidElements[n.DataAtom] {
@@ -217,7 +264,7 @@ func (r *renderer) renderElement(n *Node) error {
 	if err := r.print("</"); err != nil {
 		return err
 	}
-	if err := r.print(n.Data); err != nil {
+	if err := r.print(n.TagName()); err != nil {
 		return err
 	}
 	if err := r.print(">\n"); err != nil {

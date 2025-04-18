@@ -688,7 +688,7 @@ close(p)
 
 %
 
-open(p, aria-yolo=text(beep) data-foo=text(bar) onBaz=text(onQux) onclick=text(onClick))
+open(p, aria-yolo=text(beep) data-foo=text(bar) on-baz=text(onQux) onclick=text(onClick))
 text(quuz)
 close(p)
 

@@ -112,18 +112,52 @@ func inBodyIM(p *parser) bool {
 			p.markDependency(e.Data)
 		}
 
-		for hasAttr {
-			key, val, isExpr, more := p.z.TagAttr()
-			x := Attribute{
-				KeyAtom: atom.Lookup(key),
-				Val:     string(val),
-				IsExpr:  isExpr,
+		if hasAttr {
+			if _, found := nonSpecCamelAttrTags[e.DataAtom]; found {
+				searchPrefix := uint64(e.DataAtom) << 32
+				for hasAttr {
+					key, val, isExpr, more := p.z.TagAttr()
+					x := Attribute{
+						KeyAtom: atom.Lookup(key),
+						Val:     string(val),
+						IsExpr:  isExpr,
+					}
+					if x.KeyAtom == 0 {
+						if attrIsNotDataOrAria(key) {
+							h, camelSafe, _ := fnv(hash0, key)
+							if camelSafe {
+								x.Key = string(camelize(key))
+							} else if match, known := nonSpecCamelAttrTable[searchPrefix|uint64(h)]; known {
+								x.Key = match
+							} else {
+								x.Key = string(key)
+							}
+						} else {
+							x.Key = string(key)
+						}
+					}
+					e.Attr = append(e.Attr, x)
+					hasAttr = more
+				}
+			} else {
+				for hasAttr {
+					key, val, isExpr, more := p.z.TagAttr()
+					x := Attribute{
+						KeyAtom: atom.Lookup(key),
+						Val:     string(val),
+						IsExpr:  isExpr,
+					}
+					if x.KeyAtom == 0 {
+						if attrIsNotDataOrAria(key) {
+							x.Key = string(camelize(key))
+						} else {
+							x.Key = string(key)
+						}
+					}
+					e.Attr = append(e.Attr, x)
+					hasAttr = more
+				}
 			}
-			if x.KeyAtom == 0 {
-				x.Key = string(key)
-			}
-			e.Attr = append(e.Attr, x)
-			hasAttr = more
 		}
 
 		p.oe.top().AppendChild(e)
@@ -247,4 +281,45 @@ func (p *parser) parse() error {
 		p.parseCurrentToken()
 	}
 	return nil
+}
+
+const hash0 = 0x84f70e16
+
+func fnv(h uint32, s []byte) (uint32, bool, int) {
+	for i := range s {
+		if s[i] == '-' {
+			return 0, true, i
+		}
+		h ^= uint32(s[i])
+		h *= 16777619
+	}
+	return h, false, 0
+}
+
+func attrIsNotDataOrAria(s []byte) bool {
+	return !(len(s) > 5 &&
+		s[4] == '-' && s[3] == 'a' &&
+		((s[0] == 'd' && s[1] == 'a' && s[2] == 't') ||
+			(s[0] == 'a' && s[1] == 'r' && s[2] == 'i')))
+}
+
+func camelize(b []byte) []byte {
+	n := 0
+	upperNext := false
+	for i := range b {
+		c := b[i]
+		if c == '-' {
+			upperNext = true
+			continue
+		}
+		if upperNext && 'a' <= c && c <= 'z' {
+			b[n] = c - 'a' + 'A'
+			upperNext = false
+		} else {
+			b[n] = c
+			upperNext = false
+		}
+		n++
+	}
+	return b[:n]
 }
