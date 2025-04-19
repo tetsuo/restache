@@ -204,9 +204,9 @@ func (r *renderer) renderElement(n *Node) error {
 					} else {
 						a.Key = a.KeyAtom.String()
 					}
-					if err := r.renderTextAttribute(a); err != nil {
-						return err
-					}
+				}
+				if err := r.renderTextAttribute(a); err != nil {
+					return err
 				}
 			}
 		}
