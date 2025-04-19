@@ -142,10 +142,21 @@ func (s *nodeStack) top() *Node {
 	return nil
 }
 
-func (s *nodeStack) popUntil(a atom.Atom, name []byte) bool {
+func (s *nodeStack) popUntilAtom(a atom.Atom) bool {
 	for i := len(*s) - 1; i >= 0; i-- {
 		n := (*s)[i]
-		if n.Type == ElementNode && ((a != 0 && n.DataAtom == a) || (a == 0 && equal(n.Data, name))) {
+		if n.Type == ElementNode && n.DataAtom == a {
+			*s = (*s)[:i]
+			return true
+		}
+	}
+	return false
+}
+
+func (s *nodeStack) popUntilName(name []byte) bool {
+	for i := len(*s) - 1; i >= 0; i-- {
+		n := (*s)[i]
+		if n.Type == ElementNode && equal(n.Data, name) {
 			*s = (*s)[:i]
 			return true
 		}
