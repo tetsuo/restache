@@ -68,16 +68,6 @@ func initialIM(p *parser) bool {
 	return p.im(p)
 }
 
-func lookupElementAtom(s []byte) atom.Atom {
-	a := atom.Lookup(s)
-	if a != 0 {
-		if _, ok := commonElements[a]; ok {
-			return a
-		}
-	}
-	return 0
-}
-
 func inBodyIM(p *parser) bool {
 	switch p.tt {
 	case TextToken:
@@ -178,7 +168,14 @@ func inBodyIM(p *parser) bool {
 	case EndTagToken:
 		name, _ := p.z.TagName()
 		// pop stack until a matching element is found
-		p.oe.popUntil(lookupElementAtom(name), name)
+		a := atom.Lookup(name)
+		if a != 0 {
+			if _, ok := commonElements[a]; ok {
+				p.oe.popUntilAtom(atom.Lookup(name))
+				return true
+			}
+		}
+		p.oe.popUntilName(name)
 		return true
 
 	case VariableToken:
