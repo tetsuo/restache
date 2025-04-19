@@ -677,7 +677,7 @@ open(link, rel=text(stylesheet) href=expr(theme.css))
 %
 
 open(p)
-text(Hello &amp; welcome, )
+text(Hello & welcome, )
 expr({name)
 text(}!)
 close(p)

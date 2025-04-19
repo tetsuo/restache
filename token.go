@@ -139,7 +139,7 @@ consume:
 			t.tt = ErrorToken
 			return t.tt
 		case html.TextToken:
-			t.buf = t.z.Raw()
+			t.buf = t.z.Text()
 			t.pos = 0
 			t.bufEnd = len(t.buf)
 			t.parseTextSegment()
