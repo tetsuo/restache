@@ -69,6 +69,10 @@ func (r *renderer) printf(format string, args ...any) error {
 	return nil
 }
 
+func (r *renderer) renderText(n *Node) error {
+	return r.print(n.Data)
+}
+
 func (r *renderer) renderComponent(n *Node) error {
 	if err := r.print("import * as React from 'react';"); err != nil {
 		return err
@@ -126,7 +130,7 @@ func (r *renderer) render(n *Node) error {
 	case ErrorNode:
 		return errors.New("html: cannot render an ErrorNode node")
 	case TextNode:
-		return escape(r.w, n.Data)
+		return r.renderText(n)
 	case ComponentNode:
 		return r.renderComponent(n)
 	case ElementNode:
