@@ -70,6 +70,9 @@ func (r *renderer) printf(format string, args ...any) error {
 }
 
 func (r *renderer) renderText(n *Node) error {
+	if err := r.writeIndent(); err != nil {
+		return err
+	}
 	return r.print(n.Data)
 }
 
@@ -99,18 +102,35 @@ func (r *renderer) renderComponent(n *Node) error {
 	if err := r.print("(props) {\n"); err != nil {
 		return err
 	}
-	if err := r.print("  return ("); err != nil {
+	if err := r.print("  return (\n"); err != nil {
 		return err
 	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if err := r.render(c); err != nil {
+	if n.FirstChild != nil && n.FirstChild == n.LastChild {
+		if err := r.render(n.FirstChild); err != nil {
+			return err
+		}
+	} else {
+		if err := r.writeIndent(); err != nil {
+			return err
+		}
+		if err := r.print("<>\n"); err != nil {
+			return err
+		}
+		r.indent++
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if err := r.render(c); err != nil {
+				return err
+			}
+		}
+		r.indent--
+		if err := r.writeIndent(); err != nil {
+			return err
+		}
+		if err := r.print("</>\n"); err != nil {
 			return err
 		}
 	}
-	if err := r.print("  );"); err != nil {
-		return err
-	}
-	if err := r.print("}"); err != nil {
+	if err := r.print("  );\n}"); err != nil {
 		return err
 	}
 	return nil
@@ -219,48 +239,57 @@ func (r *renderer) renderElement(n *Node) error {
 		if n.FirstChild != nil {
 			return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
 		}
-		err := r.print("/>")
+		err := r.print("/>\n")
 		return err
 	}
-	if err := r.print(">\n"); err != nil {
-		return err
-	}
-
-	// Add initial newline where there is danger of a newline being ignored.
-	if c := n.FirstChild; c != nil && c.Type == TextNode && strings.HasPrefix(c.Data, "\n") {
-		switch n.DataAtom {
-		case atom.Pre, atom.Listing, atom.Textarea:
-			if err := r.print1('\n'); err != nil {
-				return err
-			}
-		}
-	}
-
 	r.indent++
 
-	for c := n.FirstChild; c != nil; {
-		if c.Type == WhenNode || c.Type == UnlessNode {
-			group := []*Node{}
-			cond := c.Data
-			for c != nil && (c.Type == WhenNode || c.Type == UnlessNode) && c.Data == cond {
-				group = append(group, c)
+	c := n.FirstChild
+	if c != nil {
+		if err := r.print(">\n"); err != nil {
+			return err
+		}
+		// Add initial newline where there is danger of a newline being ignored.
+		if c.Type == TextNode && strings.HasPrefix(c.Data, "\n") {
+			switch n.DataAtom {
+			case atom.Pre, atom.Listing, atom.Textarea:
+				if err := r.print1('\n'); err != nil {
+					return err
+				}
+			}
+		}
+		for c != nil {
+			if c.Type == WhenNode || c.Type == UnlessNode {
+				group := []*Node{}
+				cond := c.Data
+				for c != nil && (c.Type == WhenNode || c.Type == UnlessNode) && c.Data == cond {
+					group = append(group, c)
+					c = c.NextSibling
+				}
+				if err := r.renderConditionalGroup(group); err != nil {
+					return err
+				}
+			} else {
+				if err := r.render(c); err != nil {
+					return err
+				}
 				c = c.NextSibling
 			}
-			if err := r.renderConditionalGroup(group); err != nil {
-				return err
-			}
-		} else {
-			if err := r.render(c); err != nil {
-				return err
-			}
-			c = c.NextSibling
 		}
+		if err := r.print("\n"); err != nil {
+			return err
+		}
+		r.indent--
+		if err := r.writeIndent(); err != nil {
+			return err
+		}
+	} else {
+		if err := r.print(">"); err != nil {
+			return err
+		}
+		r.indent--
 	}
 
-	r.indent--
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
 	// Render the </xxx> closing tag.
 	if err := r.print("</"); err != nil {
 		return err
