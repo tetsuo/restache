@@ -12,14 +12,14 @@ import (
 
 func Render(w io.Writer, n *Node) (int, error) {
 	if x, ok := w.(writer); ok {
-		r := &renderer{w: x, indent: 2}
+		r := &renderer{w: x}
 		if err := r.render(n); err != nil {
 			return 0, err
 		}
 		return r.written, nil
 	}
 	buf := bufio.NewWriter(w)
-	r := &renderer{w: buf, indent: 2}
+	r := &renderer{w: buf}
 	if err := r.render(n); err != nil {
 		return 0, err
 	}
@@ -60,6 +60,14 @@ func (r *renderer) print(s string) error {
 	return nil
 }
 
+func (r *renderer) println(s string) error {
+	err := r.print(s)
+	if err == nil {
+		return r.print1('\n')
+	}
+	return err
+}
+
 func (r *renderer) printf(format string, args ...any) error {
 	if n, err := r.w.WriteString(fmt.Sprintf(format, args...)); err != nil {
 		return err
@@ -70,10 +78,10 @@ func (r *renderer) printf(format string, args ...any) error {
 }
 
 func (r *renderer) renderText(n *Node) error {
-	if err := r.writeIndent(); err != nil {
+	if err := r.print(n.Data); err != nil {
 		return err
 	}
-	return r.print(n.Data)
+	return nil
 }
 
 func (r *renderer) renderComponent(n *Node) error {
@@ -99,38 +107,61 @@ func (r *renderer) renderComponent(n *Node) error {
 			return err
 		}
 	}
-	if err := r.print("(props) {\n"); err != nil {
+	if err := r.println("(props) {"); err != nil {
 		return err
 	}
-	if err := r.print("  return (\n"); err != nil {
+	r.indent++
+	if err := r.writeIndent(); err != nil {
+		return err
+	}
+	if err := r.println("return ("); err != nil {
 		return err
 	}
 	if n.FirstChild != nil && n.FirstChild == n.LastChild {
+		r.indent++
 		if err := r.render(n.FirstChild); err != nil {
 			return err
 		}
+		r.indent--
 	} else {
+		r.indent++
 		if err := r.writeIndent(); err != nil {
 			return err
 		}
-		if err := r.print("<>\n"); err != nil {
+		if err := r.print("<>"); err != nil {
 			return err
 		}
 		r.indent++
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if err := r.print1('\n'); err != nil {
+				return err
+			}
 			if err := r.render(c); err != nil {
 				return err
 			}
 		}
 		r.indent--
+		if err := r.print1('\n'); err != nil {
+			return err
+		}
 		if err := r.writeIndent(); err != nil {
 			return err
 		}
-		if err := r.print("</>\n"); err != nil {
+		if err := r.print("</>"); err != nil {
 			return err
 		}
+		r.indent--
 	}
-	if err := r.print("  );\n}"); err != nil {
+	if err := r.print1('\n'); err != nil {
+		return err
+	}
+	if err := r.writeIndent(); err != nil {
+		return err
+	}
+	if err := r.println(");"); err != nil {
+		return err
+	}
+	if err := r.println("}"); err != nil {
 		return err
 	}
 	return nil
@@ -187,6 +218,7 @@ func (r *renderer) renderElement(n *Node) error {
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
+
 	// Render the <xxx> opening tag.
 	if err := r.print1('<'); err != nil {
 		return err
@@ -239,14 +271,13 @@ func (r *renderer) renderElement(n *Node) error {
 		if n.FirstChild != nil {
 			return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
 		}
-		err := r.print("/>\n")
+		err := r.print("/>")
 		return err
 	}
-	r.indent++
 
 	c := n.FirstChild
 	if c != nil {
-		if err := r.print(">\n"); err != nil {
+		if err := r.print1('>'); err != nil {
 			return err
 		}
 		// Add initial newline where there is danger of a newline being ignored.
@@ -258,6 +289,7 @@ func (r *renderer) renderElement(n *Node) error {
 				}
 			}
 		}
+		r.indent++
 		for c != nil {
 			if c.Type == WhenNode || c.Type == UnlessNode {
 				group := []*Node{}
@@ -270,26 +302,27 @@ func (r *renderer) renderElement(n *Node) error {
 					return err
 				}
 			} else {
+				if err := r.print1('\n'); err != nil {
+					return err
+				}
 				if err := r.render(c); err != nil {
 					return err
 				}
 				c = c.NextSibling
 			}
 		}
-		if err := r.print("\n"); err != nil {
-			return err
-		}
 		r.indent--
-		if err := r.writeIndent(); err != nil {
-			return err
-		}
 	} else {
-		if err := r.print(">"); err != nil {
+		if err := r.print1('>'); err != nil {
 			return err
 		}
-		r.indent--
 	}
-
+	if err := r.print1('\n'); err != nil {
+		return err
+	}
+	if err := r.writeIndent(); err != nil {
+		return err
+	}
 	// Render the </xxx> closing tag.
 	if err := r.print("</"); err != nil {
 		return err
@@ -297,7 +330,7 @@ func (r *renderer) renderElement(n *Node) error {
 	if err := r.print(n.TagName()); err != nil {
 		return err
 	}
-	if err := r.print(">\n"); err != nil {
+	if err := r.print1('>'); err != nil {
 		return err
 	}
 	return nil
@@ -308,16 +341,13 @@ func (r *renderer) renderElement(n *Node) error {
 //
 //	{props.someValue}
 func (r *renderer) renderVariable(n *Node) error {
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
 	if err := r.print("{props."); err != nil {
 		return err
 	}
 	if err := r.print(n.Data); err != nil {
 		return err
 	}
-	if err := r.print("}\n"); err != nil {
+	if err := r.print1('}'); err != nil {
 		return err
 	}
 	return nil
@@ -328,6 +358,7 @@ func (r *renderer) renderVariable(n *Node) error {
 //
 //	{/* comment */}
 func (r *renderer) renderComment(n *Node) error {
+	r.indent++
 	if err := r.writeIndent(); err != nil {
 		return err
 	}
@@ -337,13 +368,15 @@ func (r *renderer) renderComment(n *Node) error {
 	if err := escapeComment(r.w, n.Data); err != nil {
 		return err
 	}
-	if err := r.print(" */}\n"); err != nil {
+	if err := r.println(" */}"); err != nil {
 		return err
 	}
+	r.indent--
 	return nil
 }
 
 // conditionalBlock is a small struct for when/unless blocks in a group.
+// TODO: move this to parser.
 type conditionalBlock struct {
 	Cond   string
 	Negate bool
@@ -401,9 +434,7 @@ func (r *renderer) renderConditionalGroup(group []*Node) error {
 //
 //	{ !props.foo && ( ... ) }
 func (r *renderer) renderSingleConditionBlock(b *conditionalBlock) error {
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
+
 	if err := r.print("{"); err != nil {
 		return err
 	}
@@ -418,22 +449,17 @@ func (r *renderer) renderSingleConditionBlock(b *conditionalBlock) error {
 	if err := r.print(b.Cond); err != nil {
 		return err
 	}
-	if err := r.print(" && (\n"); err != nil {
+	if err := r.println(" && ("); err != nil {
 		return err
 	}
 
-	r.indent++
 	for c := b.Body.FirstChild; c != nil; c = c.NextSibling {
 		if err := r.render(c); err != nil {
 			return err
 		}
 	}
-	r.indent--
 
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
-	if err := r.print(")}\n"); err != nil {
+	if err := r.println(")}"); err != nil {
 		return err
 	}
 
@@ -445,9 +471,7 @@ func (r *renderer) renderSingleConditionBlock(b *conditionalBlock) error {
 //
 //	{ props.foo ? ( ... ) : ( ... ) }
 func (r *renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) error {
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
+
 	if err := r.print("{"); err != nil {
 		return err
 	}
@@ -462,37 +486,27 @@ func (r *renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) error {
 	if err := r.print(a.Cond); err != nil {
 		return err
 	}
-	if err := r.print(" ? (\n"); err != nil {
+	if err := r.println(" ? ("); err != nil {
 		return err
 	}
 
-	r.indent++
 	for c := a.Body.FirstChild; c != nil; c = c.NextSibling {
 		if err := r.render(c); err != nil {
 			return err
 		}
 	}
-	r.indent--
 
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
-	if err := r.print(") : (\n"); err != nil {
+	if err := r.println(") : ("); err != nil {
 		return err
 	}
 
-	r.indent++
 	for c := b.Body.FirstChild; c != nil; c = c.NextSibling {
 		if err := r.render(c); err != nil {
 			return err
 		}
 	}
-	r.indent--
 
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
-	if err := r.print(")}\n"); err != nil {
+	if err := r.println(")}"); err != nil {
 		return err
 	}
 
@@ -506,9 +520,6 @@ func (r *renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) error {
 func (r *renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) error {
 	for i, b := range blocks {
 		if i == 0 {
-			if err := r.writeIndent(); err != nil {
-				return err
-			}
 			if err := r.print("{"); err != nil {
 				return err
 			}
@@ -525,27 +536,22 @@ func (r *renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) error {
 		if err := r.print(b.Cond); err != nil {
 			return err
 		}
-		if err := r.print(" ? (\n"); err != nil {
+		if err := r.println(" ? ("); err != nil {
 			return err
 		}
 
-		r.indent++
 		for c := b.Body.FirstChild; c != nil; c = c.NextSibling {
 			if err := r.render(c); err != nil {
 				return err
 			}
 		}
-		r.indent--
 
-		if err := r.writeIndent(); err != nil {
-			return err
-		}
 		if err := r.print(") : "); err != nil {
 			return err
 		}
 	}
 	// final fallback
-	if err := r.print("null}\n"); err != nil {
+	if err := r.println("null}"); err != nil {
 		return err
 	}
 	return nil
