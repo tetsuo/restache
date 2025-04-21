@@ -18,7 +18,7 @@ both text {! and comment }
 
 %
 
-[ text "both text", comment "and comment" ]
+[ text "both text ", comment "and comment" ]
 
 %
 
@@ -33,7 +33,7 @@ both text {! and comment }
 
 %
 
-[ comment "a comment", text "some text", comment "another comment
+[ comment "a comment", text "some text ", comment "another comment
 
   but this
     time
@@ -48,9 +48,9 @@ hello {name} world
 %
 
 [
-  text "hello",
+  text "hello ",
   var .name,
-  text "world"
+  text " world"
 ]
 
 %
@@ -64,7 +64,7 @@ hello {name} world
 [
   div [][
     p [][
-      text "Hello",
+      text "Hello ",
       var .name
     ]
   ]
@@ -348,9 +348,9 @@ test one {! comment here } ending
 %
 
 [
-  text "test one",
+  text "test one ",
   comment "comment here",
-  text "ending"
+  text " ending"
 ]
 
 %
@@ -363,7 +363,7 @@ test one {! comment here } ending
   div [] [
     img [ src text "logo.png"] [],
     span [] [
-      text "Brand",
+      text "Brand ",
       var .company
     ]
   ]
@@ -391,7 +391,7 @@ test one {! comment here } ending
 
 [
   when .loggedIn [
-    p [] [ text "Hi", var .username ]
+    p [] [ text "Hi ", var .username ]
   ],
   unless .loggedIn [
     p [] [ text "Please log in." ]
@@ -461,11 +461,11 @@ test one {! comment here } ending
   range .team [
     when team.#.active [
       var team.#.name,
-      text "is active."
+      text " is active. "
     ],
     unless team.#.active [
       var team.#.name,
-      text "is inactive."
+      text " is inactive. "
     ]
   ]
 ]
@@ -490,16 +490,16 @@ test one {! comment here } ending
 [
   range .countries [
     var countries.#.name,
-    text ":",
+    text ": ",
     range countries.#.cities [
       var countries.#.cities.#.name,
-      text ","
+      text ", "
     ],
     when countries.#.visited [
-      text "(visited)"
+      text " (visited) "
     ],
     unless countries.#.visited [
-      text "(not visited)"
+      text " (not visited) "
     ]
   ]
 ]
@@ -528,15 +528,15 @@ test one {! comment here } ending
 [
   range .bookstore [
     range bookstore.#.sections [
-      text "Section:",
+      text " Section: ",
       var bookstore.#.sections.#.name,
       when bookstore.#.sections.#.popular [
-        text "- Popular section!"
+        text " - Popular section! "
       ],
       range bookstore.#.sections.#.books [
         when bookstore.#.sections.#.books.#.bestseller [
           var bookstore.#.sections.#.books.#.title,
-          text "(bestseller)"
+          text " (bestseller) "
         ],
         unless bookstore.#.sections.#.books.#.bestseller [
           var bookstore.#.sections.#.books.#.title
@@ -563,13 +563,13 @@ test one {! comment here } ending
   range .menu [
     when menu.#.available [
       var menu.#.dish,
-      text "($",
+      text " ($",
       var menu.#.price,
-      text ")"
+      text ") "
     ],
     unless menu.#.available [
       var menu.#.dish,
-      text "(unavailable)"
+      text " (unavailable) "
     ]
   ]
 ]
@@ -598,23 +598,23 @@ test one {! comment here } ending
 
 [
   range .classes [
-    text "Class:",
+    text " Class: ",
     var classes.#.name,
     when classes.#.full [
-      text "(Full)"
+      text " (Full) "
     ],
     unless classes.#.full [
-      text "Spots open:",
+      text " Spots open: ",
       var classes.#.spots.remaining
     ],
     range classes.#.students [
       when classes.#.students.#.passed [
         var classes.#.students.#.name,
-        text ": Passed"
+        text ": Passed "
       ],
       unless classes.#.students.#.passed [
         var classes.#.students.#.name,
-        text ": Failed"
+        text ": Failed "
       ]
     ]
   ]
@@ -682,14 +682,14 @@ test one {! comment here } ending
               when catalog.#.products.#.reviews.#.highlighted [
                 p [ class text "highlight" ] [
                   var catalog.#.products.#.reviews.#.text,
-                  text "- by",
+                  text " - by ",
                   var catalog.#.products.#.reviews.#.author.name
                 ]
               ],
               unless catalog.#.products.#.reviews.#.highlighted [
                 p [] [
                   var catalog.#.products.#.reviews.#.text,
-                  text "- by",
+                  text " - by ",
                   var catalog.#.products.#.reviews.#.author.name
                 ]
               ]
@@ -748,7 +748,7 @@ test one {! comment here } ending
         ],
         unless users.#.online [
           span [ class text "status offline" ] [
-            text "Offline since",
+            text "Offline since ",
             var users.#.lastSeen
           ]
         ],
@@ -817,7 +817,7 @@ test one {! comment here } ending
             strong [] [ var projects.#.milestones.#.title ],
             when projects.#.milestones.#.dueDate [
               em [] [
-                text "Due:",
+                text "Due: ",
                 var projects.#.milestones.#.dueDate
               ]
             ],
