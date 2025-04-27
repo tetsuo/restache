@@ -71,7 +71,7 @@ func initialIM(p *parser) bool {
 func inBodyIM(p *parser) bool {
 	switch p.tt {
 	case TextToken:
-		raw := collapseWhitespace(p.z.Raw())
+		raw := collapse(p.z.Raw())
 		if raw == nil {
 			return true
 		}
@@ -325,9 +325,7 @@ func camelize(b []byte, offset int) []byte {
 	return b[:n]
 }
 
-// collapseWhitespace collapses consecutive ASCII white‑space bytes into a
-// single plain space.
-func collapseWhitespace(b []byte) []byte {
+func collapse(b []byte) []byte {
 	if len(b) == 0 {
 		return nil
 	}

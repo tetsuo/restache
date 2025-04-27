@@ -318,6 +318,7 @@ var globalCamelAttrTable = map[atom.Atom]string{
 	atom.Onvolumechange:            "onVolumeChange",
 	atom.Onwaiting:                 "onWaiting",
 	atom.Onwheel:                   "onWheel",
+}
 
 // Following attributes always receive "true" regardless of the value set.
 // https://html.spec.whatwg.org/#boolean-attributes
@@ -348,4 +349,3 @@ var boolAttrs = map[atom.Atom]struct{}{
 	atom.Reversed:            {},
 	atom.Selected:            {},
 }
-

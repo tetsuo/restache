@@ -77,97 +77,10 @@ func (r *renderer) printf(format string, args ...any) error {
 	return nil
 }
 
-func (r *renderer) renderText(n *Node) error {
-	if err := r.print(n.Data); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *renderer) renderComponent(n *Node) error {
-	if err := r.print("import * as React from 'react';"); err != nil {
-		return err
-	}
-	for _, attr := range n.Attr {
-		if err := r.printf("import %s from \"./%s.jsx\";\n", attr.Key, attr.Val); err != nil {
-			return err
-		}
-	}
+func (r *renderer) lineBreak() error {
 	if err := r.print1('\n'); err != nil {
 		return err
 	}
-	if err := r.print("export default function"); err != nil {
-		return err
-	}
-	if n.Data != "" {
-		if err := r.print1(' '); err != nil {
-			return err
-		}
-		if err := r.print(n.Data); err != nil {
-			return err
-		}
-	}
-	if err := r.println("(props) {"); err != nil {
-		return err
-	}
-	r.indent++
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
-	if err := r.println("return ("); err != nil {
-		return err
-	}
-	if n.FirstChild != nil && n.FirstChild == n.LastChild {
-		r.indent++
-		if err := r.render(n.FirstChild); err != nil {
-			return err
-		}
-		r.indent--
-	} else {
-		r.indent++
-		if err := r.writeIndent(); err != nil {
-			return err
-		}
-		if err := r.print("<>"); err != nil {
-			return err
-		}
-		r.indent++
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			if err := r.print1('\n'); err != nil {
-				return err
-			}
-			if err := r.render(c); err != nil {
-				return err
-			}
-		}
-		r.indent--
-		if err := r.print1('\n'); err != nil {
-			return err
-		}
-		if err := r.writeIndent(); err != nil {
-			return err
-		}
-		if err := r.print("</>"); err != nil {
-			return err
-		}
-		r.indent--
-	}
-	if err := r.print1('\n'); err != nil {
-		return err
-	}
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
-	if err := r.println(");"); err != nil {
-		return err
-	}
-	if err := r.println("}"); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *renderer) writeIndent() error {
 	for range r.indent {
 		if err := r.print("  "); err != nil {
 			return err
@@ -176,26 +89,228 @@ func (r *renderer) writeIndent() error {
 	return nil
 }
 
-func (r *renderer) render(n *Node) error {
-	switch n.Type {
-	case ErrorNode:
-		return errors.New("html: cannot render an ErrorNode node")
-	case TextNode:
-		return r.renderText(n)
-	case ComponentNode:
-		return r.renderComponent(n)
-	case ElementNode:
-		return r.renderElement(n)
-	case CommentNode:
-		return r.renderComment(n)
-	case VariableNode:
-		return r.renderVariable(n)
-	default:
-		return errors.New("html: unknown node type")
+func (r *renderer) renderText(n *Node) error {
+	s := n.Data
+	if s[0] == ' ' && n.PrevSibling == nil {
+		s = s[1:]
 	}
+	x := len(s)
+	if s[x-1] == ' ' && n.NextSibling == nil {
+		s = s[:x-1]
+	}
+	if err := r.print(s); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (r *renderer) renderTextAttribute(a Attribute) error {
+func (r *renderer) renderVariable(n *Node) error {
+	if err := r.print("{ props."); err != nil {
+		return err
+	}
+	if err := r.print(n.Data); err != nil {
+		return err
+	}
+	if err := r.print(" }"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *renderer) renderFragment(n *Node, hasKey bool) error {
+	if hasKey {
+		if err := r.print("<React.Fragment key={ i }>"); err != nil {
+			return err
+		}
+	} else {
+		if err := r.print("<>"); err != nil {
+			return err
+		}
+	}
+	r.indent++
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if err := r.render(c); err != nil {
+			return err
+		}
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if hasKey {
+		if err := r.print("</React.Fragment>"); err != nil {
+			return err
+		}
+	} else {
+		if err := r.print("</>"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *renderer) renderComponent(n *Node) error {
+	if n.FirstChild == nil {
+		return r.println("export default function() { return null; }")
+	}
+	if err := r.println("import * as React from 'react';"); err != nil {
+		return err
+	}
+	for _, attr := range n.Attr {
+		if err := r.printf("import %s from \"./%s.jsx\";\n", attr.Key, attr.Val); err != nil {
+			return err
+		}
+	}
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.printf("export default function %s(props) {", n.Data); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print("return ("); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.renderFragment(n, false); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.println(");\n}"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *renderer) renderWhen(n *Node) error {
+	if err := r.print1('{'); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.printf("props.%s && (", n.Data); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.renderFragment(n, false); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print1(')'); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print1('}'); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *renderer) renderUnless(n *Node) error {
+	if err := r.print1('{'); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.printf("!props.%s && (", n.Data); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.renderFragment(n, false); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print1(')'); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print1('}'); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *renderer) renderRange(n *Node) error {
+	if err := r.print1('{'); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.printf("props.%s.map(", n.Data); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print("(d, i) => ("); err != nil {
+		return err
+	}
+	r.indent++
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.renderFragment(n, true); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print1(')'); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print1(')'); err != nil {
+		return err
+	}
+	r.indent--
+	if err := r.lineBreak(); err != nil {
+		return err
+	}
+	if err := r.print1('}'); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *renderer) renderAttribute(a Attribute) error {
 	if err := r.print1(' '); err != nil {
 		return err
 	}
@@ -207,18 +322,19 @@ func (r *renderer) renderTextAttribute(a Attribute) error {
 			return nil
 		}
 	}
-	if err := r.printf(`="%s"`, a.Val); err != nil {
-		return err
+	if a.IsExpr {
+		if err := r.printf(`={ props.%s }`, a.Val); err != nil {
+			return err
+		}
+	} else {
+		if err := r.printf(`="%s"`, a.Val); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// renderElementNode renders a normal element.
 func (r *renderer) renderElement(n *Node) error {
-	if err := r.writeIndent(); err != nil {
-		return err
-	}
-
 	// Render the <xxx> opening tag.
 	if err := r.print1('<'); err != nil {
 		return err
@@ -248,7 +364,7 @@ func (r *renderer) renderElement(n *Node) error {
 						a.Key = a.KeyAtom.String()
 					}
 				}
-				if err := r.renderTextAttribute(a); err != nil {
+				if err := r.renderAttribute(a); err != nil {
 					return err
 				}
 			}
@@ -261,7 +377,7 @@ func (r *renderer) renderElement(n *Node) error {
 						a.Key = a.KeyAtom.String()
 					}
 				}
-				if err := r.renderTextAttribute(a); err != nil {
+				if err := r.renderAttribute(a); err != nil {
 					return err
 				}
 			}
@@ -269,9 +385,9 @@ func (r *renderer) renderElement(n *Node) error {
 	}
 	if _, ok := voidElements[n.DataAtom]; ok {
 		if n.FirstChild != nil {
-			return fmt.Errorf("html: void element <%s> has child nodes", n.Data)
+			return fmt.Errorf("void element <%s> has child nodes", n.Data)
 		}
-		err := r.print("/>")
+		err := r.print(" />")
 		return err
 	}
 
@@ -289,27 +405,13 @@ func (r *renderer) renderElement(n *Node) error {
 				}
 			}
 		}
+
 		r.indent++
 		for c != nil {
-			if c.Type == WhenNode || c.Type == UnlessNode {
-				group := []*Node{}
-				cond := c.Data
-				for c != nil && (c.Type == WhenNode || c.Type == UnlessNode) && c.Data == cond {
-					group = append(group, c)
-					c = c.NextSibling
-				}
-				if err := r.renderConditionalGroup(group); err != nil {
-					return err
-				}
-			} else {
-				if err := r.print1('\n'); err != nil {
-					return err
-				}
-				if err := r.render(c); err != nil {
-					return err
-				}
-				c = c.NextSibling
+			if err := r.render(c); err != nil {
+				return err
 			}
+			c = c.NextSibling
 		}
 		r.indent--
 	} else {
@@ -317,11 +419,10 @@ func (r *renderer) renderElement(n *Node) error {
 			return err
 		}
 	}
-	if err := r.print1('\n'); err != nil {
-		return err
-	}
-	if err := r.writeIndent(); err != nil {
-		return err
+	if n.FirstChild != nil {
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
 	}
 	// Render the </xxx> closing tag.
 	if err := r.print("</"); err != nil {
@@ -336,223 +437,83 @@ func (r *renderer) renderElement(n *Node) error {
 	return nil
 }
 
-// renderVariable renders a variable JSX expression.
-// Example:
-//
-//	{props.someValue}
-func (r *renderer) renderVariable(n *Node) error {
-	if err := r.print("{props."); err != nil {
-		return err
-	}
-	if err := r.print(n.Data); err != nil {
-		return err
-	}
-	if err := r.print1('}'); err != nil {
-		return err
-	}
-	return nil
-}
-
-// renderComment renders a comment JSX expression.
-// Example:
-//
-//	{/* comment */}
 func (r *renderer) renderComment(n *Node) error {
-	r.indent++
-	if err := r.writeIndent(); err != nil {
-		return err
+	if len(n.Data) < 80 {
+		if err := r.print("{/* "); err != nil {
+			return err
+		}
+		if err := escapeComment(r.w, n.Data); err != nil {
+			return err
+		}
+		if err := r.print(" */}"); err != nil {
+			return err
+		}
+	} else {
+		if err := r.print("{/*"); err != nil {
+			return err
+		}
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		if err := escapeComment(r.w, n.Data); err != nil {
+			return err
+		}
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		if err := r.print("*/}"); err != nil {
+			return err
+		}
 	}
-	if err := r.print("{/* "); err != nil {
-		return err
-	}
-	if err := escapeComment(r.w, n.Data); err != nil {
-		return err
-	}
-	if err := r.println(" */}"); err != nil {
-		return err
-	}
-	r.indent--
 	return nil
 }
 
-// conditionalBlock is a small struct for when/unless blocks in a group.
-// TODO: move this to parser.
-type conditionalBlock struct {
-	Cond   string
-	Negate bool
-	Body   *Node
-}
-
-// renderConditionalGroup renders a conditional JSX expression based on the node group.
-// The function selects the appropriate rendering method (single, ternary, or multi-ternary).
-func (r *renderer) renderConditionalGroup(group []*Node) error {
-	// Convert each node into a conditionalBlock
-	blocks := make([]conditionalBlock, len(group))
-	for i, n := range group {
-		blocks[i] = conditionalBlock{
-			Cond:   n.Data,
-			Negate: (n.Type == UnlessNode),
-			Body:   n,
-		}
-	}
-
-	switch len(blocks) {
-	case 1:
-		return r.renderSingleConditionBlock(&blocks[0])
-
-	case 2:
-		// Possibly an if/else if they share the same .Cond but differ in Negate
-		a, b := blocks[0], blocks[1]
-		if a.Cond == b.Cond &&
-			((!a.Negate && b.Negate) || (a.Negate && !b.Negate)) {
-			// Same condition, one if, one unless; single ternary
-			if a.Negate {
-				// Switch them so the positive is first
-				return r.renderTwoWayTernaryBlock(b, a)
-			}
-			return r.renderTwoWayTernaryBlock(a, b)
-		} else {
-			// Different conditions; just two separate blocks
-			if err := r.renderSingleConditionBlock(&a); err != nil {
+func (r *renderer) render(n *Node) error {
+	switch n.Type {
+	case ErrorNode:
+		return errors.New("cannot render an ErrorNode node")
+	case TextNode:
+		if n.PrevSibling == nil || !(n.PrevSibling.Type == TextNode || n.PrevSibling.Type == VariableNode) {
+			if err := r.lineBreak(); err != nil {
 				return err
 			}
-			return r.renderSingleConditionBlock(&b)
 		}
-
+		return r.renderText(n)
+	case ElementNode:
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		return r.renderElement(n)
+	case VariableNode:
+		if n.PrevSibling == nil || !(n.PrevSibling.Type == TextNode || n.PrevSibling.Type == VariableNode) {
+			if err := r.lineBreak(); err != nil {
+				return err
+			}
+		}
+		return r.renderVariable(n)
+	case WhenNode:
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		return r.renderWhen(n)
+	case UnlessNode:
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		return r.renderUnless(n)
+	case RangeNode:
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		return r.renderRange(n)
+	case CommentNode:
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		return r.renderComment(n)
+	case ComponentNode:
+		return r.renderComponent(n)
 	default:
-		// More than 2; chain them into nested ternaries
-		return r.renderMultiTernaryBlocks(blocks)
+		return errors.New("unknown node type")
 	}
-}
-
-// renderSingleConditionBlock renders a conditional JSX expression.
-// Example:
-//
-//	{ props.foo && ( ... ) }
-//
-// or
-//
-//	{ !props.foo && ( ... ) }
-func (r *renderer) renderSingleConditionBlock(b *conditionalBlock) error {
-
-	if err := r.print("{"); err != nil {
-		return err
-	}
-	if b.Negate {
-		if err := r.print("!"); err != nil {
-			return err
-		}
-	}
-	if err := r.print("props."); err != nil {
-		return err
-	}
-	if err := r.print(b.Cond); err != nil {
-		return err
-	}
-	if err := r.println(" && ("); err != nil {
-		return err
-	}
-
-	for c := b.Body.FirstChild; c != nil; c = c.NextSibling {
-		if err := r.render(c); err != nil {
-			return err
-		}
-	}
-
-	if err := r.println(")}"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// renderTwoWayTernaryBlock renders a two-way ternary JSX expression.
-// Example:
-//
-//	{ props.foo ? ( ... ) : ( ... ) }
-func (r *renderer) renderTwoWayTernaryBlock(a, b conditionalBlock) error {
-
-	if err := r.print("{"); err != nil {
-		return err
-	}
-	if a.Negate {
-		if err := r.print("!"); err != nil {
-			return err
-		}
-	}
-	if err := r.print("props."); err != nil {
-		return err
-	}
-	if err := r.print(a.Cond); err != nil {
-		return err
-	}
-	if err := r.println(" ? ("); err != nil {
-		return err
-	}
-
-	for c := a.Body.FirstChild; c != nil; c = c.NextSibling {
-		if err := r.render(c); err != nil {
-			return err
-		}
-	}
-
-	if err := r.println(") : ("); err != nil {
-		return err
-	}
-
-	for c := b.Body.FirstChild; c != nil; c = c.NextSibling {
-		if err := r.render(c); err != nil {
-			return err
-		}
-	}
-
-	if err := r.println(")}"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// renderMultiTernaryBlocks renders a multi-way ternary JSX expression.
-// Example:
-//
-//	{ props.cond1 ? (...) : props.cond2 ? (...) : ... : null }
-func (r *renderer) renderMultiTernaryBlocks(blocks []conditionalBlock) error {
-	for i, b := range blocks {
-		if i == 0 {
-			if err := r.print("{"); err != nil {
-				return err
-			}
-		}
-		if b.Negate {
-			if err := r.print("!props."); err != nil {
-				return err
-			}
-		} else {
-			if err := r.print("props."); err != nil {
-				return err
-			}
-		}
-		if err := r.print(b.Cond); err != nil {
-			return err
-		}
-		if err := r.println(" ? ("); err != nil {
-			return err
-		}
-
-		for c := b.Body.FirstChild; c != nil; c = c.NextSibling {
-			if err := r.render(c); err != nil {
-				return err
-			}
-		}
-
-		if err := r.print(") : "); err != nil {
-			return err
-		}
-	}
-	// final fallback
-	if err := r.println("null}"); err != nil {
-		return err
-	}
-	return nil
 }

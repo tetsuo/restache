@@ -140,6 +140,9 @@ consume:
 			return t.tt
 		case html.TextToken:
 			t.buf = t.z.Text()
+			if t.buf == nil {
+				continue
+			}
 			t.pos = 0
 			t.bufEnd = len(t.buf)
 			t.parseTextSegment()
