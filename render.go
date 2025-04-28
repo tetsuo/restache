@@ -40,6 +40,7 @@ type renderer struct {
 
 	indent  int
 	written int
+	rlvl    int
 }
 
 func (r *renderer) print1(c byte) error {
@@ -105,7 +106,7 @@ func (r *renderer) renderText(n *Node) error {
 }
 
 func (r *renderer) renderVariable(n *Node) error {
-	if err := r.print("{ props."); err != nil {
+	if err := r.printf("{ d%d.", r.rlvl); err != nil {
 		return err
 	}
 	if err := r.print(n.Data); err != nil {
@@ -113,38 +114,6 @@ func (r *renderer) renderVariable(n *Node) error {
 	}
 	if err := r.print(" }"); err != nil {
 		return err
-	}
-	return nil
-}
-
-func (r *renderer) renderFragment(n *Node, hasKey bool) error {
-	if hasKey {
-		if err := r.print("<React.Fragment key={ i }>"); err != nil {
-			return err
-		}
-	} else {
-		if err := r.print("<>"); err != nil {
-			return err
-		}
-	}
-	r.indent++
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if err := r.render(c); err != nil {
-			return err
-		}
-	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if hasKey {
-		if err := r.print("</React.Fragment>"); err != nil {
-			return err
-		}
-	} else {
-		if err := r.print("</>"); err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -164,7 +133,7 @@ func (r *renderer) renderComponent(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("export default function %s(props) {", n.Data); err != nil {
+	if err := r.printf("export default function %s(d%d) {", n.Data, r.rlvl); err != nil {
 		return err
 	}
 	r.indent++
@@ -178,8 +147,16 @@ func (r *renderer) renderComponent(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.renderFragment(n, false); err != nil {
-		return err
+	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
+		if err := r.renderElement(n.FirstChild); err != nil {
+			return err
+		}
+	} else {
+		n.Type = ElementNode
+		n.Data = ""
+		if err := r.renderElement(n); err != nil {
+			return err
+		}
 	}
 	r.indent--
 	if err := r.lineBreak(); err != nil {
@@ -199,15 +176,23 @@ func (r *renderer) renderWhen(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("props.%s && (", n.Data); err != nil {
+	if err := r.printf("d%d.%s && (", r.rlvl, n.Data); err != nil {
 		return err
 	}
 	r.indent++
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.renderFragment(n, false); err != nil {
-		return err
+	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
+		if err := r.renderElement(n.FirstChild); err != nil {
+			return err
+		}
+	} else {
+		n.Type = ElementNode
+		n.Data = ""
+		if err := r.renderElement(n); err != nil {
+			return err
+		}
 	}
 	r.indent--
 	if err := r.lineBreak(); err != nil {
@@ -234,15 +219,23 @@ func (r *renderer) renderUnless(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("!props.%s && (", n.Data); err != nil {
+	if err := r.printf("!d%d.%s && (", r.rlvl, n.Data); err != nil {
 		return err
 	}
 	r.indent++
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.renderFragment(n, false); err != nil {
-		return err
+	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
+		if err := r.renderElement(n.FirstChild); err != nil {
+			return err
+		}
+	} else {
+		n.Type = ElementNode
+		n.Data = ""
+		if err := r.renderElement(n); err != nil {
+			return err
+		}
 	}
 	r.indent--
 	if err := r.lineBreak(); err != nil {
@@ -269,23 +262,37 @@ func (r *renderer) renderRange(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("props.%s.map(", n.Data); err != nil {
+	if err := r.printf("d%d.%s.map(", r.rlvl, n.Data); err != nil {
 		return err
 	}
 	r.indent++
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.print("(d, i) => ("); err != nil {
+
+	r.rlvl++
+	if err := r.printf("d%d => (", r.rlvl); err != nil {
 		return err
 	}
 	r.indent++
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.renderFragment(n, true); err != nil {
-		return err
+	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
+		n.FirstChild.Attr = append(n.FirstChild.Attr, Attribute{Key: "key", Val: "key", IsExpr: true})
+
+		if err := r.renderElement(n.FirstChild); err != nil {
+			return err
+		}
+	} else {
+		n.Type = ElementNode
+		n.Data = "React.Fragment"
+		n.Attr = append(n.Attr, Attribute{Key: "key", Val: "key", IsExpr: true})
+		if err := r.renderElement(n); err != nil {
+			return err
+		}
 	}
+	r.rlvl--
 	r.indent--
 	if err := r.lineBreak(); err != nil {
 		return err
@@ -323,7 +330,7 @@ func (r *renderer) renderAttribute(a Attribute) error {
 		}
 	}
 	if a.IsExpr {
-		if err := r.printf(`={ props.%s }`, a.Val); err != nil {
+		if err := r.printf(`={ d%d.%s }`, r.rlvl, a.Val); err != nil {
 			return err
 		}
 	} else {
@@ -439,13 +446,13 @@ func (r *renderer) renderElement(n *Node) error {
 
 func (r *renderer) renderComment(n *Node) error {
 	if len(n.Data) < 80 {
-		if err := r.print("{/* "); err != nil {
+		if err := r.print("{ /* "); err != nil {
 			return err
 		}
 		if err := escapeComment(r.w, n.Data); err != nil {
 			return err
 		}
-		if err := r.print(" */}"); err != nil {
+		if err := r.print(" */ }"); err != nil {
 			return err
 		}
 	} else {
