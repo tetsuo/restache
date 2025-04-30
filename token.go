@@ -240,5 +240,5 @@ func identifyKeyword(chunk []byte) TokenType {
 }
 
 var spaceTable = [256]bool{
-	' ': true, '\t': true, '\r': true, '\n': true, '\f': true,
+	' ': true, '\t': true, '\r': true, '\n': true,
 }
