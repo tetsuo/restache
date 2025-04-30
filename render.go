@@ -52,9 +52,8 @@ type renderer struct {
 func (r *renderer) print1(c byte) error {
 	if err := r.w.WriteByte(c); err != nil {
 		return err
-	} else {
-		r.written += 1
 	}
+	r.written += 1
 	return nil
 }
 
