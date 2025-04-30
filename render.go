@@ -29,6 +29,12 @@ func Render(w io.Writer, n *Node) (int, error) {
 	return r.written, nil
 }
 
+var (
+	ErrErrorNode    = errors.New("cannot render an ErrorNode node")
+	ErrUnknownNode  = errors.New("unknown node type")
+	ErrVoidChildren = errors.New("void element has child nodes")
+)
+
 type writer interface {
 	io.Writer
 	io.ByteWriter
@@ -390,7 +396,7 @@ func (r *renderer) renderElement(n *Node) error {
 	}
 	if _, ok := voidElements[n.DataAtom]; ok {
 		if n.FirstChild != nil {
-			return fmt.Errorf("void element <%s> has child nodes", n.Data)
+			return ErrVoidChildren
 		}
 		err := r.print(" />")
 		return err
@@ -476,7 +482,7 @@ func (r *renderer) renderComment(n *Node) error {
 func (r *renderer) render(n *Node) error {
 	switch n.Type {
 	case ErrorNode:
-		return errors.New("cannot render an ErrorNode node")
+		return ErrErrorNode
 	case TextNode:
 		if n.PrevSibling == nil || !(n.PrevSibling.Type == TextNode || n.PrevSibling.Type == VariableNode) {
 			if err := r.lineBreak(); err != nil {
@@ -519,6 +525,10 @@ func (r *renderer) render(n *Node) error {
 	case ComponentNode:
 		return r.renderComponent(n)
 	default:
+		return ErrUnknownNode
+	}
+}
+
 var indentStrings = [32]string{
 	"",
 	"  ",
