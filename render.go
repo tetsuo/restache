@@ -438,7 +438,7 @@ func (r *renderer) renderElement(n *Node) error {
 	if err := r.print("</"); err != nil {
 		return err
 	}
-	if err := r.print(n.TagName()); err != nil {
+	if err := r.print(tagName); err != nil {
 		return err
 	}
 	if err := r.print1('>'); err != nil {
