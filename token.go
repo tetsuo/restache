@@ -18,9 +18,9 @@ const (
 	TextToken
 	CommentToken
 	VariableToken
-	WhenToken   // if
-	UnlessToken // if not
-	RangeToken  // for
+	WhenToken
+	UnlessToken
+	RangeToken
 	EndControlToken
 )
 
