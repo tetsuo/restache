@@ -82,12 +82,10 @@ func (r *renderer) lineBreak() error {
 	if err := r.print1('\n'); err != nil {
 		return err
 	}
-	for range r.indent {
-		if err := r.print("  "); err != nil {
-			return err
-		}
+	if r.indent < len(indentStrings) {
+		return r.print(indentStrings[r.indent])
 	}
-	return nil
+	return r.print(strings.Repeat("  ", r.indent))
 }
 
 func (r *renderer) renderText(n *Node) error {
@@ -521,6 +519,37 @@ func (r *renderer) render(n *Node) error {
 	case ComponentNode:
 		return r.renderComponent(n)
 	default:
-		return errors.New("unknown node type")
-	}
+var indentStrings = [32]string{
+	"",
+	"  ",
+	"    ",
+	"      ",
+	"        ",
+	"          ",
+	"            ",
+	"              ",
+	"                ",
+	"                  ",
+	"                    ",
+	"                      ",
+	"                        ",
+	"                          ",
+	"                            ",
+	"                              ",
+	"                                ",
+	"                                  ",
+	"                                    ",
+	"                                      ",
+	"                                        ",
+	"                                          ",
+	"                                            ",
+	"                                              ",
+	"                                                ",
+	"                                                  ",
+	"                                                    ",
+	"                                                      ",
+	"                                                        ",
+	"                                                          ",
+	"                                                            ",
+	"                                                              ",
 }
