@@ -75,11 +75,12 @@ func inBodyIM(p *parser) bool {
 
 		if e.DataAtom != 0 {
 			if _, ok := commonElements[e.DataAtom]; !ok {
-				e.Data = e.DataAtom.String()
+				name := e.DataAtom.String()
+				e.Data = capitalize(name)
 				e.DataAtom = 0
 			}
 		} else {
-			capitalizeFirst(name)
+			capitalizeBytes(name)
 			e.Data = string(name)
 		}
 
@@ -271,7 +272,7 @@ func (p *parser) parse() error {
 		for i, tagName := range imported {
 			p.doc.Attr[i] = Attribute{
 				Key: tagName,
-				Val: "./" + tagName + extName,
+				Val: "./" + decapitalize(tagName) + extName,
 			}
 		}
 	}
@@ -436,11 +437,38 @@ func wrapChildrenInFragment(parent *Node) {
 	parent.AppendChild(frag)
 }
 
-func capitalizeFirst(b []byte) {
+func capitalizeBytes(b []byte) {
 	if len(b) == 0 {
 		return
 	}
 	if b[0] >= 'a' && b[0] <= 'z' {
 		b[0] -= 'a' - 'A'
 	}
+}
+
+func capitalize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	c := s[0]
+	if c >= 'a' && c <= 'z' {
+		c -= 'a' - 'A'
+	}
+	if c == s[0] {
+		return s
+	}
+	return string(c) + s[1:]
+}
+
+func decapitalize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	c := s[0]
+	if c >= 'A' && c <= 'Z' {
+		c += 'a' - 'A'
+	} else {
+		return s
+	}
+	return string(c) + s[1:]
 }
