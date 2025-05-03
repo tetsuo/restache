@@ -109,7 +109,7 @@ func TestParseModuleDeps(t *testing.T) {
 				expectedAttrs[from] = filtered
 			}
 
-			nodes, err := restache.ParseModule(baseDir, restache.WithIncludes(relPaths))
+			nodes, err := restache.ParseDir(baseDir, restache.WithIncludes(relPaths))
 			if err != nil {
 				t.Fatalf("ParseModule failed: %v", err)
 			}

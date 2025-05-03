@@ -30,9 +30,10 @@ func Render(w io.Writer, n *Node) (int, error) {
 }
 
 var (
-	ErrErrorNode    = errors.New("cannot render an ErrorNode node")
-	ErrUnknownNode  = errors.New("unknown node type")
-	ErrVoidChildren = errors.New("void element has child nodes")
+	ErrErrorNode       = errors.New("cannot render an ErrorNode node")
+	ErrUnknownNode     = errors.New("unknown node type")
+	ErrVoidChildren    = errors.New("void element has child nodes")
+	ErrTooManyChildren = errors.New("element must have a single child")
 )
 
 type writer interface {
@@ -75,11 +76,11 @@ func (r *renderer) println(s string) error {
 }
 
 func (r *renderer) printf(format string, args ...any) error {
-	if n, err := r.w.WriteString(fmt.Sprintf(format, args...)); err != nil {
+	n, err := fmt.Fprintf(r.w, format, args...)
+	if err != nil {
 		return err
-	} else {
-		r.written += n
 	}
+	r.written += n
 	return nil
 }
 
@@ -109,7 +110,7 @@ func (r *renderer) renderText(n *Node) error {
 }
 
 func (r *renderer) renderVariable(n *Node) error {
-	if err := r.printf("{ d%d.", r.rlvl); err != nil {
+	if err := r.printf("{ props%d.", r.rlvl); err != nil {
 		return err
 	}
 	if err := r.print(n.Data); err != nil {
@@ -129,14 +130,14 @@ func (r *renderer) renderComponent(n *Node) error {
 		return err
 	}
 	for _, attr := range n.Attr {
-		if err := r.printf("import %s from \"./%s.jsx\";\n", attr.Key, attr.Val); err != nil {
+		if err := r.printf("import %s from '%s';\n", attr.Key, attr.Val); err != nil {
 			return err
 		}
 	}
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("export default function %s(d%d) {", n.Data, r.rlvl); err != nil {
+	if err := r.printf("export default function %s(props%d) {", n.Data, r.rlvl); err != nil {
 		return err
 	}
 	r.indent++
@@ -150,16 +151,11 @@ func (r *renderer) renderComponent(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
-		if err := r.renderElement(n.FirstChild); err != nil {
-			return err
-		}
-	} else {
-		n.Type = ElementNode
-		n.Data = ""
-		if err := r.renderElement(n); err != nil {
-			return err
-		}
+	if n.FirstChild.Type != ElementNode || n.FirstChild != n.LastChild {
+		return ErrTooManyChildren
+	}
+	if err := r.renderElement(n.FirstChild); err != nil {
+		return err
 	}
 	r.indent--
 	if err := r.lineBreak(); err != nil {
@@ -179,21 +175,15 @@ func (r *renderer) renderWhen(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("d%d.%s && (", r.rlvl, n.Data); err != nil {
+	if err := r.printf("props%d.%s && (", r.rlvl, n.Data); err != nil {
 		return err
 	}
 	r.indent++
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
+	if n.FirstChild != nil && n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
 		if err := r.renderElement(n.FirstChild); err != nil {
-			return err
-		}
-	} else {
-		n.Type = ElementNode
-		n.Data = ""
-		if err := r.renderElement(n); err != nil {
 			return err
 		}
 	}
@@ -222,7 +212,7 @@ func (r *renderer) renderUnless(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("!d%d.%s && (", r.rlvl, n.Data); err != nil {
+	if err := r.printf("!props%d.%s && (", r.rlvl, n.Data); err != nil {
 		return err
 	}
 	r.indent++
@@ -231,12 +221,6 @@ func (r *renderer) renderUnless(n *Node) error {
 	}
 	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
 		if err := r.renderElement(n.FirstChild); err != nil {
-			return err
-		}
-	} else {
-		n.Type = ElementNode
-		n.Data = ""
-		if err := r.renderElement(n); err != nil {
 			return err
 		}
 	}
@@ -265,7 +249,7 @@ func (r *renderer) renderRange(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.printf("d%d.%s.map(", r.rlvl, n.Data); err != nil {
+	if err := r.printf("props%d.%s.map(", r.rlvl, n.Data); err != nil {
 		return err
 	}
 	r.indent++
@@ -274,24 +258,15 @@ func (r *renderer) renderRange(n *Node) error {
 	}
 
 	r.rlvl++
-	if err := r.printf("d%d => (", r.rlvl); err != nil {
+	if err := r.printf("props%d => (", r.rlvl); err != nil {
 		return err
 	}
 	r.indent++
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
-		n.FirstChild.Attr = append(n.FirstChild.Attr, Attribute{Key: "key", Val: "key", IsExpr: true})
-
+	if n.FirstChild != nil && n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
 		if err := r.renderElement(n.FirstChild); err != nil {
-			return err
-		}
-	} else {
-		n.Type = ElementNode
-		n.Data = "React.Fragment"
-		n.Attr = append(n.Attr, Attribute{Key: "key", Val: "key", IsExpr: true})
-		if err := r.renderElement(n); err != nil {
 			return err
 		}
 	}
@@ -320,11 +295,11 @@ func (r *renderer) renderRange(n *Node) error {
 	return nil
 }
 
-func (r *renderer) renderAttribute(a Attribute) error {
+func (r *renderer) renderAttribute(a Attribute, key string) error {
 	if err := r.print1(' '); err != nil {
 		return err
 	}
-	if err := r.print(a.Key); err != nil {
+	if err := r.print(key); err != nil {
 		return err
 	}
 	if a.Val == "" && a.KeyAtom != 0 {
@@ -333,15 +308,9 @@ func (r *renderer) renderAttribute(a Attribute) error {
 		}
 	}
 	if a.IsExpr {
-		if err := r.printf(`={ d%d.%s }`, r.rlvl, a.Val); err != nil {
-			return err
-		}
-	} else {
-		if err := r.printf(`="%s"`, a.Val); err != nil {
-			return err
-		}
+		return r.printf(`={ props%d.%s }`, r.rlvl, a.Val)
 	}
-	return nil
+	return r.printf(`="%s"`, a.Val)
 }
 
 func (r *renderer) renderElement(n *Node) error {
@@ -374,20 +343,23 @@ func (r *renderer) renderElement(n *Node) error {
 						a.Key = a.KeyAtom.String()
 					}
 				}
-				if err := r.renderAttribute(a); err != nil {
+				if err := r.renderAttribute(a, a.Key); err != nil {
 					return err
 				}
 			}
 		} else {
 			for _, a := range n.Attr {
+				var key string
 				if a.KeyAtom != 0 {
 					if alias, ok := globalCamelAttrTable[a.KeyAtom]; ok {
-						a.Key = alias
+						key = alias
 					} else {
-						a.Key = a.KeyAtom.String()
+						key = a.KeyAtom.String()
 					}
+				} else {
+					key = a.Key
 				}
-				if err := r.renderAttribute(a); err != nil {
+				if err := r.renderAttribute(a, key); err != nil {
 					return err
 				}
 			}

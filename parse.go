@@ -11,7 +11,7 @@ import (
 )
 
 func Parse(r io.Reader) (node *Node, err error) {
-	p := newParser(r, nil)
+	p := newParser(r)
 	if err = p.parse(); err != nil {
 		return
 	}
@@ -29,34 +29,17 @@ type parser struct {
 	tt   TokenType
 	path []PathComponent
 	sc   bool // indicates self closing token
-
-	lookup map[string]int // dependency lookup table
-	afters map[int]bool   // marked dependency indexes
 }
 
-func newParser(r io.Reader, lookup map[string]int) *parser {
+func newParser(r io.Reader) *parser {
 	p := &parser{
-		z:      NewTokenizer(r),
-		im:     initialIM,
-		lookup: lookup,
+		z:  NewTokenizer(r),
+		im: initialIM,
 		doc: &Node{
 			Type: ComponentNode,
 		},
 	}
-	if p.lookup != nil {
-		p.afters = make(map[int]bool)
-	}
 	return p
-}
-
-func (p *parser) markDependency(data string) {
-	if p.lookup != nil {
-		if idx, ok := p.lookup[data]; ok {
-			if _, ok = p.afters[idx]; !ok {
-				p.afters[idx] = true
-			}
-		}
-	}
 }
 
 // initialIM is the first insertion mode used.
@@ -94,11 +77,10 @@ func inBodyIM(p *parser) bool {
 			if _, ok := commonElements[e.DataAtom]; !ok {
 				e.Data = e.DataAtom.String()
 				e.DataAtom = 0
-				p.markDependency(e.Data)
 			}
 		} else {
+			capitalizeFirst(name)
 			e.Data = string(name)
-			p.markDependency(e.Data)
 		}
 
 		if hasAttr {
@@ -280,6 +262,22 @@ func (p *parser) parse() error {
 		}
 		p.parseCurrentToken()
 	}
+
+	const extName = ".stache"
+
+	imported := collectImports(p.doc)
+	if len(imported) > 0 {
+		p.doc.Attr = make([]Attribute, len(imported))
+		for i, tagName := range imported {
+			p.doc.Attr[i] = Attribute{
+				Key: tagName,
+				Val: "./" + tagName + extName,
+			}
+		}
+	}
+
+	ensureFragments(p.doc)
+
 	return nil
 }
 
@@ -352,4 +350,97 @@ func collapse(b []byte) []byte {
 		return nil
 	}
 	return b[:w]
+}
+
+// collectImports returns the .Data of every ElementNode whose
+// DataAtom == 0, without duplicates, in depth-first (pre-order) order.
+func collectImports(root *Node) []string {
+	if root == nil {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, 16) // seen .Data values
+	out := make([]string, 0, 8)
+
+	stack := []*Node{root.FirstChild}
+
+	for len(stack) > 0 {
+		i := len(stack) - 1
+		n := stack[i]
+		stack = stack[:i]
+
+		for n != nil {
+			if n.Type == ElementNode && n.DataAtom == 0 {
+				if _, ok := seen[n.Data]; !ok {
+					seen[n.Data] = struct{}{}
+					out = append(out, n.Data)
+				}
+			}
+			// push next sibling first so the first child is processed next
+			if nx := n.NextSibling; nx != nil {
+				stack = append(stack, nx)
+			}
+			n = n.FirstChild
+		}
+	}
+	return out
+}
+
+func ensureFragments(root *Node) {
+	if root == nil {
+		return
+	}
+
+	stack := []*Node{root}
+
+	for len(stack) > 0 {
+		n := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		if (n.Type == ComponentNode ||
+			n.Type == RangeNode ||
+			n.Type == WhenNode ||
+			n.Type == UnlessNode) &&
+			n.FirstChild != nil && n.FirstChild.NextSibling != nil {
+
+			wrapChildrenInFragment(n)
+		}
+
+		for c := n.LastChild; c != nil; c = c.PrevSibling {
+			stack = append(stack, c)
+		}
+	}
+}
+
+func wrapChildrenInFragment(parent *Node) {
+	frag := &Node{
+		Type: ElementNode,
+		Path: slices.Clone(parent.Path),
+	}
+
+	if parent.Type == RangeNode {
+		frag.Data = "React.Fragment"
+		frag.Attr = append(frag.Attr, Attribute{
+			Key:    "key",
+			Val:    "key",
+			IsExpr: true,
+		})
+	}
+
+	for c := parent.FirstChild; c != nil; {
+		next := c.NextSibling
+		parent.RemoveChild(c)
+		frag.AppendChild(c)
+		c = next
+	}
+	parent.AppendChild(frag)
+}
+
+func capitalizeFirst(b []byte) {
+	if len(b) == 0 {
+		return
+	}
+	if b[0] >= 'a' && b[0] <= 'z' {
+		b[0] -= 'a' - 'A'
+	}
 }

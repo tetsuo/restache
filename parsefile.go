@@ -5,20 +5,17 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"unicode"
 
 	"golang.org/x/net/html/atom"
 )
 
 // fileParser parses a template with dependencies; it implements toposort.Vertex.
 type fileParser struct {
-	path   string         // full path (e.g. /foo/Bar.stache)
-	ext    string         // extension (e.g. .stache)
-	stem   string         // filename without extension (e.g. Bar)
-	tag    string         // lowercase stem (e.g. bar)
-	doc    *Node          // the root component node
-	lookup map[string]int // dependency lookup table
-	afters []int          // collected dependency indexes
+	path string // full path (e.g. /foo/Bar.stache)
+	ext  string // extension (e.g. .stache)
+	stem string // filename without extension (e.g. Bar)
+	tag  string // lowercase stem (e.g. bar)
+	doc  *Node  // the root component node
 }
 
 func newFileParser(absPath string) (*fileParser, error) {
@@ -60,7 +57,7 @@ func (s *fileParser) parse() error {
 	}
 	defer f.Close()
 
-	p := newParser(f, s.lookup)
+	p := newParser(f)
 	if err := p.parse(); err != nil {
 		return err
 	}
@@ -69,37 +66,46 @@ func (s *fileParser) parse() error {
 	s.doc.Data = s.tag
 	s.doc.Path = []PathComponent{{Key: s.stem}, {Key: s.ext}}
 
-	s.afters = collectKeys(p.afters)
-	s.doc.Attr = make([]Attribute, len(s.afters))
-
 	return nil
-}
-
-func (s *fileParser) Afters() []int {
-	return s.afters
 }
 
 // isTagNameValidAndUpper checks if the provided name is valid as HTML tag and
 // returns true if it contains at least one upper case letter.
 func isTagNameValidAndUpper(name string) (bool, error) {
-	r := rune(name[0])
-	if !unicode.IsLetter(r) {
-		return false, fmt.Errorf("must start with a letter")
+	if len(name) == 0 {
+		return false, fmt.Errorf("name is empty")
 	}
-	hasUpper := unicode.IsUpper(r)
-	for _, r := range name[1:] {
-		if unicode.IsUpper(r) {
+
+	first := name[0]
+	if !isLetter(first) {
+		return false, fmt.Errorf("must start with an ASCII letter")
+	}
+
+	hasUpper := isUpper(first)
+	for i := 1; i < len(name); i++ {
+		c := name[i]
+		if isUpper(c) {
 			hasUpper = true
-		} else if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '-' {
-			return false, fmt.Errorf("contains invalid character %q", r)
+		} else if !isLetter(c) && !isDigit(c) && c != '-' {
+			return false, fmt.Errorf("contains invalid character %q", c)
 		}
 	}
+
 	return hasUpper, nil
 }
 
-func collectKeys[K comparable, V any](m map[K]V) (keys []K) {
-	for key := range m {
-		keys = append(keys, key)
-	}
-	return
+func isLetter(c byte) bool {
+	return isUpper(c) || isLower(c)
+}
+
+func isUpper(c byte) bool {
+	return c >= 'A' && c <= 'Z'
+}
+
+func isLower(c byte) bool {
+	return (c >= 'a' && c <= 'z')
+}
+
+func isDigit(c byte) bool {
+	return c >= '0' && c <= '9'
 }

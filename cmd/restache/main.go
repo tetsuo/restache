@@ -144,7 +144,7 @@ func main() {
 				}
 				continue
 			}
-			if _, err := restache.TranspileModule(dir, actualOutDir,
+			if _, err := restache.TranspileDir(dir, actualOutDir,
 				restache.WithIncludes(files),
 				restache.WithParallelism(parallelism),
 				restache.WithCallback(logArtifact),
@@ -163,7 +163,7 @@ func main() {
 				}
 				continue
 			}
-			if _, err := restache.TranspileModule(dir, "",
+			if _, err := restache.TranspileDir(dir, "",
 				restache.WithIncludes(files),
 				restache.WithParallelism(parallelism),
 				restache.WithCallback(logArtifact),

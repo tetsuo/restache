@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/tetsuo/toposort"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -84,78 +83,31 @@ func readConfig(cfg *config, inputDir string, opts ...Option) (int, error) {
 	return n, nil
 }
 
-func parseModule(inputDir string, includes []string, parallelism int) ([]*Node, error) {
+func parseFiles(inputDir string, includes []string, parallelism int) ([]*fileParser, error) {
 	var err error
 	n := len(includes)
 	entries := make([]*fileParser, n)
-	lookupTable := make(map[string]int, n)
 	for i, path := range includes {
 		entries[i], err = newFileParser(filepath.Join(inputDir, path))
 		if err != nil {
 			return nil, err
 		}
-		lookupTable[entries[i].tag] = i
 	}
 
 	var g errgroup.Group
 	g.SetLimit(parallelism)
 
 	for _, e := range entries {
-		e.lookup = lookupTable
 		g.Go(e.parse)
 	}
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
-	sort := false
-
-	// Before sorting collect imports:
-	for _, e := range entries {
-		if e.doc.Attr != nil {
-			j := 0
-			for i, other := range e.afters {
-				// Recursive?
-				if entries[other].tag == e.tag {
-					e.doc.DataAtom = 1
-					continue
-				}
-				e.afters[j] = e.afters[i]
-				e.doc.Attr[j] = Attribute{
-					Key: entries[other].tag,
-					Val: entries[other].stem,
-				}
-				j++
-			}
-			if e.doc.DataAtom == 1 {
-				e.afters = e.afters[:j]
-				e.doc.Attr = e.doc.Attr[:j]
-			}
-			if j > 0 {
-				sort = true
-			}
-		}
-	}
-
-	if sort {
-		if err := toposort.BFS(entries); err != nil {
-			// TODO: will detect recursive entries earlier; this only returns ErrCircular,
-			// should rather panic after recursive detection.
-			return nil, fmt.Errorf("error sorting files in %s: %w", inputDir, err)
-		}
-	}
-
-	nodes := make([]*Node, n)
-	for i, entry := range entries {
-		nodes[i] = entry.doc
-	}
-
-	return nodes, nil
+	return entries, nil
 }
 
-// ParseModule reads the provided directory for files listed in includes, parses each file to
-// build a dependency graph, and returns a slice of components in topologically sorted order.
-func ParseModule(inputDir string, opts ...Option) ([]*Node, error) {
+func ParseDir(inputDir string, opts ...Option) ([]*Node, error) {
 	if inputDir == "" {
 		return nil, fmt.Errorf("input directory path is empty")
 	}
@@ -171,7 +123,17 @@ func ParseModule(inputDir string, opts ...Option) ([]*Node, error) {
 		return nil, err
 	}
 
-	return parseModule(absInputDir, cfg.includes, min(n, cfg.parallelism))
+	fps, err := parseFiles(absInputDir, cfg.includes, min(n, cfg.parallelism))
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := make([]*Node, n)
+	for i, entry := range fps {
+		nodes[i] = entry.doc
+	}
+
+	return nodes, nil
 }
 
 type Artifact struct {
@@ -199,7 +161,6 @@ func TranspileFile(inputFile, outputFile string) (Artifact, error) {
 	if err != nil {
 		return Artifact{}, err // returns descriptive error
 	}
-	e.lookup = map[string]int{e.tag: 0}
 
 	if err := e.parse(); err != nil {
 		return Artifact{}, err // returns descriptive error
@@ -241,7 +202,7 @@ func renderToFile(absPath string, n *Node) (int, error) {
 	}
 }
 
-func TranspileModule(inputDir string, outputDir string, opts ...Option) ([]Artifact, error) {
+func TranspileDir(inputDir string, outputDir string, opts ...Option) ([]Artifact, error) {
 	if inputDir == "" {
 		return nil, fmt.Errorf("input directory path is empty")
 	}
@@ -271,7 +232,7 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) ([]Artif
 
 	start := time.Now()
 
-	nodes, err := parseModule(inputDir, cfg.includes, parallelism)
+	nodes, err := parseFiles(inputDir, cfg.includes, parallelism)
 	if err != nil {
 		return nil, fmt.Errorf("parse module %q: %v", inputDir, err)
 	}
@@ -291,12 +252,12 @@ func TranspileModule(inputDir string, outputDir string, opts ...Option) ([]Artif
 		g.Go(func() error {
 			// parseModule guarantees that node.Path is always at least length 2 (stem, ext),
 			// otherwise this might panic on certain input files:
-			outfile := filepath.Join(absOutputDir, node.Path[:len(node.Path)-1][0].Key) + ".jsx"
+			outfile := filepath.Join(absOutputDir, node.doc.Path[:len(node.doc.Path)-1][0].Key) + ".jsx"
 			dst, err := os.Create(outfile)
 			if err != nil {
 				return fmt.Errorf("could not create file %q: %v", outfile, err)
 			}
-			if written, err := Render(dst, node); err != nil {
+			if written, err := Render(dst, node.doc); err != nil {
 				dst.Close()
 				return fmt.Errorf("failed to write file %q: %v", outfile, err)
 			} else {
