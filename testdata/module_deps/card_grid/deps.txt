@@ -1,3 +1,0 @@
-dashboard card
-card cardfooter
-cardfooter footermetric

@@ -1,5 +1,0 @@
-<user />
-<content />
-{#replies}
-  <post />
-{/replies}

@@ -1,7 +1,0 @@
-app rootcontainer
-rootcontainer layoutblock
-layoutblock widgetstack
-layoutblock infobox
-widgetstack smallwidget
-infobox statrow
-statrow statitem

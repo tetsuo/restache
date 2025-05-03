@@ -1,13 +1,58 @@
 package restache
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"golang.org/x/net/html/atom"
 )
+
+func Plugin() api.Plugin {
+	return api.Plugin{
+		Name:  "stache-loader",
+		Setup: pluginSetup,
+	}
+}
+
+func pluginSetup(build api.PluginBuild) {
+	build.OnResolve(api.OnResolveOptions{Filter: "\\.stache$"}, pluginBuildResolveHandler)
+	build.OnLoad(api.OnLoadOptions{Filter: "\\.stache$"}, pluginBuildLoadHandler)
+}
+
+func pluginBuildResolveHandler(args api.OnResolveArgs) (api.OnResolveResult, error) {
+	path := filepath.Join(args.ResolveDir, args.Path)
+	return api.OnResolveResult{
+		Path:      path,
+		Namespace: "file",
+	}, nil
+}
+
+func pluginBuildLoadHandler(args api.OnLoadArgs) (api.OnLoadResult, error) {
+	e, err := newFileParser(args.Path)
+	if err != nil {
+		return api.OnLoadResult{}, err
+	}
+
+	if err := e.parse(); err != nil {
+		return api.OnLoadResult{}, err
+	}
+
+	var buf bytes.Buffer
+
+	if _, err := Render(&buf, e.doc); err != nil {
+		return api.OnLoadResult{}, err
+	}
+
+	contents := buf.String()
+	return api.OnLoadResult{
+		Contents: &contents,
+		Loader:   api.LoaderJSX,
+	}, nil
+}
 
 // fileParser parses a template with dependencies; it implements toposort.Vertex.
 type fileParser struct {

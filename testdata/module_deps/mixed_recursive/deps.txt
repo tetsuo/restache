@@ -1,7 +1,0 @@
-feed post
-feed announcement
-post user
-post content
-post post
-announcement heading
-announcement content

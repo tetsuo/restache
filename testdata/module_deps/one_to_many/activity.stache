@@ -1,5 +1,0 @@
-<ul>
-  {#recent}
-    <li>{item}</li>
-  {/recent}
-</ul>

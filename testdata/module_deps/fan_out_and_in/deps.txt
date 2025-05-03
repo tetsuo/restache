@@ -1,7 +1,0 @@
-shell leftbar
-shell rightbar
-shell footerbar
-leftbar status
-rightbar status
-rightbar notifications
-footerbar status
