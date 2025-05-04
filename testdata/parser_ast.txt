@@ -18,7 +18,7 @@ both text {! and comment }
 
 %
 
-[ text "both text ", comment "and comment" ]
+[[][ text "both text ", comment "and comment"]]
 
 %
 
@@ -33,13 +33,14 @@ both text {! and comment }
 
 %
 
-[ comment "a comment", text "some text ", comment "another comment
+[[][ comment "a comment", text "some text ", comment "another comment
 
   but this
     time
   it
    is multi
    line!" ]
+]
 
 %
 
@@ -47,11 +48,11 @@ hello {name} world
 
 %
 
-[
+[[][
   text "hello ",
   var .name,
   text " world"
-]
+]]
 
 %
 
@@ -84,7 +85,7 @@ hello {name} world
 
 %
 
-[ custom [][] ]
+[ Custom [][] ]
 
 %
 
@@ -141,13 +142,13 @@ hello {name} world
 
 %
 
-[
+[[][
   input[][],
   input[][],
   input[][],
   input[][],
   text "bazbar"
-]
+]]
 
 %
 
@@ -161,12 +162,12 @@ hello {name} world
 
 %
 
-[
+[[][
   hr[][], hr[][], hr[][], hr[][],
   img [ src text "quu" ][],
   img [ src text "quux" ][],
   p[] [ text "test" ]
-]
+]]
 
 %
 
@@ -183,7 +184,7 @@ hello {name} world
 
 %
 
-[ input [][], span [][ var .name ] ]
+[[][ input [][], span [][ var .name ] ]]
 
 %
 
@@ -296,14 +297,14 @@ hello {name} world
 
 %
 
-[
+[[][
   comment "element e mismatch",
-  x[][
-    d[][
-      y[][]
+  X[][
+    D[][
+      Y[][]
     ]
   ]
-]
+]]
 
 %
 
@@ -331,11 +332,15 @@ hello {name} world
 
 [ range .x [
     range x.#.d [
-      range x.#.d.#.y [
-        var x.#.d.#.y.#.name
-      ],
-      unless x.#.d.#.z [
-        var x.#.d.#.name
+      React.Fragment[
+        key var x.#.key
+      ][
+        range x.#.d.#.y [
+          var x.#.d.#.y.#.name
+        ],
+        unless x.#.d.#.z [
+          var x.#.d.#.name
+        ]
       ]
     ]
   ]
@@ -347,11 +352,11 @@ test one {! comment here } ending
 
 %
 
-[
+[[][
   text "test one ",
   comment "comment here",
   text " ending"
-]
+]]
 
 %
 
@@ -389,14 +394,14 @@ test one {! comment here } ending
 
 %
 
-[
+[[][
   when .loggedIn [
     p [] [ text "Hi ", var .username ]
   ],
   unless .loggedIn [
     p [] [ text "Please log in." ]
   ]
-]
+]]
 
 %
 
@@ -459,13 +464,22 @@ test one {! comment here } ending
 
 [
   range .team [
-    when team.#.active [
-      var team.#.name,
-      text " is active. "
-    ],
-    unless team.#.active [
-      var team.#.name,
-      text " is inactive. "
+    React.Fragment [
+      key var .key
+    ]
+    [
+      when team.#.active [
+        [][
+          var team.#.name,
+          text " is active. "
+        ]
+      ],
+      unless team.#.active [
+        [][
+          var team.#.name,
+          text " is inactive. "
+        ]
+      ]
     ]
   ]
 ]
@@ -488,18 +502,27 @@ test one {! comment here } ending
 %
 
 [
-  range .countries [
-    var countries.#.name,
-    text ": ",
-    range countries.#.cities [
-      var countries.#.cities.#.name,
-      text ", "
-    ],
-    when countries.#.visited [
-      text " (visited) "
-    ],
-    unless countries.#.visited [
-      text " (not visited) "
+  range .countries[
+    React.Fragment[
+      key var .key
+    ][
+      var countries.#.name,
+      text ": ",
+      range countries.#.cities[
+        React.Fragment[
+          key var countries.#.key
+        ]
+        [
+          var countries.#.cities.#.name,
+          text ", "
+        ]
+      ],
+      when countries.#.visited[
+        text " (visited) "
+      ],
+      unless countries.#.visited[
+        text " (not visited) "
+      ]
     ]
   ]
 ]
@@ -526,20 +549,24 @@ test one {! comment here } ending
 %
 
 [
-  range .bookstore [
-    range bookstore.#.sections [
-      text " Section: ",
-      var bookstore.#.sections.#.name,
-      when bookstore.#.sections.#.popular [
-        text " - Popular section! "
-      ],
-      range bookstore.#.sections.#.books [
-        when bookstore.#.sections.#.books.#.bestseller [
-          var bookstore.#.sections.#.books.#.title,
-          text " (bestseller) "
+  range .bookstore[
+    range bookstore.#.sections[
+      React.Fragment[
+        key var bookstore.#.key
+      ][
+          text " Section: ", var bookstore.#.sections.#.name, when bookstore.#.sections.#.popular[
+          text " - Popular section! "
         ],
-        unless bookstore.#.sections.#.books.#.bestseller [
-          var bookstore.#.sections.#.books.#.title
+        range bookstore.#.sections.#.books[
+          React.Fragment[ key var bookstore.#.sections.#.key ] [
+            when bookstore.#.sections.#.books.#.bestseller[
+              [][
+                var bookstore.#.sections.#.books.#.title,
+                text " (bestseller) "
+              ]
+            ],
+            unless bookstore.#.sections.#.books.#.bestseller[ var bookstore.#.sections.#.books.#.title ]
+          ]
         ]
       ]
     ]
@@ -560,16 +587,21 @@ test one {! comment here } ending
 %
 
 [
-  range .menu [
-    when menu.#.available [
-      var menu.#.dish,
-      text " ($",
-      var menu.#.price,
-      text ") "
-    ],
-    unless menu.#.available [
-      var menu.#.dish,
-      text " (unavailable) "
+  range .menu[
+    React.Fragment[
+      key var .key
+    ][
+      when menu.#.available[
+        [][
+          var menu.#.dish,
+          text " ($", var menu.#.price, text ") "
+        ]
+      ],
+      unless menu.#.available[
+        [][
+          var menu.#.dish, text " (unavailable) "
+        ]
+      ]
     ]
   ]
 ]
@@ -597,24 +629,38 @@ test one {! comment here } ending
 %
 
 [
-  range .classes [
+  range .classes[
+    React.Fragment[
+      key var .key
+    ][
     text " Class: ",
     var classes.#.name,
-    when classes.#.full [
+    when classes.#.full[
       text " (Full) "
     ],
-    unless classes.#.full [
-      text " Spots open: ",
-      var classes.#.spots.remaining
+    unless classes.#.full[
+      [][
+        text " Spots open: ",
+        var classes.#.spots.remaining
+      ]
     ],
-    range classes.#.students [
-      when classes.#.students.#.passed [
-        var classes.#.students.#.name,
-        text ": Passed "
-      ],
-      unless classes.#.students.#.passed [
-        var classes.#.students.#.name,
-        text ": Failed "
+    range classes.#.students[
+      React.Fragment[
+        key var classes.#.key
+      ][
+        when classes.#.students.#.passed[
+          [][
+            var classes.#.students.#.name,
+            text ": Passed "
+          ]
+        ],
+        unless classes.#.students.#.passed[
+          [][
+            var classes.#.students.#.name,
+            text ": Failed "
+            ]
+          ]
+        ]
       ]
     ]
   ]
@@ -657,45 +703,61 @@ test one {! comment here } ending
 %
 
 [
-  range .catalog [
-    section [ class var catalog.#.section.class ] [
-      when catalog.#.featured [
-        h1 [] [ var catalog.#.section.title ]
+  range .catalog[
+    section[
+      class var catalog.#.section.class
+    ][
+      when catalog.#.featured[
+        h1[][
+          var catalog.#.section.title
+        ]
       ],
-      unless catalog.#.featured [
-        h2 [] [ var catalog.#.section.title ]
+      unless catalog.#.featured[
+        h2[][
+          var catalog.#.section.title
+        ]
       ],
-      range catalog.#.products [
-        article [ id var catalog.#.products.#.sku ] [
-          img [
+      range catalog.#.products[
+        article[
+          id var catalog.#.products.#.sku
+        ][
+          img[
             src var catalog.#.products.#.image.url,
             alt var catalog.#.products.#.image.alt
           ][],
-          when catalog.#.products.#.onSale [
-            span [ class text "discount" ] [
+          when catalog.#.products.#.onSale[
+            span[
+              class text "discount"
+            ][
               var catalog.#.products.#.discount,
               text "% OFF"
             ]
           ],
-          footer [] [
-            range catalog.#.products.#.reviews [
-              when catalog.#.products.#.reviews.#.highlighted [
-                p [ class text "highlight" ] [
+          footer[][
+            range catalog.#.products.#.reviews[
+              React.Fragment[
+              key var catalog.#.products.#.key][
+                when catalog.#.products.#.reviews.#.highlighted[
+                  p[
+                    class text "highlight"
+                  ][
+                    var catalog.#.products.#.reviews.#.text,
+                    text " - by ",
+                    var catalog.#.products.#.reviews.#.author.name
+                  ]
+                ],
+                unless catalog.#.products.#.reviews.#.highlighted[
+                  p[][
                   var catalog.#.products.#.reviews.#.text,
                   text " - by ",
-                  var catalog.#.products.#.reviews.#.author.name
-                ]
-              ],
-              unless catalog.#.products.#.reviews.#.highlighted [
-                p [] [
-                  var catalog.#.products.#.reviews.#.text,
-                  text " - by ",
-                  var catalog.#.products.#.reviews.#.author.name
+                  var catalog.#.products.#.reviews.#.author.name]
                 ]
               ]
             ],
-            unless catalog.#.products.#.reviews [
-              p [] [ text "No reviews yet." ]
+            unless catalog.#.products.#.reviews[
+              p[][
+                text "No reviews yet."
+              ]
             ]
           ]
         ]
@@ -803,35 +865,53 @@ test one {! comment here } ending
 %
 
 [
-  range .projects [
-    div [ data-project var projects.#.id, class var projects.#.status ] [
-      header [] [
-        h3 [] [ var projects.#.name ],
-        when projects.#.archived [
-          span [ class text "badge" ] [ text "Archived" ]
+  range .projects[
+    div[
+      data-project var projects.#.id,
+      class var projects.#.status
+    ][
+      header[][
+        h3[][
+          var projects.#.name
+        ],
+        when projects.#.archived[
+          span[
+            class text "badge"
+          ][
+            text "Archived"
+          ]
         ]
       ],
-      ul [] [
-        range projects.#.milestones [
-          li [] [
-            strong [] [ var projects.#.milestones.#.title ],
-            when projects.#.milestones.#.dueDate [
-              em [] [
+      ul[][
+        range projects.#.milestones[
+          li[][
+            strong[][
+            var projects.#.milestones.#.title],
+            when projects.#.milestones.#.dueDate[
+              em[][
                 text "Due: ",
                 var projects.#.milestones.#.dueDate
               ]
             ],
-            range projects.#.milestones.#.tasks [
-              input [
-                type text "checkbox",
-                data-assignee var projects.#.milestones.#.tasks.#.assignee.id
-              ][],
-              label [] [ var projects.#.milestones.#.tasks.#.description ]
+            range projects.#.milestones.#.tasks[
+              React.Fragment[
+                key var projects.#.milestones.#.key
+              ][
+                input[
+                  type text "checkbox",
+                  data-assignee var projects.#.milestones.#.tasks.#.assignee.id
+                ][],
+                label[][
+                 var projects.#.milestones.#.tasks.#.description
+                ]
+              ]
             ]
           ]
         ],
-        unless projects.#.milestones [
-          li [] [ text "No milestones defined." ]
+        unless projects.#.milestones[
+          li[][
+           text "No milestones defined."
+          ]
         ]
       ]
     ]
