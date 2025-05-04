@@ -73,15 +73,15 @@ func inBodyIM(p *parser) bool {
 			Path:     slices.Clone(p.path),
 		}
 
-		if e.DataAtom != 0 {
+		if e.DataAtom == 0 {
+			capitalizeBytes(name)
+			e.Data = string(name)
+		} else {
 			if _, ok := commonElements[e.DataAtom]; !ok {
 				name := e.DataAtom.String()
 				e.Data = capitalize(name)
 				e.DataAtom = 0
 			}
-		} else {
-			capitalizeBytes(name)
-			e.Data = string(name)
 		}
 
 		if hasAttr {
@@ -152,11 +152,10 @@ func inBodyIM(p *parser) bool {
 		// pop stack until a matching element is found
 		a := atom.Lookup(name)
 		if a != 0 {
-			if _, ok := commonElements[a]; ok {
-				p.oe.popUntilAtom(atom.Lookup(name))
-				return true
-			}
+			p.oe.popUntilAtom(atom.Lookup(name))
+			return true
 		}
+		capitalizeBytes(name)
 		p.oe.popUntilName(name)
 		return true
 
