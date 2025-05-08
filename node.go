@@ -186,3 +186,63 @@ func equal(a string, b []byte) bool {
 	}
 	return true
 }
+
+// collectElementData returns the .Data of every ElementNode whose
+// DataAtom == 0, without duplicates, in depth-first (pre-order) order.
+func collectElementData(root *Node) []string {
+	if root == nil {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, 16) // seen .Data values
+	out := make([]string, 0, 8)
+
+	stack := []*Node{root.FirstChild}
+
+	for len(stack) > 0 {
+		i := len(stack) - 1
+		n := stack[i]
+		stack = stack[:i]
+
+		for n != nil {
+			if n.Type == ElementNode && n.DataAtom == 0 {
+				if _, ok := seen[n.Data]; !ok {
+					seen[n.Data] = struct{}{}
+					out = append(out, n.Data)
+				}
+			}
+			// push next sibling first so the first child is processed next
+			if nx := n.NextSibling; nx != nil {
+				stack = append(stack, nx)
+			}
+			n = n.FirstChild
+		}
+	}
+	return out
+}
+
+func rewriteElementData(root *Node, rewrites map[string]string) {
+	if root == nil {
+		return
+	}
+
+	stack := []*Node{root.FirstChild}
+
+	for len(stack) > 0 {
+		i := len(stack) - 1
+		n := stack[i]
+		stack = stack[:i]
+
+		for n != nil {
+			if n.Type == ElementNode && n.DataAtom == 0 {
+				if newVal, ok := rewrites[n.Data]; ok {
+					n.Data = newVal
+				}
+			}
+			if next := n.NextSibling; next != nil {
+				stack = append(stack, next)
+			}
+			n = n.FirstChild
+		}
+	}
+}

@@ -124,18 +124,12 @@ func (r *renderer) renderVariable(n *Node) error {
 
 func (r *renderer) renderComponent(n *Node) error {
 	if n.FirstChild == nil {
-		return r.println("export default function() { return null; }")
-	}
-	if err := r.println("import * as React from 'react';"); err != nil {
-		return err
+		return nil
 	}
 	for _, attr := range n.Attr {
 		if err := r.printf("import %s from '%s';\n", attr.Key, attr.Val); err != nil {
 			return err
 		}
-	}
-	if err := r.lineBreak(); err != nil {
-		return err
 	}
 	if err := r.printf("export default function %s(props%d) {", n.Data, r.rlvl); err != nil {
 		return err

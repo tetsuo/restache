@@ -74,7 +74,6 @@ func inBodyIM(p *parser) bool {
 		}
 
 		if e.DataAtom == 0 {
-			capitalizeBytes(name)
 			e.Data = string(name)
 		} else {
 			if _, ok := commonElements[e.DataAtom]; !ok {
@@ -155,7 +154,6 @@ func inBodyIM(p *parser) bool {
 			p.oe.popUntilAtom(atom.Lookup(name))
 			return true
 		}
-		capitalizeBytes(name)
 		p.oe.popUntilName(name)
 		return true
 
@@ -217,9 +215,15 @@ func inBodyIM(p *parser) bool {
 			n     *Node
 			found bool
 		)
-		// If it's a range node, restore the path
-		if n, found = p.oe.popControl(name); found && n.Type == RangeNode {
-			p.path = n.Path
+		if n, found = p.oe.popControl(name); found {
+			// Needs fragment?
+			if n.FirstChild != nil && n.FirstChild.NextSibling != nil {
+				wrapChildrenInFragment(n)
+			}
+			// If it's a range node, restore the path
+			if n.Type == RangeNode {
+				p.path = n.Path
+			}
 		}
 		return true
 
@@ -263,20 +267,9 @@ func (p *parser) parse() error {
 		p.parseCurrentToken()
 	}
 
-	const extName = ".stache"
-
-	imported := collectImports(p.doc)
-	if len(imported) > 0 {
-		p.doc.Attr = make([]Attribute, len(imported))
-		for i, tagName := range imported {
-			p.doc.Attr[i] = Attribute{
-				Key: tagName,
-				Val: "./" + decapitalize(tagName) + extName,
-			}
-		}
+	if p.doc.FirstChild != nil && p.doc.FirstChild.NextSibling != nil {
+		wrapChildrenInFragment(p.doc)
 	}
-
-	ensureFragments(p.doc)
 
 	return nil
 }
@@ -352,68 +345,9 @@ func collapse(b []byte) []byte {
 	return b[:w]
 }
 
-// collectImports returns the .Data of every ElementNode whose
-// DataAtom == 0, without duplicates, in depth-first (pre-order) order.
-func collectImports(root *Node) []string {
-	if root == nil {
-		return nil
-	}
-
-	seen := make(map[string]struct{}, 16) // seen .Data values
-	out := make([]string, 0, 8)
-
-	stack := []*Node{root.FirstChild}
-
-	for len(stack) > 0 {
-		i := len(stack) - 1
-		n := stack[i]
-		stack = stack[:i]
-
-		for n != nil {
-			if n.Type == ElementNode && n.DataAtom == 0 {
-				if _, ok := seen[n.Data]; !ok {
-					seen[n.Data] = struct{}{}
-					out = append(out, n.Data)
-				}
-			}
-			// push next sibling first so the first child is processed next
-			if nx := n.NextSibling; nx != nil {
-				stack = append(stack, nx)
-			}
-			n = n.FirstChild
-		}
-	}
-	return out
-}
-
-func ensureFragments(root *Node) {
-	if root == nil {
-		return
-	}
-
-	stack := []*Node{root}
-
-	for len(stack) > 0 {
-		n := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-
-		if (n.Type == ComponentNode ||
-			n.Type == RangeNode ||
-			n.Type == WhenNode ||
-			n.Type == UnlessNode) &&
-			n.FirstChild != nil && n.FirstChild.NextSibling != nil {
-
-			wrapChildrenInFragment(n)
-		}
-
-		for c := n.LastChild; c != nil; c = c.PrevSibling {
-			stack = append(stack, c)
-		}
-	}
-}
-
 func wrapChildrenInFragment(parent *Node) {
 	frag := &Node{
+		Data: "React.Fragment",
 		Type: ElementNode,
 		Path: slices.Clone(parent.Path),
 	}
@@ -436,15 +370,6 @@ func wrapChildrenInFragment(parent *Node) {
 	parent.AppendChild(frag)
 }
 
-func capitalizeBytes(b []byte) {
-	if len(b) == 0 {
-		return
-	}
-	if b[0] >= 'a' && b[0] <= 'z' {
-		b[0] -= 'a' - 'A'
-	}
-}
-
 func capitalize(s string) string {
 	if len(s) == 0 {
 		return s
@@ -454,19 +379,6 @@ func capitalize(s string) string {
 		c -= 'a' - 'A'
 	}
 	if c == s[0] {
-		return s
-	}
-	return string(c) + s[1:]
-}
-
-func decapitalize(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-	c := s[0]
-	if c >= 'A' && c <= 'Z' {
-		c += 'a' - 'A'
-	} else {
 		return s
 	}
 	return string(c) + s[1:]
