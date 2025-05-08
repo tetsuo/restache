@@ -235,25 +235,18 @@ func (p *plugin) onLoad(args api.OnLoadArgs) (api.OnLoadResult, error) {
 	}
 	resolveDir := filepath.Dir(args.Path)
 
-	if root.FirstChild == nil {
-		contents := "export default function() { return null; }"
-		return api.OnLoadResult{
-			Contents:   &contents,
-			Loader:     api.LoaderJSX,
-			ResolveDir: resolveDir,
-		}, nil
-	}
-
 	componentName := strings.TrimSuffix(filepath.Base(args.Path), filepath.Ext(args.Path))
 	root.Data = pascalize(componentName)
 
-	if err := p.rewriteImports(root, resolveDir); err != nil {
-		return api.OnLoadResult{}, err
-	}
-
 	var buf bytes.Buffer
-	if _, err := buf.WriteString("import * as React from 'react';\n"); err != nil {
-		return api.OnLoadResult{}, err
+
+	if root.FirstChild != nil {
+		if err := p.rewriteImports(root, resolveDir); err != nil {
+			return api.OnLoadResult{}, err
+		}
+		if _, err := buf.WriteString("import * as React from 'react';\n"); err != nil {
+			return api.OnLoadResult{}, err
+		}
 	}
 
 	if _, err := Render(&buf, root); err != nil {

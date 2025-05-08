@@ -123,9 +123,6 @@ func (r *renderer) renderVariable(n *Node) error {
 }
 
 func (r *renderer) renderComponent(n *Node) error {
-	if n.FirstChild == nil {
-		return nil
-	}
 	for _, attr := range n.Attr {
 		if err := r.printf("import %s from '%s';\n", attr.Key, attr.Val); err != nil {
 			return err
@@ -138,25 +135,38 @@ func (r *renderer) renderComponent(n *Node) error {
 	if err := r.lineBreak(); err != nil {
 		return err
 	}
-	if err := r.print("return ("); err != nil {
-		return err
-	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if n.FirstChild.Type != ElementNode || n.FirstChild != n.LastChild {
-		return ErrTooManyChildren
-	}
-	if err := r.renderElement(n.FirstChild); err != nil {
-		return err
-	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if err := r.println(");\n}"); err != nil {
-		return err
+	if n.FirstChild != nil {
+		if err := r.print("return ("); err != nil {
+			return err
+		}
+		r.indent++
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		if n.FirstChild.Type != ElementNode || n.FirstChild != n.LastChild {
+			return ErrTooManyChildren
+		}
+		if err := r.renderElement(n.FirstChild); err != nil {
+			return err
+		}
+		r.indent--
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		if err := r.println(");\n}"); err != nil {
+			return err
+		}
+	} else {
+		if err := r.print("return null;"); err != nil {
+			return err
+		}
+		r.indent--
+		if err := r.lineBreak(); err != nil {
+			return err
+		}
+		if err := r.println("}"); err != nil {
+			return err
+		}
 	}
 	return nil
 }

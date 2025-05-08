@@ -216,10 +216,7 @@ func inBodyIM(p *parser) bool {
 			found bool
 		)
 		if n, found = p.oe.popControl(name); found {
-			// Needs fragment?
-			if n.FirstChild != nil && n.FirstChild.NextSibling != nil {
-				wrapChildrenInFragment(n)
-			}
+			wrapChildrenInFragmentIfNeeded(n)
 			// If it's a range node, restore the path
 			if n.Type == RangeNode {
 				p.path = n.Path
@@ -266,11 +263,9 @@ func (p *parser) parse() error {
 		}
 		p.parseCurrentToken()
 	}
-
-	if p.doc.FirstChild != nil && p.doc.FirstChild.NextSibling != nil {
-		wrapChildrenInFragment(p.doc)
+	if p.doc.Type == ComponentNode {
+		wrapChildrenInFragmentIfNeeded(p.doc)
 	}
-
 	return nil
 }
 
@@ -345,7 +340,11 @@ func collapse(b []byte) []byte {
 	return b[:w]
 }
 
-func wrapChildrenInFragment(parent *Node) {
+func wrapChildrenInFragmentIfNeeded(parent *Node) {
+	first := parent.FirstChild
+	if first == nil || (first.NextSibling == nil && first.Type == ElementNode) {
+		return
+	}
 	frag := &Node{
 		Data: "React.Fragment",
 		Type: ElementNode,
