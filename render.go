@@ -46,7 +46,7 @@ type renderer struct {
 	w writer
 
 	written int
-	rlvl    int
+	scope   int
 }
 
 func (r *renderer) print1(c byte) error {
@@ -91,13 +91,10 @@ func (r *renderer) renderText(n *Node) error {
 }
 
 func (r *renderer) renderVariable(n *Node) error {
-	if err := r.printf("{ props%d.", r.rlvl); err != nil {
+	if err := r.printf("$%d.", r.scope); err != nil {
 		return err
 	}
 	if err := r.print(n.Data); err != nil {
-		return err
-	}
-	if err := r.print(" }"); err != nil {
 		return err
 	}
 	return nil
@@ -109,32 +106,18 @@ func (r *renderer) renderComponent(n *Node) error {
 			return err
 		}
 	}
-	if err := r.printf("export default function %s(props%d) {", n.Data, r.rlvl); err != nil {
+	if err := r.printf("export default function %s($%d) {", n.Data, r.scope); err != nil {
 		return err
 	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if n.FirstChild != nil {
-		if err := r.print("return ("); err != nil {
+	first := n.FirstChild
+	if first != nil {
+		if err := r.print("return "); err != nil {
 			return err
 		}
-		r.indent++
-		if err := r.lineBreak(); err != nil {
+		if err := r.render(first); err != nil {
 			return err
 		}
-		if n.FirstChild.Type != ElementNode || n.FirstChild != n.LastChild {
-			return ErrTooManyChildren
-		}
-		if err := r.renderElement(n.FirstChild); err != nil {
-			return err
-		}
-		r.indent--
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
-		if err := r.println(");\n}"); err != nil {
+		if err := r.print(";}"); err != nil {
 			return err
 		}
 	} else {
@@ -148,65 +131,24 @@ func (r *renderer) renderComponent(n *Node) error {
 	return nil
 }
 
-func (r *renderer) renderWhen(n *Node) error {
-	if err := r.print1('{'); err != nil {
+func (r *renderer) renderWhen(n *Node, negate bool) error {
+	if err := r.print1('('); err != nil {
 		return err
 	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if err := r.printf("props%d.%s && (", r.rlvl, n.Data); err != nil {
-		return err
-	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if n.FirstChild != nil && n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
-		if err := r.renderElement(n.FirstChild); err != nil {
+	if negate {
+		if err := r.print1('!'); err != nil {
 			return err
 		}
 	}
 	if err := r.printf("$%d.%s && ", r.scope, n.Data); err != nil {
 		return err
 	}
-	if err := r.print1(')'); err != nil {
-		return err
-	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if err := r.print1('}'); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *renderer) renderUnless(n *Node) error {
-	if err := r.print1('{'); err != nil {
-		return err
-	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if err := r.printf("!props%d.%s && (", r.rlvl, n.Data); err != nil {
-		return err
-	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
-		if err := r.renderElement(n.FirstChild); err != nil {
+	if n.FirstChild != nil && n.FirstChild == n.LastChild {
+		if err := r.render(n.FirstChild); err != nil {
 			return err
 		}
-	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
+	} else {
+		// TODO: raise error
 	}
 	if err := r.print1(')'); err != nil {
 		return err
@@ -215,54 +157,22 @@ func (r *renderer) renderUnless(n *Node) error {
 }
 
 func (r *renderer) renderRange(n *Node) error {
-	if err := r.print1('{'); err != nil {
+	if err := r.printf("$%d.%s.map(", r.scope, n.Data); err != nil {
 		return err
 	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
+	r.scope++
+	if err := r.printf("$%d => ", r.scope); err != nil {
 		return err
 	}
-	if err := r.printf("props%d.%s.map(", r.rlvl, n.Data); err != nil {
-		return err
-	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-
-	r.rlvl++
-	if err := r.printf("props%d => (", r.rlvl); err != nil {
-		return err
-	}
-	r.indent++
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if n.FirstChild != nil && n.FirstChild == n.LastChild && n.FirstChild.Type == ElementNode {
-		if err := r.renderElement(n.FirstChild); err != nil {
+	if n.FirstChild != nil && n.FirstChild == n.LastChild {
+		if err := r.render(n.FirstChild); err != nil {
 			return err
 		}
+	} else {
+		// TODO: raise too many
 	}
-	r.rlvl--
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
+	r.scope--
 	if err := r.print1(')'); err != nil {
-		return err
-	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if err := r.print1(')'); err != nil {
-		return err
-	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if err := r.print1('}'); err != nil {
 		return err
 	}
 	return nil
@@ -281,7 +191,7 @@ func (r *renderer) renderAttribute(a Attribute, key string) error {
 		}
 	}
 	if a.IsExpr {
-		return r.printf(`={ props%d.%s }`, r.rlvl, a.Val)
+		return r.printf(`={ $%d.%s }`, r.scope, a.Val)
 	}
 	return r.printf(`="%s"`, a.Val)
 }
@@ -360,22 +270,14 @@ func (r *renderer) renderElement(n *Node) error {
 				}
 			}
 		}
-
-		r.indent++
 		for c != nil {
 			if err := r.render(c); err != nil {
 				return err
 			}
 			c = c.NextSibling
 		}
-		r.indent--
 	} else {
 		if err := r.print1('>'); err != nil {
-			return err
-		}
-	}
-	if n.FirstChild != nil {
-		if err := r.lineBreak(); err != nil {
 			return err
 		}
 	}
@@ -407,13 +309,7 @@ func (r *renderer) renderComment(n *Node) error {
 		if err := r.print("{/*"); err != nil {
 			return err
 		}
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
 		if err := escapeComment(r.w, n.Data); err != nil {
-			return err
-		}
-		if err := r.lineBreak(); err != nil {
 			return err
 		}
 		if err := r.print("*/}"); err != nil {
