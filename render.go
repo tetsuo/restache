@@ -45,7 +45,6 @@ type writer interface {
 type renderer struct {
 	w writer
 
-	indent  int
 	written int
 	rlvl    int
 }
@@ -67,14 +66,6 @@ func (r *renderer) print(s string) error {
 	return nil
 }
 
-func (r *renderer) println(s string) error {
-	err := r.print(s)
-	if err == nil {
-		return r.print1('\n')
-	}
-	return err
-}
-
 func (r *renderer) printf(format string, args ...any) error {
 	n, err := fmt.Fprintf(r.w, format, args...)
 	if err != nil {
@@ -82,16 +73,6 @@ func (r *renderer) printf(format string, args ...any) error {
 	}
 	r.written += n
 	return nil
-}
-
-func (r *renderer) lineBreak() error {
-	if err := r.print1('\n'); err != nil {
-		return err
-	}
-	if r.indent < len(indentStrings) {
-		return r.print(indentStrings[r.indent])
-	}
-	return r.print(strings.Repeat("  ", r.indent))
 }
 
 func (r *renderer) renderText(n *Node) error {
@@ -160,11 +141,7 @@ func (r *renderer) renderComponent(n *Node) error {
 		if err := r.print("return null;"); err != nil {
 			return err
 		}
-		r.indent--
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
-		if err := r.println("}"); err != nil {
+		if err := r.print("}"); err != nil {
 			return err
 		}
 	}
@@ -191,8 +168,7 @@ func (r *renderer) renderWhen(n *Node) error {
 			return err
 		}
 	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
+	if err := r.printf("$%d.%s && ", r.scope, n.Data); err != nil {
 		return err
 	}
 	if err := r.print1(')'); err != nil {
@@ -233,13 +209,6 @@ func (r *renderer) renderUnless(n *Node) error {
 		return err
 	}
 	if err := r.print1(')'); err != nil {
-		return err
-	}
-	r.indent--
-	if err := r.lineBreak(); err != nil {
-		return err
-	}
-	if err := r.print1('}'); err != nil {
 		return err
 	}
 	return nil
@@ -531,39 +500,4 @@ func escapeComment(w writer, s string) error {
 		}
 	}
 	return nil
-}
-
-var indentStrings = [32]string{
-	"",
-	"  ",
-	"    ",
-	"      ",
-	"        ",
-	"          ",
-	"            ",
-	"              ",
-	"                ",
-	"                  ",
-	"                    ",
-	"                      ",
-	"                        ",
-	"                          ",
-	"                            ",
-	"                              ",
-	"                                ",
-	"                                  ",
-	"                                    ",
-	"                                      ",
-	"                                        ",
-	"                                          ",
-	"                                            ",
-	"                                              ",
-	"                                                ",
-	"                                                  ",
-	"                                                    ",
-	"                                                      ",
-	"                                                        ",
-	"                                                          ",
-	"                                                            ",
-	"                                                              ",
 }
