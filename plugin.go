@@ -142,7 +142,7 @@ func (p *plugin) buildImports(idb *importsInfo, root *Node, resolveDir string) (
 	rewrites := make(map[string]string) // orig tag to local ident
 
 	for _, tag := range collectElementData(root) {
-		if tag == "React.Fragment" {
+		if tag == "React.Fragment" || tag == "" {
 			continue
 		}
 
