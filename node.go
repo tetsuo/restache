@@ -80,6 +80,10 @@ func (n *Node) InsertBefore(newChild, oldChild *Node) {
 	newChild.NextSibling = next
 }
 
+func (n *Node) Render(w writer) (int, error) {
+	return Render(w, n)
+}
+
 // AppendChild adds a node c as a child of n.
 //
 // It will panic if c already has a parent or siblings.
