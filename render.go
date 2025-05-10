@@ -248,12 +248,15 @@ func (r *renderer) renderElement(n *Node) error {
 			}
 		}
 	}
-	if _, ok := voidElements[n.DataAtom]; ok {
-		if n.FirstChild != nil {
-			return ErrVoidChildren
+
+	if n.DataAtom != 0 {
+		if _, ok := voidElements[n.DataAtom]; ok {
+			if n.FirstChild != nil {
+				return ErrVoidChildren
+			}
+			err := r.print(" />")
+			return err
 		}
-		err := r.print(" />")
-		return err
 	}
 
 	c := n.FirstChild
