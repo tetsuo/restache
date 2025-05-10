@@ -216,7 +216,7 @@ func inBodyIM(p *parser) bool {
 			found bool
 		)
 		if n, found = p.oe.popControl(name); found {
-			wrapChildrenInFragmentIfNeeded(n)
+			ensureFragment(n)
 			// If it's a range node, restore the path
 			if n.Type == RangeNode {
 				p.path = n.Path
@@ -264,7 +264,7 @@ func (p *parser) parse() error {
 		p.parseCurrentToken()
 	}
 	if p.doc.Type == ComponentNode {
-		wrapChildrenInFragmentIfNeeded(p.doc)
+		ensureFragment(p.doc)
 	}
 	return nil
 }
@@ -340,13 +340,18 @@ func collapse(b []byte) []byte {
 	return b[:w]
 }
 
-func wrapChildrenInFragmentIfNeeded(parent *Node) {
+func ensureFragment(parent *Node) {
 	first := parent.FirstChild
-	if first == nil || (first.NextSibling == nil && first.Type == ElementNode) {
+	if first == nil {
+		parent.AppendChild(&Node{Type: ElementNode})
+		// which is ok; this is only called on control nodes & component
 		return
 	}
+	if first.NextSibling == nil && !(first.Type == TextNode || first.Type == CommentNode) {
+		return
+	}
+	// continuing; parent has one child, and it's not a text node or comment node
 	frag := &Node{
-		Data: "React.Fragment",
 		Type: ElementNode,
 		Path: slices.Clone(parent.Path),
 	}
