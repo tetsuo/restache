@@ -49,30 +49,27 @@ type renderer struct {
 	scope   int
 }
 
-func (r *renderer) print1(c byte) error {
-	if err := r.w.WriteByte(c); err != nil {
-		return err
+func (r *renderer) print1(c byte) (err error) {
+	if err = r.w.WriteByte(c); err == nil {
+		r.written += 1
 	}
-	r.written += 1
-	return nil
+	return
 }
 
-func (r *renderer) print(s string) error {
-	if n, err := r.w.WriteString(s); err != nil {
-		return err
-	} else {
+func (r *renderer) print(s string) (err error) {
+	var n int
+	if n, err = r.w.WriteString(s); err == nil {
 		r.written += n
 	}
-	return nil
+	return
 }
 
-func (r *renderer) printf(format string, args ...any) error {
-	n, err := fmt.Fprintf(r.w, format, args...)
-	if err != nil {
-		return err
+func (r *renderer) printf(format string, args ...any) (err error) {
+	var n int
+	if n, err = fmt.Fprintf(r.w, format, args...); err == nil {
+		r.written += n
 	}
-	r.written += n
-	return nil
+	return
 }
 
 func (r *renderer) renderText(n *Node) error {
@@ -90,14 +87,11 @@ func (r *renderer) renderText(n *Node) error {
 	return nil
 }
 
-func (r *renderer) renderVariable(n *Node) error {
-	if err := r.printf("$%d.", r.scope); err != nil {
-		return err
+func (r *renderer) renderVariable(n *Node) (err error) {
+	if err = r.printf("$%d.", r.scope); err == nil {
+		err = r.print(n.Data)
 	}
-	if err := r.print(n.Data); err != nil {
-		return err
-	}
-	return nil
+	return
 }
 
 func (r *renderer) renderComponent(n *Node) error {
