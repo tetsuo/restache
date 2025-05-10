@@ -237,7 +237,7 @@ func inBodyIM(p *parser) bool {
 	panic(fmt.Sprintf("unknown token type: %d", int(p.tt)))
 }
 
-// parseCurrentTokens call the current insertion mode; it sets the self-closing-tag
+// parseCurrentToken call the current insertion mode; it sets the self-closing-tag
 // mode (p.sc) on, if a SelfClosingTagToken is encountered.
 func (p *parser) parseCurrentToken() {
 	if p.tt == SelfClosingTagToken {
