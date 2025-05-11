@@ -1,0 +1,133 @@
+hi
+
+%
+
+<>hi</>
+
+%
+
+    hi
+
+%
+
+<>hi</>
+
+%
+
+hello     world
+
+%
+
+<>hello world</>
+
+%
+
+{somevar}
+
+%
+
+$0.somevar
+
+%
+
+{somevar}{anothervar}
+
+%
+
+<>{$0.somevar}{$0.anothervar}</>
+
+%
+
+<span></span>
+
+%
+
+<span></span>
+
+%
+
+<span>hi</span><b>hello</b>
+
+%
+
+<><span>hi</span><b>hello</b></>
+
+%
+
+<img>
+
+%
+
+<img />
+
+%
+
+<span>
+
+%
+
+<span></span>
+
+%
+
+{?x}{/x}
+
+%
+
+($0.x && <></>)
+
+%
+
+{?hi}sup{/hi}
+
+%
+
+($0.hi && <>sup</>)
+
+%
+
+{?hi}<span></span>{/hi}
+
+%
+
+($0.hi && <span></span>)
+
+%
+
+{?hi}<img><hr>{/hi}
+
+%
+
+($0.hi && <><img /><hr /></>)
+
+%
+
+{^x}{/x}
+
+%
+
+(!$0.x && <></>)
+
+%
+
+{#x}{/x}
+
+%
+
+$0.x.map($1 => <></>)
+
+%
+
+{#hi}hi{/hi}
+
+%
+
+$0.hi.map($1 => <React.Fragment key={ $1.key }>hi</React.Fragment>)
+
+%
+
+{!Hi hello}
+
+%
+
+<>{ /* Hi hello */ }</>
