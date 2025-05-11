@@ -81,10 +81,7 @@ func (r *renderer) renderText(n *Node) error {
 	if s[x-1] == ' ' && n.NextSibling == nil {
 		s = s[:x-1]
 	}
-	if err := r.print(s); err != nil {
-		return err
-	}
-	return nil
+	return r.print(s)
 }
 
 func (r *renderer) renderVariable(n *Node) (err error) {
