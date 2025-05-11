@@ -37,13 +37,14 @@ func TestParse(t *testing.T) {
 		}
 	})
 
-	t.Run("skip empty text", func(t *testing.T) {
+	t.Run("empty text becomes fragment", func(t *testing.T) {
 		root, err := restache.Parse(strings.NewReader("  "))
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
-		res := dumpResolvedTree(root)
-		expected := "[  ]"
+		res := normalizeSpaces(dumpResolvedTree(root))
+		fmt.Println(res)
+		expected := "[[][]]"
 		if res != expected {
 			t.Errorf("expected %q, got %q", expected, res)
 		}

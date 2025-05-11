@@ -2,7 +2,7 @@ hello hi
 
 %
 
-[ text "hello hi" ]
+[[][ text "hello hi" ]]
 
 %
 
@@ -10,7 +10,7 @@ hello hi
 
 %
 
-[ comment "my comment hi" ]
+[[][ comment "my comment hi" ]]
 
 %
 
@@ -85,7 +85,7 @@ hello {name} world
 
 %
 
-[ Custom [][] ]
+[ custom [][] ]
 
 %
 
@@ -209,8 +209,16 @@ hello {name} world
 %
 
 [
-  p [] [
-    when .isAdmin [ text "Welcome back!" ]
+  p
+  []
+  [
+    when .isAdmin
+    [
+      []
+      [
+        text "Welcome back!"
+      ]
+    ]
   ]
 ]
 
@@ -284,7 +292,7 @@ hello {name} world
 
 %
 
-[ comment "uninitialized element"]
+[[][ comment "uninitialized element"]]
 
 %
 
@@ -297,14 +305,13 @@ hello {name} world
 
 %
 
-[[][
-  comment "element e mismatch",
-  X[][
-    D[][
-      Y[][]
-    ]
+[
+  []
+  [
+    comment "element e mismatch",
+    x[][ d[][ y[][] ] ]
   ]
-]]
+]
 
 %
 
@@ -313,7 +320,7 @@ hello {name} world
 
 %
 
-[ comment "uninitialized control"]
+[[][ comment "uninitialized control"]]
 
 %
 
@@ -502,14 +509,19 @@ test one {! comment here } ending
 %
 
 [
-  range .countries[
-    React.Fragment[
+  range .countries
+  [
+    React.Fragment
+    [
       key var .key
-    ][
+    ]
+    [
       var countries.#.name,
       text ": ",
-      range countries.#.cities[
-        React.Fragment[
+      range countries.#.cities
+      [
+        React.Fragment
+        [
           key var countries.#.key
         ]
         [
@@ -517,11 +529,19 @@ test one {! comment here } ending
           text ", "
         ]
       ],
-      when countries.#.visited[
-        text " (visited) "
+      when countries.#.visited
+      [
+        []
+        [
+          text " (visited) "
+        ]
       ],
-      unless countries.#.visited[
-        text " (not visited) "
+      unless countries.#.visited
+      [
+        []
+        [
+          text " (not visited) "
+        ]
       ]
     ]
   ]
@@ -549,23 +569,43 @@ test one {! comment here } ending
 %
 
 [
-  range .bookstore[
-    range bookstore.#.sections[
-      React.Fragment[
+  range .bookstore
+  [
+    range bookstore.#.sections
+    [
+      React.Fragment
+      [
         key var bookstore.#.key
-      ][
-          text " Section: ", var bookstore.#.sections.#.name, when bookstore.#.sections.#.popular[
-          text " - Popular section! "
+      ]
+      [
+        text " Section: ",
+        var bookstore.#.sections.#.name,
+        when bookstore.#.sections.#.popular
+        [
+          []
+          [
+            text " - Popular section! "
+          ]
         ],
-        range bookstore.#.sections.#.books[
-          React.Fragment[ key var bookstore.#.sections.#.key ] [
-            when bookstore.#.sections.#.books.#.bestseller[
-              [][
+        range bookstore.#.sections.#.books
+        [
+          React.Fragment
+          [
+            key var bookstore.#.sections.#.key
+          ]
+          [
+            when bookstore.#.sections.#.books.#.bestseller
+            [
+              []
+              [
                 var bookstore.#.sections.#.books.#.title,
                 text " (bestseller) "
               ]
             ],
-            unless bookstore.#.sections.#.books.#.bestseller[ var bookstore.#.sections.#.books.#.title ]
+            unless bookstore.#.sections.#.books.#.bestseller
+            [
+              var bookstore.#.sections.#.books.#.title
+            ]
           ]
         ]
       ]
@@ -629,35 +669,51 @@ test one {! comment here } ending
 %
 
 [
-  range .classes[
-    React.Fragment[
+  range .classes
+  [
+    React.Fragment
+    [
       key var .key
-    ][
-    text " Class: ",
-    var classes.#.name,
-    when classes.#.full[
-      text " (Full) "
-    ],
-    unless classes.#.full[
-      [][
-        text " Spots open: ",
-        var classes.#.spots.remaining
-      ]
-    ],
-    range classes.#.students[
-      React.Fragment[
-        key var classes.#.key
-      ][
-        when classes.#.students.#.passed[
-          [][
-            var classes.#.students.#.name,
-            text ": Passed "
-          ]
-        ],
-        unless classes.#.students.#.passed[
-          [][
-            var classes.#.students.#.name,
-            text ": Failed "
+    ]
+    [
+      text " Class: ",
+      var classes.#.name,
+      when classes.#.full
+      [
+        []
+        [
+          text " (Full) "
+        ]
+      ],
+      unless classes.#.full
+      [
+        []
+        [
+          text " Spots open: ",
+          var classes.#.spots.remaining
+        ]
+      ],
+      range classes.#.students
+      [
+        React.Fragment
+        [
+          key var classes.#.key
+        ]
+        [
+          when classes.#.students.#.passed
+          [
+            []
+            [
+              var classes.#.students.#.name,
+              text ": Passed "
+            ]
+          ],
+          unless classes.#.students.#.passed
+          [
+            []
+            [
+              var classes.#.students.#.name,
+              text ": Failed "
             ]
           ]
         ]
