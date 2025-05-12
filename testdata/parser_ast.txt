@@ -235,7 +235,7 @@ hello {name} world
 [
   unless .isAdmin [
     range .users [
-      li [] [ var users.#.name ]
+      li [key var users.#.key] [ var users.#.name ]
     ]
   ]
 ]
@@ -273,7 +273,7 @@ hello {name} world
 [
   range .fruits [
     range fruits.#.x [
-      u [class var fruits.#.x.#.style ][
+      u [key var fruits.#.x.#.key, class var fruits.#.x.#.style ][
         unless fruits.#.x.#.name [
           li [] [text "No name"]
         ],
@@ -390,7 +390,7 @@ test one {! comment here } ending
 [
   ul [] [
     range .items [
-      li [] [ var items.#.itemName ]
+      li [key var items.#.key] [ var items.#.itemName ]
     ]
   ]
 ]
@@ -759,59 +759,94 @@ test one {! comment here } ending
 %
 
 [
-  range .catalog[
-    section[
+  range .catalog
+  [
+    section
+    [
+      key var catalog.#.key,
       class var catalog.#.section.class
-    ][
-      when catalog.#.featured[
-        h1[][
+    ]
+    [
+      when catalog.#.featured
+      [
+        h1
+        []
+        [
           var catalog.#.section.title
         ]
       ],
-      unless catalog.#.featured[
-        h2[][
+      unless catalog.#.featured
+      [
+        h2
+        []
+        [
           var catalog.#.section.title
         ]
       ],
-      range catalog.#.products[
-        article[
+      range catalog.#.products
+      [
+        article
+        [
+          key var catalog.#.products.#.key,
           id var catalog.#.products.#.sku
-        ][
-          img[
+        ]
+        [
+          img
+          [
             src var catalog.#.products.#.image.url,
             alt var catalog.#.products.#.image.alt
-          ][],
-          when catalog.#.products.#.onSale[
-            span[
+          ]
+          [],
+          when catalog.#.products.#.onSale
+          [
+            span
+            [
               class text "discount"
-            ][
+            ]
+            [
               var catalog.#.products.#.discount,
               text "% OFF"
             ]
           ],
-          footer[][
-            range catalog.#.products.#.reviews[
-              React.Fragment[
-              key var catalog.#.products.#.key][
-                when catalog.#.products.#.reviews.#.highlighted[
-                  p[
+          footer
+          []
+          [
+            range catalog.#.products.#.reviews
+            [
+              React.Fragment
+              [
+                key var catalog.#.products.#.key
+              ]
+              [
+                when catalog.#.products.#.reviews.#.highlighted
+                [
+                  p
+                  [
                     class text "highlight"
-                  ][
+                  ]
+                  [
                     var catalog.#.products.#.reviews.#.text,
                     text " - by ",
                     var catalog.#.products.#.reviews.#.author.name
                   ]
                 ],
-                unless catalog.#.products.#.reviews.#.highlighted[
-                  p[][
-                  var catalog.#.products.#.reviews.#.text,
-                  text " - by ",
-                  var catalog.#.products.#.reviews.#.author.name]
+                unless catalog.#.products.#.reviews.#.highlighted
+                [
+                  p
+                  []
+                  [
+                    var catalog.#.products.#.reviews.#.text,
+                    text " - by ",
+                    var catalog.#.products.#.reviews.#.author.name
+                  ]
                 ]
               ]
             ],
-            unless catalog.#.products.#.reviews[
-              p[][
+            unless catalog.#.products.#.reviews
+            [
+              p
+              []
+              [
                 text "No reviews yet."
               ]
             ]
@@ -854,34 +889,81 @@ test one {! comment here } ending
 %
 
 [
-  div [ id text "dashboard" ] [
-    range .users [
-      div [ class var users.#.role ] [
-        span [] [
+  div
+  [
+    id text "dashboard"
+  ]
+  [
+    range .users
+    [
+      div
+      [
+        key var users.#.key,
+        class var users.#.role
+      ]
+      [
+        span
+        []
+        [
           var users.#.name.first,
           var users.#.name.last
         ],
-        when users.#.online [
-          span [ class text "status online" ] [ text "Online" ]
+        when users.#.online
+        [
+          span
+          [
+            class text "status online"
+          ]
+          [
+            text "Online"
+          ]
         ],
-        unless users.#.online [
-          span [ class text "status offline" ] [
+        unless users.#.online
+        [
+          span
+          [
+            class text "status offline"
+          ]
+          [
             text "Offline since ",
             var users.#.lastSeen
           ]
         ],
-        range users.#.tasks [
-          li [ data-task-id var users.#.tasks.#.id ] [
-            when users.#.tasks.#.completed [
-              span [ class text "done" ] [ var users.#.tasks.#.title ]
+        range users.#.tasks
+        [
+          li
+          [
+            key var users.#.tasks.#.key,
+            data-task-id var users.#.tasks.#.id
+          ]
+          [
+            when users.#.tasks.#.completed
+            [
+              span
+              [
+                class text "done"
+              ]
+              [
+                var users.#.tasks.#.title
+              ]
             ],
-            unless users.#.tasks.#.completed [
-              span [] [ var users.#.tasks.#.title ]
+            unless users.#.tasks.#.completed
+            [
+              span
+              []
+              [
+                var users.#.tasks.#.title
+              ]
             ]
           ]
         ],
-        unless users.#.tasks [
-          p [] [ text "No tasks assigned." ]
+        unless users.#.tasks
+        [
+          p
+          []
+          [
+            text "No tasks assigned."
+          ]
         ]
       ]
     ]
@@ -921,52 +1003,86 @@ test one {! comment here } ending
 %
 
 [
-  range .projects[
-    div[
+  range .projects
+  [
+    div
+    [
+      key var projects.#.key,
       data-project var projects.#.id,
       class var projects.#.status
-    ][
-      header[][
-        h3[][
+    ]
+    [
+      header
+      []
+      [
+        h3
+        []
+        [
           var projects.#.name
         ],
-        when projects.#.archived[
-          span[
+        when projects.#.archived
+        [
+          span
+          [
             class text "badge"
-          ][
+          ]
+          [
             text "Archived"
           ]
         ]
       ],
-      ul[][
-        range projects.#.milestones[
-          li[][
-            strong[][
-            var projects.#.milestones.#.title],
-            when projects.#.milestones.#.dueDate[
-              em[][
+      ul
+      []
+      [
+        range projects.#.milestones
+        [
+          li
+          [
+            key var projects.#.milestones.#.key
+          ]
+          [
+            strong
+            []
+            [
+              var projects.#.milestones.#.title
+            ],
+            when projects.#.milestones.#.dueDate
+            [
+              em
+              []
+              [
                 text "Due: ",
                 var projects.#.milestones.#.dueDate
               ]
             ],
-            range projects.#.milestones.#.tasks[
-              React.Fragment[
+            range projects.#.milestones.#.tasks
+            [
+              React.Fragment
+              [
                 key var projects.#.milestones.#.key
-              ][
-                input[
+              ]
+              [
+                input
+                [
                   type text "checkbox",
                   data-assignee var projects.#.milestones.#.tasks.#.assignee.id
-                ][],
-                label[][
-                 var projects.#.milestones.#.tasks.#.description
+                ]
+                [],
+                label
+                []
+                [
+                  var projects.#.milestones.#.tasks.#.description
                 ]
               ]
             ]
           ]
         ],
-        unless projects.#.milestones[
-          li[][
-           text "No milestones defined."
+        unless projects.#.milestones
+        [
+          li
+          []
+          [
+            text "No milestones defined."
           ]
         ]
       ]
