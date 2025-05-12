@@ -22,22 +22,24 @@ func Parse(r io.Reader) (node *Node, err error) {
 type insertionMode func(*parser) bool
 
 type parser struct {
-	z    *Tokenizer
-	oe   nodeStack
-	doc  *Node
-	im   insertionMode
-	tt   TokenType
-	path []PathComponent
-	sc   bool // indicates self closing token
+	z     *Tokenizer
+	oe    nodeStack
+	doc   *Node
+	im    insertionMode
+	tt    TokenType
+	path  []PathComponent
+	sc    bool // indicates self closing token
+	seen  map[string]struct{}
+	order []string
 }
 
 func newParser(r io.Reader) *parser {
 	p := &parser{
-		z:  NewTokenizer(r),
-		im: initialIM,
-		doc: &Node{
-			Type: ComponentNode,
-		},
+		z:     NewTokenizer(r),
+		im:    initialIM,
+		doc:   &Node{Type: ComponentNode},
+		seen:  make(map[string]struct{}, 16),
+		order: make([]string, 0, 8),
 	}
 	return p
 }
@@ -75,10 +77,13 @@ func inBodyIM(p *parser) bool {
 
 		if e.DataAtom == 0 {
 			e.Data = string(name)
+			if _, ok := p.seen[e.Data]; !ok {
+				p.seen[e.Data] = struct{}{}
+				p.order = append(p.order, e.Data)
+			}
 		} else {
 			if _, ok := commonElements[e.DataAtom]; !ok {
-				name := e.DataAtom.String()
-				e.Data = capitalize(name)
+				e.Data = e.DataAtom.String()
 				e.DataAtom = 0
 			}
 		}
@@ -385,18 +390,4 @@ func ensureFragment(parent *Node) {
 		c = next
 	}
 	parent.AppendChild(frag)
-}
-
-func capitalize(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-	c := s[0]
-	if c >= 'a' && c <= 'z' {
-		c -= 'a' - 'A'
-	}
-	if c == s[0] {
-		return s
-	}
-	return string(c) + s[1:]
 }
