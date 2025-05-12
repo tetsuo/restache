@@ -30,10 +30,9 @@ func Render(w io.Writer, n *Node) (int, error) {
 }
 
 var (
-	ErrErrorNode       = errors.New("cannot render an ErrorNode node")
-	ErrUnknownNode     = errors.New("unknown node type")
-	ErrVoidChildren    = errors.New("void element has child nodes")
-	ErrTooManyChildren = errors.New("element must have a single child")
+	ErrErrorNode    = errors.New("cannot render an ErrorNode node")
+	ErrUnknownNode  = errors.New("unknown node type")
+	ErrVoidChildren = errors.New("void element has child nodes")
 )
 
 type writer interface {
@@ -47,6 +46,8 @@ type renderer struct {
 
 	written int
 	scope   int
+
+	inExpr bool
 }
 
 func (r *renderer) print1(c byte) (err error) {
@@ -188,22 +189,20 @@ func (r *renderer) renderAttribute(a Attribute, key string) error {
 }
 
 func (r *renderer) renderElement(n *Node) error {
-	// Render the <xxx> opening tag.
+	// <tag
 	if err := r.print1('<'); err != nil {
 		return err
 	}
 
-	var tagName string
+	tagName := n.Data
 	if n.DataAtom != 0 {
 		tagName = n.DataAtom.String()
-	} else {
-		tagName = n.Data
 	}
-
 	if err := r.print(tagName); err != nil {
 		return err
 	}
 
+	// attributes
 	if len(n.Attr) > 0 {
 		if _, found := camelAttrTags[n.DataAtom]; found {
 			searchPrefix := uint64(n.DataAtom) << 32
@@ -240,23 +239,24 @@ func (r *renderer) renderElement(n *Node) error {
 		}
 	}
 
+	// void element?
 	if n.DataAtom != 0 {
 		if _, ok := voidElements[n.DataAtom]; ok {
 			if n.FirstChild != nil {
 				return ErrVoidChildren
 			}
-			err := r.print(" />")
-			return err
+			return r.print(" />")
 		}
 	}
 
-	c := n.FirstChild
-	if c != nil {
-		if err := r.print1('>'); err != nil {
-			return err
-		}
-		// Add initial newline where there is danger of a newline being ignored.
-		if c.Type == TextNode && strings.HasPrefix(c.Data, "\n") {
+	// non-void: children
+	if err := r.print1('>'); err != nil {
+		return err
+	}
+
+	if n.FirstChild != nil {
+		// extra newline for <pre>, <listing>, <textarea> when first child starts with '\n'
+		if n.FirstChild.Type == TextNode && strings.HasPrefix(n.FirstChild.Data, "\n") {
 			switch n.DataAtom {
 			case atom.Pre, atom.Listing, atom.Textarea:
 				if err := r.print1('\n'); err != nil {
@@ -264,28 +264,27 @@ func (r *renderer) renderElement(n *Node) error {
 				}
 			}
 		}
-		for c != nil {
-			if err := r.render(c); err != nil {
-				return err
-			}
-			c = c.NextSibling
-		}
-	} else {
-		if err := r.print1('>'); err != nil {
+
+		// enter JSX context
+		saved := r.inExpr
+		r.inExpr = false
+
+		if err := r.renderChildren(n); err != nil {
 			return err
 		}
+
+		// restore outer context
+		r.inExpr = saved
 	}
-	// Render the </xxx> closing tag.
+
+	// </tag>
 	if err := r.print("</"); err != nil {
 		return err
 	}
 	if err := r.print(tagName); err != nil {
 		return err
 	}
-	if err := r.print1('>'); err != nil {
-		return err
-	}
-	return nil
+	return r.print1('>')
 }
 
 func (r *renderer) renderComment(n *Node) error {
@@ -313,54 +312,108 @@ func (r *renderer) renderComment(n *Node) error {
 	return nil
 }
 
+func (r *renderer) renderChildren(p *Node) error {
+	for c := p.FirstChild; c != nil; c = c.NextSibling {
+		switch c.Type {
+
+		case VariableNode:
+			if err := r.enterExpr(); err != nil {
+				return err
+			}
+			if err := r.renderVariable(c); err != nil {
+				return err
+			}
+			if err := r.leaveExpr(); err != nil {
+				return err
+			}
+
+		case WhenNode:
+			if err := r.enterExpr(); err != nil {
+				return err
+			}
+			if err := r.renderWhen(c, false); err != nil {
+				return err
+			}
+			if err := r.leaveExpr(); err != nil {
+				return err
+			}
+
+		case UnlessNode:
+			if err := r.enterExpr(); err != nil {
+				return err
+			}
+			if err := r.renderWhen(c, true); err != nil {
+				return err
+			}
+			if err := r.leaveExpr(); err != nil {
+				return err
+			}
+
+		case RangeNode:
+			if err := r.enterExpr(); err != nil {
+				return err
+			}
+			if err := r.renderRange(c); err != nil {
+				return err
+			}
+			if err := r.leaveExpr(); err != nil {
+				return err
+			}
+
+		default:
+			if err := r.render(c); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (r *renderer) render(n *Node) error {
 	switch n.Type {
 	case ErrorNode:
 		return ErrErrorNode
 	case TextNode:
-		if n.PrevSibling == nil || !(n.PrevSibling.Type == TextNode || n.PrevSibling.Type == VariableNode) {
-			if err := r.lineBreak(); err != nil {
-				return err
-			}
-		}
 		return r.renderText(n)
 	case ElementNode:
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
 		return r.renderElement(n)
 	case VariableNode:
-		if n.PrevSibling == nil || !(n.PrevSibling.Type == TextNode || n.PrevSibling.Type == VariableNode) {
-			if err := r.lineBreak(); err != nil {
-				return err
-			}
-		}
 		return r.renderVariable(n)
 	case WhenNode:
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
-		return r.renderWhen(n)
+		return r.renderWhen(n, false)
 	case UnlessNode:
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
-		return r.renderUnless(n)
+		return r.renderWhen(n, true)
 	case RangeNode:
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
 		return r.renderRange(n)
 	case CommentNode:
-		if err := r.lineBreak(); err != nil {
-			return err
-		}
 		return r.renderComment(n)
 	case ComponentNode:
 		return r.renderComponent(n)
 	default:
 		return ErrUnknownNode
 	}
+}
+
+func (r *renderer) enterExpr() error {
+	if r.inExpr {
+		return nil
+	}
+	if err := r.print1('{'); err != nil {
+		return err
+	}
+	r.inExpr = true
+	return nil
+}
+
+func (r *renderer) leaveExpr() error {
+	if !r.inExpr {
+		return nil
+	}
+	if err := r.print1('}'); err != nil {
+		return err
+	}
+	r.inExpr = false
+	return nil
 }
 
 func escapeComment(w writer, s string) error {
