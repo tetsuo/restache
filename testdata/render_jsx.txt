@@ -131,3 +131,203 @@ $0.hi.map($1 => <React.Fragment key={ $1.key }>hi</React.Fragment>)
 %
 
 <>{ /* Hi hello */ }</>
+
+%
+
+{?hi}<img>{/hi}
+
+%
+
+($0.hi && <img />)
+
+%
+
+{#x}<img>{/x}
+
+%
+
+$0.x.map($1 => <img key={ $1.key } />)
+
+%
+
+<div>{?hi}{/hi}</div>
+
+%
+
+<div>{($0.hi && <></>)}</div>
+
+%
+
+<div>{^hi}{/hi}</div>
+
+%
+
+<div>{(!$0.hi && <></>)}</div>
+
+%
+
+<div>{?hi}{/hi}{somevar}{^hey}{/hey}</div>
+
+%
+
+<div>{($0.hi && <></>)}{$0.somevar}{(!$0.hey && <></>)}</div>
+
+%
+
+{foo}bar
+
+%
+
+<>{$0.foo}bar</>
+
+%
+
+{foo}<b>bar</b>
+
+%
+
+<>{$0.foo}<b>bar</b></>
+
+%
+
+{?cond}hello{foo}world{/cond}
+
+%
+
+($0.cond && <>hello{$0.foo}world</>)
+
+%
+
+<span>{foo}</span>
+
+%
+
+<span>{$0.foo}</span>
+
+%
+
+<div>{?a}{/a}{foo}{^b}{/b}</div>
+
+%
+
+<div>{($0.a && <></>)}{$0.foo}{(!$0.b && <></>)}</div>
+
+%
+
+{! comment }{?cond}<b>{foo}</b>{/cond}
+
+%
+
+<>{ /* comment */ }{($0.cond && <b>{$0.foo}</b>)}</>
+
+%
+
+{?cond}<b>{?inner}<i>{foo}</i>{/inner}</b>{/cond}
+
+%
+
+($0.cond && <b>{($0.inner && <i>{$0.foo}</i>)}</b>)
+
+%
+
+{foo}<span>{bar}</span>{baz}
+
+%
+
+<>{$0.foo}<span>{$0.bar}</span>{$0.baz}</>
+
+%
+
+<div>{! A }<b>{! B }</b>{! C }</div>
+
+%
+
+<div>{ /* A */ }<b>{ /* B */ }</b>{ /* C */ }</div>
+
+%
+
+{#list}item{/list}
+
+%
+
+$0.list.map($1 => <React.Fragment key={ $1.key }>item</React.Fragment>)
+
+%
+
+{#list}{item}{/list}
+
+%
+
+$0.list.map($1 => $1.item)
+
+%
+
+<ul>{#items}<li>{name}</li>{/items}</ul>
+
+%
+
+<ul>{$0.items.map($1 => <li key={ $1.key }>{$1.name}</li>)}</ul>
+
+%
+
+{#rows}<tr>{#cols}<td>{val}</td>{/cols}</tr>{/rows}
+
+%
+
+$0.rows.map($1 => <tr key={ $1.key }>{$1.cols.map($2 => <td key={ $2.key }>{$2.val}</td>)}</tr>)
+
+%
+
+{#list}{?visible}<b>{text}</b>{/visible}{/list}
+
+%
+
+$0.list.map($1 => ($1.visible && <b>{$1.text}</b>))
+
+%
+
+{#people}<div>{name} ({?online}online{/online})</div>{/people}
+
+%
+
+$0.people.map($1 => <div key={ $1.key }>{$1.name} ({($1.online && <>online</>)})</div>)
+
+%
+
+<div>{#list}<b>{text}</b>{/list}</div>
+
+%
+
+<div>{$0.list.map($1 => <b key={ $1.key }>{$1.text}</b>)}</div>
+
+%
+
+{#todos}{! item comment }{text}{/todos}
+
+%
+
+$0.todos.map($1 => <React.Fragment key={ $1.key }>{ /* item comment */ }{$1.text}</React.Fragment>)
+
+%
+
+{#msgs}{from}: {text}<br>{/msgs}
+
+%
+
+$0.msgs.map($1 => <React.Fragment key={ $1.key }>{$1.from}: {$1.text}<br /></React.Fragment>)
+
+%
+
+<ul>{#items}{?active}<li>{label}</li>{/active}{/items}</ul>
+
+%
+
+<ul>{$0.items.map($1 => ($1.active && <li>{$1.label}</li>))}</ul>
+
+%
+
+{#x}{#y}{#z}<span>{v}</span>{/z}{/y}{/x}
+
+%
+
+$0.x.map($1 => $1.y.map($2 => $2.z.map($3 => <span key={ $3.key }>{$3.v}</span>)))
