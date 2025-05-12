@@ -343,26 +343,39 @@ func collapse(b []byte) []byte {
 func ensureFragment(parent *Node) {
 	first := parent.FirstChild
 	if first == nil {
+		// range with empty body; <></>
 		parent.AppendChild(&Node{Type: ElementNode})
-		// which is ok; this is only called on control nodes & component
 		return
 	}
+
+	// range with exactly one element child; prepend key attr
+	if parent.Type == RangeNode &&
+		first.NextSibling == nil &&
+		first.Type == ElementNode {
+		first.Attr = append([]Attribute{{
+			Key:    "key",
+			Val:    "key",
+			IsExpr: true,
+		}}, first.Attr...)
+		return
+	}
+
 	if first.NextSibling == nil && !(first.Type == TextNode || first.Type == CommentNode) {
-		return
+		return // already a single non-text node; no fragment needed
 	}
-	// continuing; parent has one child, and it's not a text node or comment node
+
+	// for other scenarios, add fragment
 	frag := &Node{
 		Type: ElementNode,
 		Path: slices.Clone(parent.Path),
 	}
-
 	if parent.Type == RangeNode {
 		frag.Data = "React.Fragment"
-		frag.Attr = append(frag.Attr, Attribute{
+		frag.Attr = []Attribute{{
 			Key:    "key",
 			Val:    "key",
 			IsExpr: true,
-		})
+		}}
 	}
 
 	for c := parent.FirstChild; c != nil; {
