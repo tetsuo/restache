@@ -43,7 +43,6 @@ func TestParse(t *testing.T) {
 			t.Errorf("expected no error, got %v", err)
 		}
 		res := normalizeSpaces(dumpResolvedTree(root))
-		fmt.Println(res)
 		expected := "[[][]]"
 		if res != expected {
 			t.Errorf("expected %q, got %q", expected, res)

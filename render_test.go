@@ -13,7 +13,12 @@ import (
 
 func TestRender(t *testing.T) {
 	const file = "testdata/render_jsx.txt"
-	for _, tc := range buildTestcases(t, file) {
+	testCases := buildTestcases(t, file)
+	testCases = append(testCases, testCase{
+		data:     "",
+		expected: "<></>",
+	})
+	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s L%d", file, tc.line), func(t *testing.T) {
 			root, err := restache.Parse(strings.NewReader(tc.data))
 			if err != nil {

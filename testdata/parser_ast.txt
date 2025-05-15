@@ -1089,3 +1089,11 @@ test one {! comment here } ending
     ]
   ]
 ]
+
+%
+
+<accesskey>hi</accesskey>
+
+%
+
+[ accesskey[][ text "hi"]]
