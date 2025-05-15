@@ -30,9 +30,13 @@ func Render(w io.Writer, n *Node) (int, error) {
 }
 
 var (
-	ErrErrorNode    = errors.New("cannot render an ErrorNode node")
-	ErrUnknownNode  = errors.New("unknown node type")
-	ErrVoidChildren = errors.New("void element has child nodes")
+	ErrErrorNode       = errors.New("cannot render an ErrorNode node")
+	ErrUnknownNode     = errors.New("unknown node type")
+	ErrVoidChildren    = errors.New("void element has child nodes")
+	ErrTooManyChildren = errors.New("node allows only a single child")
+	ErrChildOnly       = errors.New("node must appear inside an element node")
+	ErrTopLevelOnly    = errors.New("node must appear at the top level")
+	ErrMissingBody     = errors.New("node must have children")
 )
 
 type writer interface {
@@ -74,6 +78,9 @@ func (r *renderer) printf(format string, args ...any) (err error) {
 }
 
 func (r *renderer) renderText(n *Node) error {
+	if n.Parent != nil && n.Parent.Type != ElementNode {
+		return ErrChildOnly
+	}
 	s := n.Data
 	if s[0] == ' ' && n.PrevSibling == nil {
 		s = s[1:]
@@ -93,6 +100,9 @@ func (r *renderer) renderVariable(n *Node) (err error) {
 }
 
 func (r *renderer) renderComponent(n *Node) error {
+	if n.Parent != nil || n.PrevSibling != nil || n.NextSibling != nil {
+		return ErrTopLevelOnly
+	}
 	for _, attr := range n.Attr {
 		if err := r.printf("import %s from '%s';\n", attr.Key, attr.Val); err != nil {
 			return err
@@ -124,6 +134,9 @@ func (r *renderer) renderComponent(n *Node) error {
 }
 
 func (r *renderer) renderWhen(n *Node, negate bool) error {
+	if n.FirstChild == nil {
+		return ErrMissingBody
+	}
 	if err := r.print1('('); err != nil {
 		return err
 	}
@@ -140,7 +153,7 @@ func (r *renderer) renderWhen(n *Node, negate bool) error {
 			return err
 		}
 	} else {
-		// TODO: raise error
+		return ErrTooManyChildren
 	}
 	if err := r.print1(')'); err != nil {
 		return err
@@ -149,6 +162,9 @@ func (r *renderer) renderWhen(n *Node, negate bool) error {
 }
 
 func (r *renderer) renderRange(n *Node) error {
+	if n.FirstChild == nil {
+		return ErrMissingBody
+	}
 	if err := r.printf("$%d.%s.map(", r.scope, n.Data); err != nil {
 		return err
 	}
@@ -161,7 +177,7 @@ func (r *renderer) renderRange(n *Node) error {
 			return err
 		}
 	} else {
-		// TODO: raise too many
+		return ErrTooManyChildren
 	}
 	r.scope--
 	if err := r.print1(')'); err != nil {
@@ -288,6 +304,9 @@ func (r *renderer) renderElement(n *Node) error {
 }
 
 func (r *renderer) renderComment(n *Node) error {
+	if n.Parent != nil && n.Parent.Type != ElementNode {
+		return ErrChildOnly
+	}
 	if len(n.Data) < 80 {
 		if err := r.print("{ /* "); err != nil {
 			return err
