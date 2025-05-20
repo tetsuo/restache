@@ -48,6 +48,61 @@ func TestParse(t *testing.T) {
 			t.Errorf("expected %q, got %q", expected, res)
 		}
 	})
+
+	checkPanic := func(expected string, actual any) {
+		if msg, ok := actual.(string); ok {
+			if msg != expected {
+				t.Errorf("expected panic message %q, got %q", expected, msg)
+			}
+		} else {
+			t.Errorf("expected string panic, got %T: %v", actual, actual)
+		}
+	}
+
+	t.Run("panic: RemoveChild called for a non-child Node", func(t *testing.T) {
+		didPanic := false
+
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					didPanic = true
+					checkPanic("restache: RemoveChild called for a non-child Node", r)
+				}
+			}()
+
+			n1 := &restache.Node{}
+			n2 := &restache.Node{}
+			n1.RemoveChild(n2)
+		}()
+
+		if !didPanic {
+			t.Error("expected panic, but function did not panic")
+		}
+	})
+
+	t.Run("panic: AppendChild called for an attached child Node", func(t *testing.T) {
+		didPanic := false
+
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					didPanic = true
+					checkPanic("restache: AppendChild called for an attached child Node", r)
+				}
+			}()
+
+			p1 := &restache.Node{}
+			c1 := &restache.Node{}
+			p1.AppendChild(c1)
+			p2 := &restache.Node{}
+			p2.AppendChild(c1)
+		}()
+
+		if !didPanic {
+			t.Error("expected panic, but function did not panic")
+		}
+	})
+
 }
 
 func dumpResolvedTree(n *restache.Node) string {
