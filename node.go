@@ -41,9 +41,6 @@ type Node struct {
 }
 
 func (n *Node) TagName() string {
-	if n.Type != ElementNode {
-		return ""
-	}
 	if n.DataAtom != 0 {
 		return n.DataAtom.String()
 	}
