@@ -1,6 +1,8 @@
 package restache
 
 import (
+	"slices"
+
 	"golang.org/x/net/html/atom"
 )
 
@@ -124,6 +126,65 @@ func (n *Node) RemoveChild(c *Node) {
 	c.NextSibling = nil
 }
 
+func (n *Node) wrapChildrenInFragment() {
+	first := n.FirstChild
+	if first == nil {
+		// range with empty body; <></>
+		n.AppendChild(&Node{Type: ElementNode})
+		return
+	}
+
+	// range with exactly one element child; prepend key attr
+	if n.Type == RangeNode &&
+		first.NextSibling == nil &&
+		first.Type == ElementNode {
+		first.Attr = append([]Attribute{{
+			Key:    "key",
+			Val:    "key",
+			IsExpr: true,
+		}}, first.Attr...)
+		return
+	}
+
+	if first.NextSibling == nil && !(first.Type == TextNode || first.Type == CommentNode) {
+		return // already a single non-text node; no fragment needed
+	}
+
+	// for other scenarios, add fragment
+	frag := &Node{
+		Type: ElementNode,
+		Path: slices.Clone(n.Path),
+	}
+	if n.Type == RangeNode {
+		frag.Data = "React.Fragment"
+		frag.Attr = []Attribute{{
+			Key:    "key",
+			Val:    "key",
+			IsExpr: true,
+		}}
+	}
+
+	for c := n.FirstChild; c != nil; {
+		next := c.NextSibling
+		n.RemoveChild(c)
+		frag.AppendChild(c)
+		c = next
+	}
+	n.AppendChild(frag)
+}
+
+func (n *Node) nameEquals(name []byte) bool {
+	if len(n.Data) != len(name) {
+		return false
+	}
+	for i := range n.Data {
+		if n.Data[i] != name[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // nodeStack is a stack of nodes.
 type nodeStack []*Node
 
@@ -157,7 +218,7 @@ func (s *nodeStack) popUntilAtom(a atom.Atom) bool {
 func (s *nodeStack) popUntilName(name []byte) bool {
 	for i := len(*s) - 1; i >= 0; i-- {
 		n := (*s)[i]
-		if n.Type == ElementNode && equal(n.Data, name) {
+		if n.Type == ElementNode && n.nameEquals(name) {
 			*s = (*s)[:i]
 			return true
 		}
@@ -169,14 +230,14 @@ func (s *nodeStack) popControl(name []byte) (*Node, bool) {
 	for len(*s) > 1 {
 		n := s.pop()
 		if (n.Type == RangeNode || n.Type == WhenNode || n.Type == UnlessNode) &&
-			equal(n.Data, name) {
+			n.nameEquals(name) {
 			return n, true
 		}
 	}
 	return nil, false
 }
 
-func equal(a string, b []byte) bool {
+func equalStringBytes(a string, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}

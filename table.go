@@ -349,3 +349,7 @@ var boolAttrs = map[atom.Atom]struct{}{
 	atom.Reversed:            {},
 	atom.Selected:            {},
 }
+
+var spaceTable = [256]bool{
+	' ': true, '\t': true, '\r': true, '\n': true,
+}

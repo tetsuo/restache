@@ -213,7 +213,7 @@ func inBodyIM(p *parser) bool {
 			found bool
 		)
 		if n, found = p.oe.popControl(name); found {
-			ensureFragment(n)
+			n.wrapChildrenInFragment()
 			// If it's a range node, restore the path
 			if n.Type == RangeNode {
 				p.path = n.Path
@@ -261,7 +261,7 @@ func (p *parser) parse() error {
 		p.parseCurrentToken()
 	}
 	if p.doc.Type == ComponentNode {
-		ensureFragment(p.doc)
+		p.doc.wrapChildrenInFragment()
 	}
 	return nil
 }
@@ -335,51 +335,4 @@ func collapse(b []byte) []byte {
 		return nil
 	}
 	return b[:w]
-}
-
-func ensureFragment(parent *Node) {
-	first := parent.FirstChild
-	if first == nil {
-		// range with empty body; <></>
-		parent.AppendChild(&Node{Type: ElementNode})
-		return
-	}
-
-	// range with exactly one element child; prepend key attr
-	if parent.Type == RangeNode &&
-		first.NextSibling == nil &&
-		first.Type == ElementNode {
-		first.Attr = append([]Attribute{{
-			Key:    "key",
-			Val:    "key",
-			IsExpr: true,
-		}}, first.Attr...)
-		return
-	}
-
-	if first.NextSibling == nil && !(first.Type == TextNode || first.Type == CommentNode) {
-		return // already a single non-text node; no fragment needed
-	}
-
-	// for other scenarios, add fragment
-	frag := &Node{
-		Type: ElementNode,
-		Path: slices.Clone(parent.Path),
-	}
-	if parent.Type == RangeNode {
-		frag.Data = "React.Fragment"
-		frag.Attr = []Attribute{{
-			Key:    "key",
-			Val:    "key",
-			IsExpr: true,
-		}}
-	}
-
-	for c := parent.FirstChild; c != nil; {
-		next := c.NextSibling
-		parent.RemoveChild(c)
-		frag.AppendChild(c)
-		c = next
-	}
-	parent.AppendChild(frag)
 }
