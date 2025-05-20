@@ -22,24 +22,20 @@ func Parse(r io.Reader) (node *Node, err error) {
 type insertionMode func(*parser) bool
 
 type parser struct {
-	z     *Tokenizer
-	oe    nodeStack
-	doc   *Node
-	im    insertionMode
-	tt    TokenType
-	path  []PathComponent
-	sc    bool // indicates self closing token
-	seen  map[string]struct{}
-	order []string
+	z    *Tokenizer
+	oe   nodeStack
+	doc  *Node
+	im   insertionMode
+	tt   TokenType
+	path []PathComponent
+	sc   bool // indicates self closing token
 }
 
 func newParser(r io.Reader) *parser {
 	p := &parser{
-		z:     NewTokenizer(r),
-		im:    initialIM,
-		doc:   &Node{Type: ComponentNode},
-		seen:  make(map[string]struct{}, 16),
-		order: make([]string, 0, 8),
+		z:   NewTokenizer(r),
+		im:  initialIM,
+		doc: &Node{Type: ComponentNode},
 	}
 	return p
 }
@@ -77,10 +73,6 @@ func inBodyIM(p *parser) bool {
 
 		if e.DataAtom == 0 {
 			e.Data = string(name)
-			if _, ok := p.seen[e.Data]; !ok {
-				p.seen[e.Data] = struct{}{}
-				p.order = append(p.order, e.Data)
-			}
 		} else {
 			if _, ok := commonElements[e.DataAtom]; !ok {
 				e.Data = e.DataAtom.String()
