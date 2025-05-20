@@ -1097,3 +1097,27 @@ test one {! comment here } ending
 %
 
 [ accesskey[][ text "hi"]]
+
+%
+
+<img task-id="5" />
+
+%
+
+[ img[ taskId text "5"][]]
+
+%
+
+<accesskey task-id={taskID} />
+
+%
+
+[ accesskey[ taskId var .taskID][]]
+
+%
+
+<link imagesrcset=42 imagesrcsetnot=55 />
+
+%
+
+[ link[ imageSrcSet text "42", imagesrcsetnot text "55"][]]
