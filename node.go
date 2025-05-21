@@ -185,6 +185,66 @@ func (n *Node) nameEquals(name []byte) bool {
 	return true
 }
 
+// extractUnknownElementTags returns the .Data of every ElementNode whose DataAtom == 0,
+// without duplicates, in depth-first (pre-order) order.
+func (n *Node) extractUnknownElementTags() []string {
+	if n == nil {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, 16) // seen .Data values
+	out := make([]string, 0, 8)
+
+	stack := []*Node{n.FirstChild}
+
+	for len(stack) > 0 {
+		i := len(stack) - 1
+		c := stack[i]
+		stack = stack[:i]
+
+		for c != nil {
+			if c.Type == ElementNode && c.DataAtom == 0 {
+				if _, ok := seen[c.Data]; !ok {
+					seen[c.Data] = struct{}{}
+					out = append(out, c.Data)
+				}
+			}
+			if nx := c.NextSibling; nx != nil {
+				stack = append(stack, nx)
+			}
+			c = c.FirstChild
+		}
+	}
+	return out
+}
+
+func (n *Node) renameUnknownElementTags(rewrites map[string]string) {
+	if n == nil {
+		return
+	}
+
+	var stack nodeStack
+	if n.FirstChild != nil {
+		stack = append(stack, n.FirstChild)
+	}
+
+	for len(stack) > 0 {
+		c := stack.pop()
+
+		for c != nil {
+			if c.Type == ElementNode && c.DataAtom == 0 {
+				if newVal, ok := rewrites[c.Data]; ok {
+					c.Data = newVal
+				}
+			}
+			if next := c.NextSibling; next != nil {
+				stack = append(stack, next)
+			}
+			c = c.FirstChild
+		}
+	}
+}
+
 // nodeStack is a stack of nodes.
 type nodeStack []*Node
 
@@ -235,76 +295,4 @@ func (s *nodeStack) popControl(name []byte) (*Node, bool) {
 		}
 	}
 	return nil, false
-}
-
-func equalStringBytes(a string, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-// collectElementData returns the .Data of every ElementNode whose
-// DataAtom == 0, without duplicates, in depth-first (pre-order) order.
-func collectElementData(root *Node) []string {
-	if root == nil {
-		return nil
-	}
-
-	seen := make(map[string]struct{}, 16) // seen .Data values
-	out := make([]string, 0, 8)
-
-	stack := []*Node{root.FirstChild}
-
-	for len(stack) > 0 {
-		i := len(stack) - 1
-		n := stack[i]
-		stack = stack[:i]
-
-		for n != nil {
-			if n.Type == ElementNode && n.DataAtom == 0 {
-				if _, ok := seen[n.Data]; !ok {
-					seen[n.Data] = struct{}{}
-					out = append(out, n.Data)
-				}
-			}
-			// push next sibling first so the first child is processed next
-			if nx := n.NextSibling; nx != nil {
-				stack = append(stack, nx)
-			}
-			n = n.FirstChild
-		}
-	}
-	return out
-}
-
-func rewriteElementData(root *Node, rewrites map[string]string) {
-	if root == nil {
-		return
-	}
-
-	stack := []*Node{root.FirstChild}
-
-	for len(stack) > 0 {
-		i := len(stack) - 1
-		n := stack[i]
-		stack = stack[:i]
-
-		for n != nil {
-			if n.Type == ElementNode && n.DataAtom == 0 {
-				if newVal, ok := rewrites[n.Data]; ok {
-					n.Data = newVal
-				}
-			}
-			if next := n.NextSibling; next != nil {
-				stack = append(stack, next)
-			}
-			n = n.FirstChild
-		}
-	}
 }

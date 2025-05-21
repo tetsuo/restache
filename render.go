@@ -123,10 +123,7 @@ func (r *renderer) renderComponent(n *Node) error {
 			return err
 		}
 	} else {
-		if err := r.print("return null;"); err != nil {
-			return err
-		}
-		if err := r.print("}"); err != nil {
+		if err := r.print("return null;}"); err != nil {
 			return err
 		}
 	}

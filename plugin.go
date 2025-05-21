@@ -13,6 +13,21 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
+func Plugin(opts ...PluginOption) api.Plugin {
+	cfg := pluginConfig{}
+	readPluginConfig(&cfg, opts...)
+	if cfg.extName == "" {
+		cfg.extName = ".stache"
+	}
+	return api.Plugin{
+		Name: "stache-loader",
+		Setup: func(pb api.PluginBuild) {
+			p := &plugin{cfg: &cfg, buildOptions: pb.InitialOptions, resolveFunc: pb.Resolve}
+			pb.OnLoad(api.OnLoadOptions{Filter: regexp.QuoteMeta(cfg.extName) + "$"}, p.onLoad)
+		},
+	}
+}
+
 type pluginConfig struct {
 	extName     string
 	tagPrefixes map[string]string
@@ -80,68 +95,15 @@ func (p *plugin) resolvePathAny(resolveDir string, paths ...string) (string, boo
 	return resolved, isExternal, err
 }
 
-type importsInfo struct {
-	byID     map[string]string // local ident  to import path
-	byImport map[string]string // import path to local ident
-}
-
-func (db *importsInfo) existsByID(id string) bool {
-	_, exists := db.byID[id]
-	return exists
-}
-
-func (db *importsInfo) setByTag(tag, path string) string {
-	if existingIdent, ok := db.byImport[path]; ok {
-		return existingIdent
-	} else {
-		id := pascalize(tag)
-		db.byID[id] = path
-		db.byImport[path] = id
-		return id
-	}
-}
-
-func (db *importsInfo) nextIdent(pascal string) string {
-	ident := pascal
-	for i := 2; ; i++ {
-		if exists := db.existsByID(ident); !exists {
-			break
-		}
-		ident = pascal + strconv.Itoa(i)
-	}
-	return ident
-}
-
-func (db *importsInfo) setByID(id, path string) string {
-	if existingIdent, ok := db.byImport[path]; ok {
-		return existingIdent
-	} else {
-		db.byID[id] = path
-		db.byImport[path] = id
-		return id
-	}
-}
-
-func copyAttrs(src *importsInfo, targ *Node) {
-	keys := make([]string, 0, len(src.byID))
-	for k := range src.byID {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, local := range keys {
-		targ.Attr = append(targ.Attr, Attribute{Key: local, Val: src.byID[local]})
-	}
-}
-
 var (
 	fileSep     = string(filepath.Separator)
 	currentPath = "." + fileSep
 )
 
-func (p *plugin) buildImports(idb *importsInfo, root *Node, resolveDir string) (map[string]string, error) {
+func (p *plugin) buildImports(r *importResolver, root *Node, resolveDir string) (map[string]string, error) {
 	rewrites := make(map[string]string) // orig tag to local ident
 
-	for _, tag := range collectElementData(root) {
+	for _, tag := range root.extractUnknownElementTags() {
 		if tag == "React.Fragment" || tag == "" {
 			continue
 		}
@@ -158,13 +120,13 @@ func (p *plugin) buildImports(idb *importsInfo, root *Node, resolveDir string) (
 			} else {
 				resolved = path
 			}
-			rewrites[tag] = idb.setByTag(tag, resolved)
+			rewrites[tag] = r.addImportByTag(tag, resolved)
 		} else {
 			prefix, baseName := tagNameParts(tag)
 
 			// unique local id (ButtonGroup, ButtonGroup2, ...)
 			pascal := pascalize(baseName)
-			ident := idb.nextIdent(pascal)
+			ident := r.nextID(pascal)
 
 			if prefix != "" {
 				if basePath, ok := p.cfg.tagPrefixes[prefix]; ok {
@@ -177,7 +139,7 @@ func (p *plugin) buildImports(idb *importsInfo, root *Node, resolveDir string) (
 					); err != nil {
 						return nil, err
 					} else {
-						rewrites[tag] = idb.setByID(ident, resolved)
+						rewrites[tag] = r.addImportByID(ident, resolved)
 					}
 				} else {
 					prefixedPascal := pascalize(prefix) + pascal
@@ -190,8 +152,8 @@ func (p *plugin) buildImports(idb *importsInfo, root *Node, resolveDir string) (
 						}...); err != nil {
 						return nil, err
 					} else {
-						ident = idb.nextIdent(prefixedPascal)
-						rewrites[tag] = idb.setByID(ident, resolved)
+						ident = r.nextID(prefixedPascal)
+						rewrites[tag] = r.addImportByID(ident, resolved)
 					}
 				}
 			} else {
@@ -202,7 +164,7 @@ func (p *plugin) buildImports(idb *importsInfo, root *Node, resolveDir string) (
 					}...); err != nil {
 					return nil, err
 				} else {
-					rewrites[tag] = idb.setByID(ident, resolved)
+					rewrites[tag] = r.addImportByID(ident, resolved)
 				}
 			}
 		}
@@ -211,19 +173,19 @@ func (p *plugin) buildImports(idb *importsInfo, root *Node, resolveDir string) (
 }
 
 func (p *plugin) rewriteImports(root *Node, resolveDir string) error {
-	idb := &importsInfo{
-		byID:     make(map[string]string),
-		byImport: make(map[string]string),
+	r := &importResolver{
+		importsByIDs: make(map[string]string),
+		idsByImports: make(map[string]string),
 	}
 
-	rewrites, err := p.buildImports(idb, root, resolveDir)
+	rewrites, err := p.buildImports(r, root, resolveDir)
 	if err != nil {
 		return err
 	}
 
-	copyAttrs(idb, root)
+	r.copyAttrs(root)
 
-	rewriteElementData(root, rewrites)
+	root.renameUnknownElementTags(rewrites)
 
 	return nil
 }
@@ -253,12 +215,65 @@ func (p *plugin) onLoad(args api.OnLoadArgs) (api.OnLoadResult, error) {
 		return api.OnLoadResult{}, err
 	}
 	contents := buf.String()
+	// fmt.Println(contents)
 
 	return api.OnLoadResult{
 		Contents:   &contents,
 		Loader:     api.LoaderJSX,
 		ResolveDir: resolveDir,
 	}, nil
+}
+
+type importResolver struct {
+	importsByIDs map[string]string // local ident  to import path
+	idsByImports map[string]string // import path to local ident
+}
+
+func (r *importResolver) existsByID(id string) bool {
+	return r.importsByIDs[id] != ""
+}
+
+func (r *importResolver) addImportByTag(tag, path string) string {
+	if e, ok := r.idsByImports[path]; ok {
+		return e
+	} else {
+		id := pascalize(tag)
+		r.importsByIDs[id] = path
+		r.idsByImports[path] = id
+		return id
+	}
+}
+
+func (r *importResolver) nextID(pascal string) string {
+	ident := pascal
+	for i := 2; ; i++ {
+		if exists := r.existsByID(ident); !exists {
+			break
+		}
+		ident = pascal + strconv.Itoa(i)
+	}
+	return ident
+}
+
+func (r *importResolver) addImportByID(id, path string) string {
+	if existingIdent, ok := r.idsByImports[path]; ok {
+		return existingIdent
+	} else {
+		r.importsByIDs[id] = path
+		r.idsByImports[path] = id
+		return id
+	}
+}
+
+func (r *importResolver) copyAttrs(targ *Node) {
+	keys := make([]string, 0, len(r.importsByIDs))
+	for k := range r.importsByIDs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, local := range keys {
+		targ.Attr = append(targ.Attr, Attribute{Key: local, Val: r.importsByIDs[local]})
+	}
 }
 
 func parseFile(path string) (*Node, error) {
@@ -272,22 +287,6 @@ func parseFile(path string) (*Node, error) {
 		return nil, err
 	}
 	return node, nil
-}
-
-func Plugin(opts ...PluginOption) api.Plugin {
-	cfg := pluginConfig{}
-	readPluginConfig(&cfg, opts...)
-	if cfg.extName == "" {
-		cfg.extName = ".stache"
-	}
-	filter := regexp.QuoteMeta(cfg.extName) + "$"
-	return api.Plugin{
-		Name: "stache-loader",
-		Setup: func(pb api.PluginBuild) {
-			p := &plugin{cfg: &cfg, buildOptions: pb.InitialOptions, resolveFunc: pb.Resolve}
-			pb.OnLoad(api.OnLoadOptions{Filter: filter}, p.onLoad)
-		},
-	}
 }
 
 func pascalize(s string) string {
