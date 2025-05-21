@@ -58,7 +58,7 @@ root.render(Fruits({ items: [{ name: 'Apple', key: 'apple' }] }))
 
 Run your build process, and `.stache` files will be transpiled into JSX automatically.
 
-A more complete usage example is available in the [example](./example) directory.
+> A more complete usage example is available in the [example](./example) directory.
 
 ## Syntax
 
@@ -84,4 +84,13 @@ Use `{variableName}` to interpolate variables.
 
 Define components using custom tags, which are resolved based on naming conventions and mappings.
 
+## Component resolution
+
+Restache resolves component tags by:
+
+1. **PascalCasing**: Converting tag names to PascalCase.
+2. **Prefix Mapping**: Using configured prefixes to locate components.
+3. **Tag Mappings**: Directly mapping tag names to component paths.
+
+These mappings are configured via the ESBuild plugin options.
 
