@@ -1,9 +1,9 @@
-import Index from './index.stache'
-import exampleData from './example-data.json'
+import Base from './base.stache'
+import exampleData from './data.json'
 import { createRoot } from 'react-dom/client';
 
 window.addEventListener("load", () => {
   const root = createRoot(document.getElementById('root'));
-  root.render(Index(exampleData));
+  root.render(Base(exampleData));
 })
 

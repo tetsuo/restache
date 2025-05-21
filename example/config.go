@@ -1,4 +1,4 @@
-package static
+package main
 
 type Config struct {
 	// Entrypoint is a directory in which to build JavaScript

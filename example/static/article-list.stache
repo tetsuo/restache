@@ -1,13 +1,5 @@
-<link rel="stylesheet" href="https://esm.sh/gh/tachyons-css/tachyons@0fafaa6/css/tachyons.min.css" precedence="medium" />
-
-<topbar />
-
 <section class="mw7 center avenir">
   {#storyCards}
     <card img-src={thumbnail.url} img-alt={thumbnail.alt} title={title} body={body}></card>
   {/storyCards}
 </section>
-
-<newsletter />
-
-<bottombar />
