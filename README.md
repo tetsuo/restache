@@ -58,7 +58,7 @@ root.render(Fruits({ items: [{ name: 'Apple', key: 'apple' }] }))
 
 Run your build process, and `.stache` files will be transpiled into JSX automatically.
 
-> A more complete usage example is available in the [example](./example) directory.
+> A more complete usage example is available in the [tetsuo/dashboard](https://github.com/tetsuo/dashboard) repository.
 
 ## Syntax
 

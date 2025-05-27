@@ -1,9 +1,0 @@
-<link rel="stylesheet" href="https://esm.sh/gh/tachyons-css/tachyons@0fafaa6/css/tachyons.min.css" precedence="medium" />
-
-<topbar />
-
-<article-list story-cards={storyCards} />
-
-<newsletter />
-
-<bottombar />

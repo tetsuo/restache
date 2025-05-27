@@ -1,5 +1,0 @@
-<section class="mw7 center avenir">
-  {#storyCards}
-    <card img-src={thumbnail.url} img-alt={thumbnail.alt} title={title} body={body}></card>
-  {/storyCards}
-</section>
