@@ -1,6 +1,6 @@
 # restache
 
-restache extends HTML5 syntax with [Mustache](https://mustache.github.io/)-like primitives, and compiles to modern [JSX](https://facebook.github.io/jsx/), so you can write React components like it's 2013.
+restache extends HTML5 syntax with [Mustache](https://mustache.github.io/)-like primitives and compiles to modern [JSX](https://facebook.github.io/jsx/), so you can write React components like it's 2013.
 
 ### Example
 
@@ -24,7 +24,7 @@ This becomes:
 
 ## Usage
 
-An [ESBuild](https://esbuild.github.io/) is included for easy use in Go projects:
+Ships with an [ESBuild](https://esbuild.github.io/) plugin that you can drop straight into the `Plugins` field of your configuration:
 
 ```go
 package main
@@ -55,7 +55,7 @@ func main() {
 }
 ```
 
-Check out [`tetsuo/dashboard`](https://github.com/tetsuo/dashboard) for a working example with a sample setup and a few basic components.
+Check out [`tetsuo/dashboard`](https://github.com/tetsuo/dashboard) for a working build setup and a few basic components.
 
 There's currently no support for Node.JS environment, but is on the roadmap.
 
