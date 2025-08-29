@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>restache</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <script src="wasm_exec.js"></script>
+    <link rel="stylesheet" type="text/css" media="all" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h3>
+        <a href="https://github.com/tetsuo/restache">github.com/tetsuo/restache</a>
+      </h3>
+      <h4>
+        wasm buildz
+      </h4>
+      <details class="Playground-Details js-exampleContainer" data-autorun="" open="">
+        <summary class="Playground-DetailsHeader"><span>restache-0.3-dev</span>
+          <div class="Playground-DetailsToolbar">
+            <div class="Playground-ButtonsContainer">
+              <p aria-atomic="true" class="Playground-Error" role="alert"></p><button aria-label="Run"
+                class="Playground-RunButton" title="Ctrl/Cmd + Enter">Run</button>
+            </div>
+          </div>
+        </summary>
+        <div class="Playground-DetailsBody"><textarea class="Playground-Code code" spellcheck="false">&lt;ul&gt;
+  {#fruits}
+    &lt;li&gt;{name}&lt;/li&gt;
+  {/fruits}
+&lt;/ul&gt;
+</textarea>
+          <pre><span class="Playground-OutputLabel">Output:</span><span class="Playground-Output"></span></pre>
+        </div>
+      </details>
+    </div>
+    <script type="module">
+      import loadPlayground from './load-wasm-playground.mjs'
+      loadPlayground("restache-0.3-dev.wasm")
+    </script>
+  </body>
+</html>
