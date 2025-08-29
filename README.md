@@ -55,9 +55,9 @@ func main() {
 }
 ```
 
-Check out [`tetsuo/dashboard`](https://github.com/tetsuo/dashboard) for a working build setup and a few basic components.
+Check out [`tetsuo/dashboard`](https://github.com/tetsuo/dashboard) for a complete working setup and a few basic components.
 
-There's currently no support for Node.JS environment, but is on the roadmap.
+There's currently no support for Node.JS environment, but planned.
 
 ## Language syntax
 
