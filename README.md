@@ -22,9 +22,11 @@ This becomes:
 </ul>
 ```
 
+👉 [**Playground**](https://tetsuo.github.io/restache/)
+
 ## Usage
 
-Ships with an [ESBuild](https://esbuild.github.io/) plugin that you can drop straight into the `Plugins` field of your configuration:
+Ships with an [ESBuild](https://esbuild.github.io/) plugin. Here's an example build configuration:
 
 ```go
 package main
@@ -55,7 +57,7 @@ func main() {
 }
 ```
 
-Check out [`tetsuo/dashboard`](https://github.com/tetsuo/dashboard) for a complete working setup and a few basic components.
+Check out [`tetsuo/dashboard`](https://github.com/tetsuo/dashboard) for a complete working example and a few basic components.
 
 There's currently no support for Node.JS environment, but planned.
 
