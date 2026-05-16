@@ -1,10 +1,10 @@
 module github.com/tetsuo/restache
 
-go 1.24.2
+go 1.26
 
 require (
-	github.com/evanw/esbuild v0.25.4
-	golang.org/x/net v0.0.0-20220114011407-0dd24b26b47d
+	github.com/evanw/esbuild v0.28.0
+	golang.org/x/net v0.54.0
 )
 
-require golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
+require golang.org/x/sys v0.44.0 // indirect
