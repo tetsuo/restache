@@ -1,0 +1,8 @@
+<mui:box display="flex" height="100%" role="main">
+  <drawer:sidebar nav={nav} />
+  <mui:box flex-grow="1" min-width="0">
+    {children}
+  </mui:box>
+</mui:box>
+
+<backdrop:fullscreen open={loading} />

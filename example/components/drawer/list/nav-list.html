@@ -1,0 +1,14 @@
+<mui:list aria-label={ariaLabel} component="div">
+  {#items}
+    <mui:list-item component="div">
+      <mui:link href={href} underline="none" onclick={triggerClick}>
+        <mui:list-item-button selected={active}>
+          <mui:list-item-icon>{icon}</mui:list-item-icon>
+          {?label}
+            <mui:list-item-text primary={label} />
+          {/label}
+        </mui:list-item-button>
+      </mui:link>
+    </mui:list-item>
+  {/items}
+</mui:list>

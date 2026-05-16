@@ -1,0 +1,47 @@
+<mui:container max-width="md">
+  <mui:stack pt="32px" spacing="25px">
+
+    {?account}
+      <title>Account info</title>
+      <card:summary
+        title="Basic info"
+        description="Your username may be visible to other users."
+        info-items={account.basicInfo}
+        class="info-card" />
+      <card:action
+        title="Change password"
+        description="Last changed 42 minutes ago" />
+      <card:summary
+        title="Active sessions"
+        description="You're currently signed in to your account on these devices."
+        action-items={account.sessions} />
+      <dialog:confirm
+        severity="warning"
+        open={account.isRevokeDialogOpen}
+        title="Revoke session"
+        submit-label="Revoke"
+        submit-variant="contained"
+        body="Are you sure you want to revoke this session?"
+        onclose={account.closeDialog}
+        onsubmit={account.closeDialog} />
+    {/account}
+
+    {?notifications}
+      <title>Notifications</title>
+      <card:summary
+        title="Product updates"
+        description="See and learn more about the latest updates, features, and bug fixes in Demo app."
+        checklist={notifications} />
+    {/notifications}
+
+    {?privacy}
+      <title>Privacy</title>
+      <card:action
+        title="Delete account"
+        description="Permanently delete your account and data."
+        class="danger"
+      />
+    {/privacy}
+
+  </mui:stack>
+</mui:container>

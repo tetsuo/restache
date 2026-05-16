@@ -1,0 +1,40 @@
+<title>Release notes</title>
+
+<mui:box p="24px 30px">
+  <mui:stack spacing="14px">
+    <mui:typography pb="18px" variant="h6">Release notes</mui:typography>
+    {#items}
+      <mui:box>
+        <mui:box display="flex" justify-content="space-between">
+          <mui:typography variant="subtitle1">{version}</mui:typography>
+          <mui:typography variant="subtitle2">{date}</mui:typography>
+        </mui:box>
+        <mui:divider />
+        <mui:list>
+          {#changes}
+            {?bugfix}
+              <mui:list-item>
+                <mui:list-item-icon>
+                  <icons:bug-report />
+                </mui:list-item-icon>
+                <mui:list-item-text>
+                  {bugfix}
+                </mui:list-item-text>
+              </mui:list-item>
+            {/bugfix}
+            {?feat}
+              <mui:list-item>
+                <mui:list-item-icon>
+                  <icons:star />
+                </mui:list-item-icon>
+                <mui:list-item-text>
+                  {feat}
+                </mui:list-item-text>
+              </mui:list-item>
+            {/feat}
+          {/changes}
+        </mui:list>
+      </mui:box>
+    {/items}
+  </mui:stack>
+</mui:box>

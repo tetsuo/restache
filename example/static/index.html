@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@latest/",
+          "react-dom/client": "https://esm.sh/react-dom@latest/client/",
+          "history/": "https://esm.sh/history@5.3.0/",
+          "@mui/material/": "https://esm.sh/@mui/material@7.3.11/",
+          "@mui/icons-material/": "https://esm.sh/@mui/icons-material@7.3.11/",
+          "date-fns/": "https://esm.sh/date-fns@4.1.0/",
+          "date-fns-tz/": "https://esm.sh/date-fns-tz@3.2.0/"
+        }
+      }
+    </script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").catch((error) => {
+          console.error("Service Worker registration failed:", error);
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import { createElement, useMemo } from 'react'
+      import { createRoot } from 'react-dom/client'
+      import App from './app.js'
+      window.addEventListener(
+        'load',
+        () => createRoot(document.getElementById('root')).render(createElement(App))
+      );
+    </script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+<mui:table sticky-header={stickyHeader} variant="crosstab">
+  <mui:table-head>
+    <mui:table-row>
+      <mui:table-cell></mui:table-cell>
+      {#headers}
+        <mui:table-cell align="center">
+          <mui:typography variant="subtitle2">{label}</mui:typography>
+        </mui:table-cell>
+      {/headers}
+    </mui:table-row>
+  </mui:table-head>
+  <mui:table-body>
+    {#rows}
+      <mui:table-row>
+        <mui:table-cell component="th" scope="row">
+          <mui:avatar alt={label}>{label}</mui:avatar>
+        </mui:table-cell>
+        {#items}
+          <mui:table-cell align="center">
+            <mui:typography>{label}</mui:typography>
+          </mui:table-cell>
+        {/items}
+      </mui:table-row>
+    {/rows}
+  </mui:table-body>
+</mui:table>

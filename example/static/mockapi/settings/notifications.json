@@ -1,0 +1,4 @@
+[
+  { "key": "newsletter", "checked": true, "label": "Send me important news & updates" },
+  { "key": "promotional", "checked": false, "label": "Send me promotional emails" }
+]

@@ -1,0 +1,10 @@
+{
+  "basicInfo": [
+    { "key": "username", "label": "Username", "value": "onur" },
+    { "key": "email", "label": "Email", "value": "ogunduz@gmail.com" }
+  ],
+  "sessions": [
+    { "key": "session1", "label": "127.0.0.1 - Firefox on Linux", "description": "Logged in since 0" },
+    { "key": "session2", "label": "192.168.2.1 - Chrome on Android", "description": "Logged in since 0" }
+  ]
+}

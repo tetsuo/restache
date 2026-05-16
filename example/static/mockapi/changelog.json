@@ -1,0 +1,23 @@
+[
+  {
+    "version": "v0.9.3",
+    "key": "v0.9.3",
+    "date": "2025-05-18",
+    "changes": [
+      { "key": "95315a9", "bugfix": "Fixed a very important bug actually." },
+      { "key": "18cfc73", "bugfix": "Days table now sorts properly." }
+    ]
+  },
+  {
+    "version": "v0.9.1",
+    "key": "v0.9.1",
+    "date": "2025-04-20",
+    "changes": [{ "key": "ad7153b", "feat": "Added a cool new feature." }]
+  },
+  {
+    "version": "v0.9.0",
+    "key": "v0.9.0",
+    "date": "2025-04-10",
+    "changes": [{ "key": "91a5415", "feat": "Early access version with made up content." }]
+  }
+]

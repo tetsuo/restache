@@ -1,0 +1,19 @@
+<mui:card class={className} variant="action">
+  <mui:card-content aria-label="Action card">
+    <mui:container disable-gutters="#">
+      <mui:list component="div">
+        <mui:list-item disable-padding="#" component="div">
+          <mui:list-item-button component="a">
+            <mui:container>
+              <mui:typography>{title}</mui:typography>
+              <mui:list-item-text secondary={description} />
+            </mui:container>
+            <mui:list-item-icon>
+              <icons:chevron-right-rounded />
+            </mui:list-item-icon>
+          </mui:list-item-button>
+        </mui:list-item>
+      </mui:list>
+    </mui:container>
+  </mui:card-content>
+</mui:card>

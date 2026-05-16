@@ -1,0 +1,14 @@
+<mui:list>
+  {#items}
+    <mui:list-item disable-padding="#">
+      <mui:list-item-button component="a" href={href}>
+        <mui:list-item-text primary={label} />
+        <mui:list-item-text primary={value} />
+        <mui:list-item-icon>
+          <icons:chevron-right-rounded />
+        </mui:list-item-icon>
+      </mui:list-item-button>
+    </mui:list-item>
+    <mui:divider component="li" />
+  {/items}
+</mui:list>

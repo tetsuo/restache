@@ -57,7 +57,7 @@ func main() {
 }
 ```
 
-Check out [`tetsuo/dashboard`](https://github.com/tetsuo/dashboard) for a complete working example and a few basic components.
+Check out the [example](./example) directory for a working dashboard UI and a few basic components.
 
 There's currently no support for Node.JS environment, but planned.
 

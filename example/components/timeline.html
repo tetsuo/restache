@@ -1,0 +1,19 @@
+<title>Home</title>
+
+<mui:box sx={sx} ref={ref} height="100vh" display="flex" flex-direction="column" min-width="460px">
+  <timeline:pagination $={pagination} />
+  <mui:box>
+    <timeline:ruler start-date={ruler.start} end-date={ruler.end} />
+    <!-- placeholder for the chart view -->
+    <mui:box
+      bgcolor="#fbfbfb"
+      width="100%"
+      height="82px"
+      border-top="1px solid #dadada"
+      border-bottom="1px solid #dadada"
+      />
+  </mui:box>
+  <mui:table-container>
+    <timeline:crosstab $={table} />
+  </mui:table-container>
+</mui:box>

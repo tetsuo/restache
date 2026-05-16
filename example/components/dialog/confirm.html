@@ -1,0 +1,12 @@
+<mui:dialog open={open} onclose={onClose} aria-labelledby="confirm-title" aria-describedby="confirm-body">
+  <mui:dialog-title>{title}</mui:dialog-title>
+  <mui:dialog-content>
+  <mui:dialog-content-text>{body}</mui:dialog-content-text>
+  </mui:dialog-content>
+  <mui:dialog-actions>
+    <mui:button auto-focus="#" onclick={onClose}>Cancel</mui:button>
+    <mui:button color={severity} variant={submitVariant} onclick={onSubmit}>
+      {submitLabel}
+    </mui:button>
+  </mui:dialog-actions>
+</mui:dialog>

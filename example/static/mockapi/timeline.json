@@ -1,0 +1,23 @@
+{
+  "overview": {
+    "start": "2025-03-28",
+    "end": "2025-04-27",
+    "resolution": "day",
+    "labelFormat": "d",
+    "tooltipFormat": "d MMMM yyyy",
+    "step": 1,
+    "headers": [
+      { "key": "A", "label": "A" },
+      { "key": "B", "label": "B" },
+      { "key": "C", "label": "C" },
+      { "key": "D", "label": "D" }
+    ]
+  },
+  "focus": {
+    "start": "2025-05-31T12:00:00.000Z",
+    "end": "2025-06-01T11:00:00.000Z",
+    "resolution": "hour",
+    "labelFormat": "H",
+    "step": 1
+  }
+}

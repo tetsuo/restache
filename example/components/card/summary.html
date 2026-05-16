@@ -1,0 +1,19 @@
+<mui:card variant="summary" class={className}>
+  <mui:card-content>
+    <mui:container disable-gutters="#">
+      <mui:typography>{title}</mui:typography>
+      <mui:typography>{description}</mui:typography>
+    </mui:container>
+    <mui:container disable-gutters="#">
+      {?checklist}
+        <list:checklist items={checklist} />
+      {/checklist}
+      {?infoItems}
+        <list:details items={infoItems} />
+      {/infoItems}
+      {?actionItems}
+        <list:actions items={actionItems} />
+      {/actionItems}
+    </mui:container>
+  </mui:card-content>
+</mui:card>

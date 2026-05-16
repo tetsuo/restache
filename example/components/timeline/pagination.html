@@ -1,0 +1,19 @@
+<mui:box
+  gap="20px"
+  mt="24px"
+  mb="32px"
+  display="flex"
+  align-items="center"
+  justify-content="center">
+
+  <mui:icon-button href="#/" disabled={$.prev.disabled} aria-label="Go to prev page">
+    <icons:chevron-left-rounded />
+  </mui:icon-button>
+  <mui:typography font-size="1.2rem" white-space="nowrap">
+    {$.prev.label} &mdash; {$.next.label}
+  </mui:typography>
+  <mui:icon-button href="#/" disabled={$.next.disabled} aria-label="Go to next page">
+    <icons:chevron-right-rounded />
+  </mui:icon-button>
+
+</mui:box>
